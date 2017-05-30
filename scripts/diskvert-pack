@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+for i in $(seq $#)
+do
+    tar czvf "$1.tgz" "$1".{txt,col,dat} && rm -fv "$1".{txt,col,dat}
+    shift 1
+done

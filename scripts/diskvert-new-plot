@@ -1,0 +1,190 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+from matplotlib import pyplot as plt
+from matplotlib import rc as pltrc
+import numpy as np
+import gzip
+from diskvert.col2python import col2python
+from argparse import ArgumentParser
+import re
+
+parser = ArgumentParser(description='Rysuje wykresy do nowego modelu dysków akrecyjnych.')
+# 1. Wyświetlanie
+parser.add_argument('--tau', '-t', action='store_true',
+    help=u"Po podaniu tej opcji, na osi X będzie głębokość optyczna zamiast wysokości.")
+# 2. Techniczne
+parser.add_argument('--show', action='store_true',
+        help=u"Wyświetla okienko zamiast zapisywania pliku")
+parser.add_argument('--output', '-o', type=str,
+        help=u"nazwa pliku wyjściowego (PNG lub inne zgodne z NumPy)")
+parser.add_argument('--dpi', type=int, default = 96,
+        help=u"Rozdzielczość DPI")
+parser.add_argument('inputfile',
+        help=u"Wyjście z programu w formacie .tar.gz")
+
+args = parser.parse_args()
+
+if re.search(r'(\.tgz|\.tar\.gz)$', args.inputfile) == None:
+    print(u"Oczekuję pliku w formacie .tar.gz lub .tgz (dostałem: %s)" % args.inputfile)
+
+(data, info) = col2python(args.inputfile)
+
+fig = plt.figure(figsize=(1280.0 / 96, 720.0 / 96), dpi = args.dpi)
+pltrc('font', family='Liberation Serif', size=10.5)
+
+xx1 =  data['heat_max'] / (data['heat_max'] - data['d*frad'])
+
+
+def xax_tau(ax):
+    plt.xlim(1e3,1e-2)
+    plt.xscale('log')
+    plt.xlabel('$\\tau_{\\rm es}$')
+    return data['tau']
+def xax_lin(ax):
+    plt.xscale('linear')
+    plt.xlabel('$z_{\\rm scale}$')
+    return data['h']
+
+xax = xax_tau if args_tau else xax_lin
+grid_dim = (2,4)
+
+# subplot: gęstość
+
+ax = plt.subplot2grid( grid_dim, (0,0) )
+ax.set_title(u"Gęstość")
+ax.set_yscale('log')
+ax.plot(xax(ax), data['rhorad'], linewidth=0.8, color='#AAEBAF')
+ax.plot(xax(ax), data['rho'], linewidth=1.5, color='#1A8A22')
+
+# subplot: temperatura
+
+ax = plt.subplot2grid( grid_dim, (1,0) )
+ax.set_title(u"Temperatura")
+tc = np.interp(0, data['z'], data['temp'])
+ax.set_ylim([tc * 3e-2,tc * 3e2])
+ax.set_yscale('log')
+ax.plot(xax(ax), data['tcompt'], '--', color='#3C5395', linewidth=1.0,
+    label=u"Komptonowska")
+ax.plot(xax(ax), (data['compw'] + 1)*data['trad'], color='#3C5395', linewidth=1.0,
+    label=u"Komptonowska (z poprawką)")
+ax.plot(xax(ax), data['trad'], color='#C4094C', linewidth=1.0,
+    label=u"Promien. $T_{\\rm rad}=\\left(\\frac{3c}{4\\sigma} P_{\\rm rad} \\right)^{1/4}$")
+ax.plot(xax(ax), data['temp'], color='black', linewidth=1.8,
+    label=u"Obliczeniowa (finalna)")
+
+ax.legend(loc='upper left',fontsize=9)
+
+# subplot: ciśnienie
+
+ax = plt.subplot2grid( grid_dim, (0,1) )
+ax.set_title(u"Ciśnienia")
+ax.set_yscale('log')
+ax.plot(xax(ax), data['pgas'], '-', color='#069E10', label=u"Gazu")
+ax.plot(xax(ax), data['prad'], '-', color='#B60A42', label=u"Promieniowania")
+ax.plot(xax(ax), data['pmag'], '-', color='#0A74B0', label=u"Magnetyczne")
+ax.plot(xax(ax), data['ptot'], '-', color='#04292E', linewidth=1.8, label=u"Całkowite")
+
+ax.legend(fontsize=9)
+
+# subplot: bety
+
+ax = plt.subplot2grid( grid_dim, (1,1) )
+ax.set_title(u"Parametr $\\beta$")
+ax.set_yscale('log')
+ax.set_ylim(1e3,1e-3)
+ax.axhline(1, color='#8B8B8B', linewidth=0.8)
+ax.plot(xax(ax), data['betarad'], '-', color='#B60A42', label=u"$\\beta$ promienista", linewidth=1.5)
+ax.plot(xax(ax), data['betamag'], '-', color='#0A74B0', label=u"$\\beta$ magnetyczna", linewidth=1.5)
+plt.grid()
+
+ax.legend(loc='lower right', fontsize = 9)
+
+
+# subplot: strumienie
+
+ax = plt.subplot2grid( grid_dim, (0,2) )
+ax.set_title(u"Strumień")
+ax.axhline(1, color='#8B8B8B', linewidth=0.8)
+ax.plot(xax(ax), data['fmag'] / info['flux_acc'], color='#0E709A', label=u"Magnetyczny")
+ax.plot(xax(ax), data['frad'] / info['flux_acc'], color='#B43216', label=u"Promienisty")
+ax.plot(xax(ax), data['flxbond'] / info['flux_acc'], color='#AD867E', linestyle='--', label=u"Warunek brzegowy")
+ax.plot(xax(ax), data['fgen'] / info['flux_acc'], color='black', linewidth=2.0, label=u"Całkowity")
+ax.set_ylim( [0,1.2] )
+# ax.set_yscale('log')
+plt.grid(True)
+
+ax.legend(loc='center right',fontsize=9)
+
+# subplot: grzanie i chłodzenie
+
+ax = plt.subplot2grid( grid_dim, (1,2) )
+ax.set_ylim(-0.1,0.5)
+ax.set_title(u"Grzanie i chłodzenie")
+# ax.set_yscale('log')
+ax.plot(xax(ax), (data['d*fgen'] - data['d*frad'])  * info['zscale'] / info['flux_acc'], color='#0E709A', label=u"Strumień magnetyczny")
+ax.plot(xax(ax), data['cool_tot'] * info['zscale'] / info['flux_acc'], color='#369818', label=u"Chłodzenie promieniste (netto)")
+ax.plot(xax(ax), data['d*frad'] * info['zscale'] / info['flux_acc'], color='#B43216', label=u"Grzanie magnetyczne")
+# ax.plot(xax(ax), data['d*frad'] * data['z'] / data['frad'], '.', color='#408FA1', label=u"Warunek brzegowy")
+ax.plot(xax(ax), data['heat_max'] * info['zscale'] / info['flux_acc'], ':', color='#5B3027', label=u"Grzanie maksymalne (patrz dok.)")
+ax.plot(xax(ax), data['d*fgen'] * info['zscale'] / info['flux_acc'], color='black', linewidth=2.0, label=u"Całkowity bilans")
+plt.grid(True)
+
+ax.legend(loc='upper right',fontsize=9)
+
+# ax2 = ax.twinx()
+# ax2.set_ylim(-4,4)
+# ax2.set_yscale('linear')
+# ax2.plot(xax(ax2), data['energbil'], color='black', linewidth=1.25, label='Bilans energetyczny')
+# ax2.axhline(0,color='#8E8B8C')
+#
+# ax2.legend(loc='upper right',fontsize=9)
+
+# subplot: prędkości
+
+ax = plt.subplot2grid( grid_dim, (0,3) )
+ax.set_title(u"Prędkości")
+ax.set_yscale("log")
+xx = max(data['csound'])
+ax.set_ylim([xx*0.001,xx*10])
+ax.plot(xax(ax), data['csound'], color='#CF1F59', label=u"dźwięku")
+ax.plot(xax(ax), data['vffall'], color='#756761', label=u"spadku swobodnego")
+ax.plot(xax(ax), data['valvf'], color='#0756DD', label=u"Alvfena")
+ax.plot(xax(ax), data['vrise'], color='#379E32', label=u"wypływu pola")
+ax.legend(fontsize=9, loc = 'lower right')
+
+# subplot: różne bezwymiarowe
+
+ax = plt.subplot2grid( grid_dim, (1,3) )
+ax.set_title(u"Różne bezwymiarowe")
+# ax.set_ylim(0,3)
+ax.set_ylim(1e-3,1e3)
+ax.set_yscale('log')
+ax.axhline(1, color='#8B8B8B', linewidth=0.8)
+ax.plot(xax(ax), data['compy'], color='#67676A',label='Y parameter')
+ax.plot(xax(ax), data['compw'], '--', color='#67676A',label='W parameter')
+
+if not args.tau:
+    ax.plot(xax(ax), data['tau'], linewidth=1.5, color='#174E1F',label='$\\tau_{\\rm es}$')
+
+ax2 = ax.twinx()
+ax2.set_yscale('log')
+ax2.set_ylim(1e-6,1)
+ax2.plot(xax(ax2), data['epsi'], '-', color='#D584BC',label='$\\epsilon$ parameter')
+for t in ax2.get_yticklabels():
+    t.set_color('#541845')
+
+ax.grid(True)
+
+ax.legend(loc='upper right',fontsize=9)
+ax2.legend(loc='lower right',fontsize=9)
+
+
+plt.tight_layout()
+
+if args.show:
+    plt.show()
+else:
+    plt.savefig(args.output if args.output != None \
+        else re.sub(r'(\.tgz|\.tar\.gz)$', '.png', args.inputfile),
+        dpi = args.dpi)

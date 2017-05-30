@@ -1,0 +1,11 @@
+/bin
+*.o
+*.a
+*.so
+*.mod
+*.smod
+*.pyc
+/diskvert-*.tar.*
+/build
+/*.egg-info
+/dist

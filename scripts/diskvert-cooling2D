@@ -1,0 +1,250 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+from diskvert.cgs import *
+from diskvert.col2python import col2python
+
+import numpy as np
+from numpy import interp,arange,where,zeros,log10,array,load
+from numpy import save as npsave
+from numpy import array as nparray
+from numpy import sqrt as npsqrt
+from math import asinh,log10
+
+from matplotlib import rc
+from matplotlib.colors import LinearSegmentedColormap
+import matplotlib.pyplot as plt
+
+import gzip
+from os import path
+from argparse import ArgumentParser
+import re
+
+########################################################################################
+
+# czytamy argumenty z linii poleceń
+parser = ArgumentParser(description=u"Rysowanie wykresów 2D w poszukiwaniu niestabilności termicznej.")
+# 1. Zakresy
+parser.add_argument('--Zmin', '--Z-min', type=float, default = 0,
+        help=u"od jakiej wysokości rysować")
+parser.add_argument('--Zmax', '--Z-max', type=float,
+        help=u"do jakiej wysokości rysować")
+parser.add_argument('--logT-max', type=float, default = 3.0,
+        help=u"logarytm maksymalnej temperatury")
+parser.add_argument('--logT-min', type=float, default = -1.5,
+        help=u"logarytm minimalnej temperatury")
+# 2. Wyświetlanie
+parser.add_argument('--display-range', type=float, default = 0.1,
+        help=u"zakres wyświetlany przy pomocy kolorów")
+parser.add_argument('--resolution', type=int, default = 96,
+        help=u"ile przedziałów w osi X")
+parser.add_argument('--contours', type=int, default = 6,
+        help=u"ile konturów po każdej stronie")
+parser.add_argument('--colormap', type=str, default = 'diskvert1',
+        help=u"wybór mapy kolorów dla matplotlib")
+# 3. Techniczne
+parser.add_argument('--show', action='store_true',
+        help=u"Wyświetla okienko zamiast zapisywania pliku")
+parser.add_argument('--output', '-o', type=str,
+        help=u"nazwa pliku wyjściowego (PNG lub inne zgodne z NumPy)")
+parser.add_argument('--dpi', type=int, default = 96,
+        help=u"Rozdzielczość DPI")
+parser.add_argument('inputfile',
+        help=u"nazwa pliku w formacie .npy.gz (spakowany pickle NumPy)")
+
+args = parser.parse_args()
+
+########################################################################################
+
+if re.search(r'(\.tgz|\.tar\.gz)$', args.inputfile) == None:
+    print(u"Oczekuję pliku w formacie .tar.gz lub .tgz (dostałem: %s)" % args.inputfile)
+
+# Dekompresujemy i wczytujemy ze StringIO plik
+print 'Wczytywanie...'
+
+filename = args.inputfile
+d,info = col2python(args.inputfile)
+
+print 'Przygotowania...'
+
+if args.Zmax != None:
+    zmax = min( [args.Zmax, max(d['h'])] )
+else:
+    zmax = max(d['h'])
+
+zlim = (args.Zmin, zmax)
+zmin,zmax = zlim
+
+tlim_lo = args.logT_min
+tlim_hi = args.logT_max
+
+
+########################################################################################
+
+
+kram_abs_0 = info['kram_abs_0']
+kram_es = info['kram_es']
+
+print u'Stała w przybliżeniu Kramersa: %.3e' % kram_abs_0
+
+def kappa(rho,temp):
+    return kram_abs_0 * rho * temp**(-3.5)
+def kappa_dt(rho,temp):
+    return -3.5 * kram_abs_0 * rho * temp**(-4.5)
+def kappa_drho(rho,temp):
+    return kram_abs_0 * temp**(-3.5)
+
+########################################################################################
+
+tcen = log10(info['temp_0'])
+t0 = log10(interp(zmin, d['h'], d['trad']))
+
+nx = int(args.resolution / 96.0 * (args.dpi * 9))
+ny = int(args.resolution / 96.0 * (args.dpi * 3))
+
+tlim_lo = tlim_lo + t0
+tlim_hi = tlim_hi + t0
+
+xax = arange(zlim[0], zlim[1], (zlim[1] - zlim[0]) / nx)
+nx = len(xax)
+
+yax = 10 ** arange(tlim_lo,tlim_hi,(tlim_hi-tlim_lo)/ny)
+ny = len(yax)
+
+
+print ' --> obrazek o wymiarach %dx%d' % (nx,ny)
+
+########################################################################################
+
+print 'Interpolacja i obliczenia...'
+
+cool_net = zeros([nx,ny])
+cool_net_dT = zeros([nx,ny])
+
+pgas = interp(xax,d['h'],d['pgas'])
+prad = interp(xax,d['h'],d['prad'])
+heat = interp(xax,d['h'],d['d*frad'])
+trad = interp(xax,d['h'],d['trad'])
+tempgas = interp(xax,d['h'],d['temp'])
+
+for iy in range(ny):
+    temp = yax[iy]
+    rho = pgas * (0.5 * cgs_mhydr) / (cgs_boltz * temp)
+
+    kap = kappa(rho,temp)
+
+    cool_net0 = ( 4 * cgs_stef * temp**4 - 3 * cgs_c * prad ) * rho * kap \
+            + 12 * cgs_kapes * rho * prad * cgs_boltz * ( temp - trad ) \
+            / ( cgs_mel * cgs_c )
+
+    cool_net[:,iy] = 1 - cool_net0/heat
+
+    cool1 = where(temp > trad, cool_net0, np.nan)
+
+    cool_net_dT[:,iy] = rho / cool1 * (  \
+            16 * cgs_stef * temp**4  * kap \
+            + ( 4 * cgs_stef * temp**4 - 3 * cgs_c * prad ) * ( temp*kappa_dt(rho,temp) - rho*kappa_drho(rho,temp) ) \
+            + 12 * cgs_kapes * prad * cgs_boltz * temp / (  cgs_mel * cgs_c )       \
+        ) - 1
+
+########################################################################################
+
+
+def mygrad(s,yl,yh,xg,yg,wg,xl,xh,sm):
+    a = wg
+    return LinearSegmentedColormap(s, {
+        'red': (
+            (0.0,yl,yl),
+            (xl,0.0,0.0),
+            (0.5,1.0,1.0),
+            (1-xh,1.0-sm,1.0-sm),
+            (1.0,yh,yh),
+        ),
+        'green': (
+            (0.0,yl,yl),
+            (0.5-xg,yg,yg),
+            (0.5-0.5*xg, yg+a*(1-yg), yg+a*(1-yg)),
+            (0.5,1,1),
+            (0.5+0.5*xg, yg+a*(1-yg), yg+a*(1-yg)),
+            (0.5+xg,yg,yg),
+            (1.0,yl,yl),
+        ),
+        'blue': (
+            (0.0,yh,yh),
+            (xh,1.0-sm,1.0-sm),
+            (0.5,0.96,0.96),
+            (1-xl,0.0,0.0),
+            (1.0,yl,yl),
+        ),
+    })
+
+plt.register_cmap(cmap=mygrad('diskvert1',0.1,0.36, 0.27,0.1,0.6, 0.4,0.25,0.04))
+plt.register_cmap(cmap=mygrad('diskvert2',0.18,0.32, 0.3,0.25,0.75, 0.2,0.45,0.0))
+cm = plt.get_cmap(args.colormap)
+
+########################################################################################
+
+print 'Rysowanie...'
+
+def thr(x,l1=1.0,l2=-1.0):
+    x1 = where(x > l2, l2, x)
+    return where(x1 < l1, l1, x1)
+
+# ustawienia strony
+lscale = 0.95
+fig = plt.figure(figsize=(1280.0 / 96, 720.0 / 96), dpi = args.dpi)
+rc('font', family='serif', size='10.5')
+plt.subplots_adjust(left=0.065, right=1.02, top=0.94, bottom=0.08)
+# ustawienia strony koniec
+
+# tworzymy nasz wykres
+ax = plt.subplot()
+ax.set_yscale('log')
+ax.set_title(u"Cooling and heating")
+ax.set_xlim(zlim)
+ax.set_ylim([10**tlim_lo,10**tlim_hi])
+ax.set_xlabel('$z / H$')
+ax.set_ylabel('$T$ [K]')
+
+# zakres wyświetlania
+display_range = args.display_range
+
+# kolorowa mapa
+mp = ax.pcolor(xax, yax, cool_net.transpose(),
+        vmin  = -display_range, vmax = display_range, cmap = cm )
+
+# wykres wyliczonej temperatury
+ax.plot(d['h'],d['temp'],'--',color='#a4a4a4',linewidth=3*lscale)
+
+#funkcje pomocnicze
+def seq1(n,a=0.5):
+    return a**abs(np.arange(1-n,n))
+def seq2(n,a=0.5):
+    x =  np.arange(1-n,n)
+    y = (n - 1 - abs(x))
+    return np.sign(x) * a**y
+
+# liczba konturów
+nc = args.contours + 1
+
+# białe kontury - pochodna
+ax.contour(xax,yax,cool_net_dT.transpose(),
+        0.2 * seq2(nc),
+        linewidths = (lscale * 1.9 * seq1(nc)),
+        colors=['w']*(2*nc-1))
+# czarne kontury - bilans
+ax.contour(xax,yax,cool_net.transpose(),\
+        display_range * seq2(nc),
+        linewidths = (lscale * 2.3 * seq1(nc)),
+        colors=['#003300']*(2*nc-1) )
+
+# pasek na prawo
+plt.colorbar(mp,ax=ax,label='$\\left( \\Lambda_{\\rm heat} - \\Lambda_{\\rm cool} \\right) /  \\Lambda_{\\rm heat}$')
+
+if args.show:
+    plt.show()
+    print(u"ZAKRES: --Z-min %0.2f --Z-max %0.2f" % ax.get_xlim())
+else:
+    plt.savefig(args.output if args.output != None \
+        else re.sub(r'(\.tgz|\.tar\.gz)$', '.cool2D.png', args.inputfile),
+        dpi = args.dpi)
