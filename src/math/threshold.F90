@@ -19,15 +19,13 @@ contains
 
     elemental real(real64) function THRLIN(x) result(y)
         real(real64), intent(in) :: x
-        if ( x .lt. -0.5 ) then
-            y = 0.
-            return
+        if ( x < -0.5_real64) then
+            y = 0
+        elseif ( x > 0.5_real64) then
+            y = 1
+        else
+            y = x + 0.5_real64
         end if
-        if ( x .gt. 0.5 ) then
-            y = 1.
-            return
-        end if
-        y = (ABS(x+0.5) - ABS(x-0.5) + 1)/2.
     end function
 
     elemental real(real64) function THR2POLY(x,ord) result(y)
@@ -42,7 +40,7 @@ contains
         a = THRLIN(0.5 + 2*x/n)
         b = THRLIN(0.5 - 2*x/n)
 
-        y = (a**n - b**n + 1.)/2.
+        y = (a**n - b**n + 1) / 2
     end function
 
     elemental real(real64) function THR4POLY(x,ord) result(y)
@@ -54,11 +52,11 @@ contains
         n = 3
         if ( present(ord) )   n = ord
 
-        a = THRLIN(1.5 + x*2)
-        b = 2*THRLIN(x)-1
-        c = THRLIN(1.5 - x*2)
+        a = THRLIN((3 + x*4)/2)
+        b = 2*THRLIN(x) - 1
+        c = THRLIN((3 - x*4)/2)
 
-        y = (a**n - c**n + b*(2*n - abs(b)**(n-1)) + 2*n)/(4.*n)
+        y = (a**n - c**n + b*(2*n - abs(b)**(n-1)) + 2*n)/(4*n)
 
     end function
 
@@ -66,8 +64,8 @@ contains
         real(real64), intent(in) :: x
         real(real64) :: z
 
-        z = 2*THRLIN(0.5*x) - 1
-        y =  (sin( pi * z) / pi + z + 1.)/2.
+        z = 2*THRLIN(x / 2) - 1
+        y =  (sin( pi * z) / pi + z + 1) / 2
     end function
 
     elemental real(real64) function THRATAN(x) result(y)
@@ -77,7 +75,7 @@ contains
 
     elemental real(real64) function thrsqrt(x) result(y)
         real(real64), intent(in) :: x
-        y = 0.5 +  x / sqrt( 1 + 4 * x**2 )
+        y = 0.5_real64 +  x / sqrt( 1 + 4 * x**2 )
     end function
 
     elemental real(real64) function thrtanh(x) result(y)
