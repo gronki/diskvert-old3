@@ -2,7 +2,6 @@ module slf_findzermulti
 
     use iso_fortran_env
     use ieee_arithmetic
-    use kind
 
     implicit none
 
@@ -10,21 +9,21 @@ contains
 
     subroutine findzer_multi(x, nx, xlo, xhi, delx, nb, f)
 
-        real(fp), intent(inout) :: x(:)
-        real(fp), intent(in) :: xlo,xhi,delx
+        real(real64), intent(inout) :: x(:)
+        real(real64), intent(in) :: xlo,xhi,delx
         integer, intent(in) :: nb
         integer, intent(out) :: nx
 
         interface
             pure subroutine f(x,y,dy)
-                import fp
-                real(fp), intent(in) :: x
-                real(fp), intent(out) :: y
-                real(fp), intent(out), optional :: dy
+                import real64
+                real(real64), intent(in) :: x
+                real(real64), intent(out) :: y
+                real(real64), intent(out), optional :: dy
             end subroutine
         end interface
 
-        real(fp) :: y(nb), dy(nb), x0(nb)
+        real(real64) :: y(nb), dy(nb), x0(nb)
         integer :: i
 
 
@@ -46,9 +45,9 @@ contains
     contains
 
         subroutine linsect(x,xlo0,xhi0,delx)
-            real(fp), intent(in) :: xhi0,xlo0,delx
-            real(fp), intent(out) :: x
-            real(fp) :: xhi,xlo,yhi,ylo,y,s
+            real(real64), intent(in) :: xhi0,xlo0,delx
+            real(real64), intent(out) :: x
+            real(real64) :: xhi,xlo,yhi,ylo,y,s
             integer :: i,n
 
             n = log(abs((xhi0-xlo0)/delx))/log(2.0)
@@ -59,7 +58,7 @@ contains
             sect_loop: do i = 1, n
                 call f(xlo,ylo)
                 call f(xhi,yhi)
-                s = sign(real(1,kind=fp),yhi-ylo)
+                s = sign(real(1,kind=real64),yhi-ylo)
 
                 x = ( yhi * xlo - ylo * xhi ) / ( yhi - ylo )
                 call f(x,y)

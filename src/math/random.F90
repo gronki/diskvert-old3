@@ -2,7 +2,6 @@ module slf_random
 
     use slf_interpol
     use iso_fortran_env
-    use kind
 
     implicit none
 
@@ -33,11 +32,11 @@ contains
     end subroutine
 
     subroutine random_pdf(x,pdf,xout,cdf)
-        real(fp), intent(in) :: x(:)
-        real(fp), intent(out) :: xout(:)
-        real(fp), intent(in) :: pdf(size(x))
-        real(fp), intent(out) :: cdf(size(x))
-        real(fp) :: rand(size(xout)), dx(size(x))
+        real(real64), intent(in) :: x(:)
+        real(real64), intent(out) :: xout(:)
+        real(real64), intent(in) :: pdf(size(x))
+        real(real64), intent(out) :: cdf(size(x))
+        real(real64) :: rand(size(xout)), dx(size(x))
         integer :: err,i
 
         if(size(x) .le. 3) write (error_unit,debugfmt) __FILE__, __LINE__, &

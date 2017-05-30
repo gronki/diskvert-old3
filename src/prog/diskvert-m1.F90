@@ -3,7 +3,6 @@ program m1
     use confort
 
     use model_m1
-
     use setup
     use settings
     use globals
@@ -19,8 +18,8 @@ program m1
     integer :: meta_lun
     integer :: errno
     integer :: i
-    real(fp), dimension(:), allocatable :: z, x
-    real(fp), dimension(:,:), allocatable :: val, der, par
+    real(real64), dimension(:), allocatable :: z, x
+    real(real64), dimension(:,:), allocatable :: val, der, par
 
     character(len=12) :: p_labels(n_pars), v_labels(n_vals)
 

@@ -17,8 +17,8 @@ program SS73
     character(len=12), dimension(ny) :: y_labels
     character(len=12), dimension(na) :: a_labels
     integer :: nmax, it
-    real(fp), allocatable, dimension(:) :: x,z
-    real(fp), allocatable, dimension(:,:) :: y,dy,a
+    real(real64), allocatable, dimension(:) :: x,z
+    real(real64), allocatable, dimension(:,:) :: y,dy,a
 
 
     y_labels(c_Pgas)    = 'Pgas'

@@ -50,7 +50,6 @@ install-user: install
 %.o: %.F90
 	$(FC) $(INCLUDE) $(FFLAGS) $(CPPFLAGS) -c -fPIC $< -o $@
 
-$(OBJECTS_LIB) $(OBJECTS_UTIL): kind.o
 settings.o: libconfort/libconfort.so
 alphadisk.o balance.o: settings.o globals.o
 settings.o: globals.o

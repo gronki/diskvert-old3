@@ -1,7 +1,7 @@
 module results
 
     use iso_fortran_env
-    use kind
+    
 
     implicit none
 
@@ -21,8 +21,8 @@ contains
 
     subroutine write_results(x,y,labels,outfn)
 
-        real(fp), intent(in), dimension(:,:) :: y
-        real(fp), intent(in), dimension(size(y,2)) :: x
+        real(real64), intent(in), dimension(:,:) :: y
+        real(real64), intent(in), dimension(size(y,2)) :: x
         character(len=*), dimension(size(y,1)), intent(in) :: labels
         character(len=*), intent(in) :: outfn
         character(len=50) :: buf
@@ -66,9 +66,9 @@ contains
     subroutine write_results_3(x,nx,y,dy,y_labels,ny,a,a_labels,na,outfn)
 
         integer, intent(in) :: nx,ny,na
-        real(fp), intent(in), dimension(ny,nx) :: y, dy
-        real(fp), intent(in), dimension(na,nx) :: a
-        real(fp), intent(in), dimension(nx) :: x
+        real(real64), intent(in), dimension(ny,nx) :: y, dy
+        real(real64), intent(in), dimension(na,nx) :: a
+        real(real64), intent(in), dimension(nx) :: x
         character(len=*), dimension(ny), intent(in) :: y_labels
         character(len=*), dimension(na), intent(in) :: a_labels
         character(len=*), intent(in) :: outfn

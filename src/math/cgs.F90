@@ -1,13 +1,12 @@
 module slf_cgs
 
     use iso_fortran_env
-    use kind
 
     implicit none
 
-    real(fp), parameter, private :: pi = 4*atan(real(1,fp))
+    real(real64), parameter, private :: pi = 4*atan(real(1,real64))
 
-    real(fp), parameter :: &
+    real(real64), parameter :: &
             cgs_boltz = 1.3806581212d-16,     &
             cgs_c = 2.99792458d10, &
             cgs_h = 6.62607554040d-27, &
@@ -33,7 +32,7 @@ module slf_cgs
             cgs_lsun = 3.9d33,     &
             cgs_kapes = 0.34d0
 
-    real(fp), parameter :: &
+    real(real64), parameter :: &
             un_keV_in_kelvin = 8.617328149741d-8,   &
             un_kelvin_in_keV = 1 / 8.617328149741d-8,   &
             un_angstrom_x_keV = 12.4
@@ -43,9 +42,9 @@ contains
         !
         ! solves the temperature when pgas+prad
         !
-        real(fp) function FINDTEMPERATURE(prs, ro) result(temp)
-            real(fp), intent(in) :: prs, ro
-            real(fp)  :: temp_hi, temp_lo, prs_comp, miu
+        real(real64) function FINDTEMPERATURE(prs, ro) result(temp)
+            real(real64), intent(in) :: prs, ro
+            real(real64)  :: temp_hi, temp_lo, prs_comp, miu
             integer :: i
             temp_hi = 1e9
             temp_lo = 0

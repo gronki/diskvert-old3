@@ -2,15 +2,15 @@ module model_ss73
 
     use iso_fortran_env
     use iso_c_binding
+    
     use globals
     use slf_cgs
     use slf_space
     use slf_rk4integr
     use slf_eulerintegr
     use slf_threshold, only: thrtanh
-    use kind
 
-    real(fp) :: alpha
+    real(real64) :: alpha
 
     integer, parameter :: ny = 4,   &
         &   c_Pgas = 1, c_Prad = 2, c_Frad = 3, c_tau = 4
@@ -38,7 +38,7 @@ contains
         real(c_double), intent(inout), dimension(ny,nz) :: y,dy
         real(c_double), intent(inout), dimension(na,nz) :: a
         integer(c_int), intent(out), optional :: nmax
-        real(fp) :: h_hi, h_lo, h
+        real(real64) :: h_hi, h_lo, h
         integer :: i,it
 
 
@@ -79,13 +79,13 @@ contains
 
     subroutine f(z,y,dy,a,abort)
 
-        real(fp), intent(in) :: z, y(:)
-        real(fp), intent(inout) :: dy(size(y)), a(:)
+        real(real64), intent(in) :: z, y(:)
+        real(real64), intent(inout) :: dy(size(y)), a(:)
         logical, intent(inout) :: abort
 
-        real(fp) :: compsw
-        real(fp), parameter :: toler = 1
-        real(fp) :: kabs, epsi, taues
+        real(real64) :: compsw
+        real(real64), parameter :: toler = 1
+        real(real64) :: kabs, epsi, taues
 
         if ( y(c_Frad) < 0 ) then
             abort = .TRUE.
