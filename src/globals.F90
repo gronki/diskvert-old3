@@ -35,6 +35,9 @@ module globals
     !   czy w rownaniach bilansu ma byc czlon comptonowski
     logical :: cfg_compton_term = .true.
 
+    !   czy uwzglednic przewodnictwo cieplne
+    logical :: cfg_conduction = .false.
+
     !   czy przeliczyc raz z danymi wartosciami centralnymi czy iterowac
     !   dla spelneia warunkow brzegowych?
     logical :: cfg_single_run = .false.

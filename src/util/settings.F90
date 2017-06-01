@@ -46,6 +46,7 @@ contains
             call command_line_flag(arg,"single",cfg_single_run)
             call command_line_flag(arg,"compton-term",cfg_compton_term)
             call command_line_flag(arg,"euler-method",cfg_euler_integration)
+            call command_line_flag(arg,"conduction",cfg_conduction)
 
             select case (arg)
             case ("-compton")
