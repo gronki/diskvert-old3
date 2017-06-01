@@ -14,8 +14,11 @@ FC				= f95
 CFLAGS			?= -g -O3 -march=native
 FFLAGS			?= $(CFLAGS)
 
-OBJECTS_MATH = bisect.o cgs.o deriv.o eulerintegr.o findzer.o findzer_multi.o histogram.o interpol.o  kramers.o linsect.o random.o rk4integr.o space.o threshold.o
-OBJECTS_LIB = $(OBJECTS_MATH) alphadisk.o balance.o globals.o model_m1.o model_ss73.o coefficients.o
+OBJECTS_MATH = bisect.o cgs.o deriv.o eulerintegr.o \
+	findzer.o findzer_multi.o histogram.o interpol.o  kramers.o \
+	linsect.o random.o rk4integr.o space.o threshold.o
+OBJECTS_LIB = $(OBJECTS_MATH) alphadisk.o balance.o globals.o model_m1.o \
+	model_ss73.o coefficients.o
 OBJECTS_UTIL = results.o summary.o setup.o settings.o
 
 VPATH = src:src/util:src/prog:src/math
