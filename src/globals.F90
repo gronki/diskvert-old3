@@ -141,10 +141,34 @@ contains
         real(real64), intent(in) :: rho,T
         kappa_abs_drho = kram_abs / T**3.5_real64
     end function
+    elemental real(real64) function kappa_abs_1(rho,T)
+        real(real64), intent(in) :: rho,T
+        kappa_abs_1 = kram_abs / T**3.5_real64
+    end function
 
     elemental real(real64) function kappa_abs_dT(rho,T)
         real(real64), intent(in) :: rho,T
         kappa_abs_dT = - 3.5_real64 * kram_abs * rho / T**(4.5_real64)
+    end function
+    elemental real(real64) function kappa_abs_2(rho,T)
+        real(real64), intent(in) :: rho,T
+        kappa_abs_2 = - 3.5_real64 * kram_abs * rho / T**(4.5_real64)
+    end function
+
+    elemental function kappa_cond(rho,T) result(kp)
+        real(real64), intent(in) :: rho, T
+        real(real64) :: kp
+        kp = 0
+    end function
+    elemental function kappa_cond_1(rho,T) result(kp)
+        real(real64), intent(in) :: rho, T
+        real(real64) :: kp
+        kp = 0
+    end function
+    elemental function kappa_cond_2(rho,T) result(kp)
+        real(real64), intent(in) :: rho, T
+        real(real64) :: kp
+        kp = 0
     end function
 
     subroutine grid(type,h,z,n) bind(C)
