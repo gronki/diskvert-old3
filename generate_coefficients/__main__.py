@@ -5,10 +5,6 @@ from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq
 
 procedures = []
 
-enableMagnetic = False
-enableCorona = False
-enableConduction = False
-
 for enableMagnetic, enableCorona, enableConduction in [
     (False, False, False),
     (True,  False, False),

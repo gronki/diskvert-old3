@@ -63,9 +63,9 @@ globals.o: $(OBJECTS_MATH)
 model_m1.o model_ss73.o: $(OBJECTS_MATH) alphadisk.o balance.o globals.o
 diskvert-m1.o: model_m1.o
 diskvert-ss73.o: model_ss73.o
-coefficients.o: globals.o cgs.o coefficients.F90
+coefficients.o: globals.o cgs.o src/coefficients.F90
 
-coefficients.F90: $(wildcard generate_coefficients/*.py)
+src/coefficients.F90: $(wildcard generate_coefficients/*.py)
 	python generate_coefficients
 
 #################  PLIKI BINARNE  #################
