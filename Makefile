@@ -30,20 +30,23 @@ all: $(BINARIES) libdiskvert.so
 install: all
 	install -d $(libdir)
 	install libdiskvert.so $(libdir)
-	install -d $(libdir)
 	install libconfort/libconfort.so $(libdir)
 	install -d $(bindir)
 	install $(BINARIES) $(bindir)
 	install scripts/diskvert-pack $(bindir)
+	ldconfig -nv $(libdir)
+	@echo
+	@echo "Program installed in $(bindir) and $(libdir). Invoke before usage:"
+	@echo "export PATH=\"\$$PATH:$(bindir)\""
+	@echo "export LD_LIBRARY_PATH=\"\$$LD_LIBRARY_PATH:$(libdir)\""
+	@echo
+	@echo "You might want to install Python scripts as well:"
+	@echo "python setup.py install --user"
+	@echo
 
 install-user: prefix = $(HOME)/.local
 install-user: install
-	@echo
-	@echo "Program installed in $(bindir) and $(libdir),"
-	@echo "Before usage, you must invoke:"
-	@echo "   export PATH=\"\$$PATH:$(bindir)\""
-	@echo "   export LD_LIBRARY_PATH=\"\$$LD_LIBRARY_PATH:$(libdir)\""
-	@echo
+
 
 #################  PLIKI OBIEKTOW  #################
 
