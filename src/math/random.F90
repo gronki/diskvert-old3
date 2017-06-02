@@ -12,14 +12,13 @@ module slf_random
             real(real64), intent(out) :: a
         end subroutine
 
-        module subroutine random_number_gauss_arr(A,n)
-            real(real64), intent(out), dimension(n) :: A
-            integer, intent(in) :: n
+        module subroutine random_number_gauss_arr(B)
+            real(real64), intent(out), dimension(:) :: B
         end subroutine
 
-        module subroutine random_number_gauss_2arr(A,B,n)
-            real(real64), intent(out), dimension(n) :: A,B
-            integer, intent(in) :: n
+        module subroutine random_number_gauss_2arr(C,D)
+            real(real64), intent(out), dimension(:) :: C
+            real(real64), intent(out), dimension(size(C)) :: D
         end subroutine
     end interface random_number_gauss
 
@@ -45,19 +44,18 @@ contains
         a = sqrt( -2 * log(U(1)) ) * cos(2 * pi * U(2))
     end subroutine
 
-    subroutine random_number_gauss_arr(A,n)
-        real(real64), intent(out), dimension(n) :: A
-        integer, intent(in) :: n
-        real(real64), dimension(n,2) :: U
+    subroutine random_number_gauss_arr(A)
+        real(real64), intent(out), dimension(:) :: A
+        real(real64), dimension(size(A),2) :: U
         call random_number(U)
         A = sqrt( -2 * log(U(:,1)) ) * cos(2 * pi * U(:,2))
     end subroutine
 
-    subroutine random_number_gauss_2arr(A,B,n)
-        real(real64), intent(out), dimension(n) :: A,B
-        integer, intent(in) :: n
-        real(real64), dimension(n,2) :: U
-        real(real64), dimension(n) :: C
+    subroutine random_number_gauss_2arr(A,B)
+        real(real64), intent(out), dimension(:) :: A
+        real(real64), intent(out), dimension(size(A)) :: B
+        real(real64), dimension(size(A),2) :: U
+        real(real64), dimension(size(A)) :: C
         call random_number(U)
         C = sqrt( -2 * log(U(:,1)) )
         A = C * cos(2 * pi * U(:,2))
