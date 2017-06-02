@@ -19,9 +19,7 @@ module model_m1
     implicit none
 
     ! stale zwiazane z polem magnetycznym
-    real(real64) :: alpha
     real(real64) :: beta_0
-    real(real64) :: dzeta
 
     ! gestosc i temperatura centralna dla trybu __DISKV_SINGLE__
     real(real64) :: rho_0_user
@@ -126,7 +124,7 @@ contains
                     & error stop "All interval bad. quitting"
 
                 if (  nmax .lt. nz-1  ) then
-                    if ( dzeta .gt. 1 ) then
+                    if ( zeta .gt. 1 ) then
                         temp_0_hi = sqrt(temp_0_hi*temp_0)
                         buf = "\/! TEMP"
                     else
@@ -217,7 +215,7 @@ contains
         val(v_taues,1)  = 0
         val(v_tauth,1)  = 0
         val(v_fgen,1)   = 0
-        dzeta = 0.5 * alpha * (beta_0 / (val(v_pgas,1)/val(v_prad,1)) + beta_0 + 1.)
+        zeta = 0.5 * alpha * (beta_0 / (val(v_pgas,1)/val(v_prad,1)) + beta_0 + 1.)
 
         !solve the equations
         if ( cfg_euler_integration ) then
@@ -276,8 +274,8 @@ contains
         alpha_eff = alpha
         if (cfg_allow_mri_shutdown) alpha_eff = a(p_mri) * alpha
 
-        a(p_vrise) = omega * dzeta * x
-        a(p_vrise_t) = omega * dzeta
+        a(p_vrise) = omega * zeta * x
+        a(p_vrise_t) = omega * zeta
         a(p_vrise_tt) = 0
         a(p_vffall) = omega*x
         a(p_bflux) = 2 * y(v_pmag) * a(p_vrise)

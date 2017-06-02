@@ -62,10 +62,14 @@ module globals
    logical :: cfg_balance_multi = .false.
 
 
+   ! parametry globalne
     real(real64) :: m_bh
     real(real64) :: acc_rate
     real(real64) :: r_calc
     real(real64) :: abun_X = 0.7, abun_Z = 0.02
+
+    ! parametry modeli
+    real(real64) :: alpha, zeta
 
     real(real64) :: kram_es
     real(real64) :: kram_ff

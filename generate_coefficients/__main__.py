@@ -122,12 +122,13 @@ for enableMagnetic, enableCorona, enableConduction in [
 
     assert neq == ny
     assert (len(boundL) + len(boundR) == ny)
-    Y = IndexedBase('Y', (ny,))
-    D = IndexedBase('D', (ny,))
 
-    A = IndexedBase('A',(neq,))
-    MY = IndexedBase('AY',(neq,ny))
-    MD = IndexedBase('AD',(neq,ny))
+    Y = IndexedBase('Y', (nymax,))
+    D = IndexedBase('D', (nymax,))
+
+    A = IndexedBase('A',(nymax,))
+    MY = IndexedBase('AY',(nymax,nymax))
+    MD = IndexedBase('AD',(nymax,nymax))
 
     def discretize(eq):
         for iy,y in zip(range(ny),yvar):

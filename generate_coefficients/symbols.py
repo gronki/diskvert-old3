@@ -11,6 +11,7 @@ m_H      = Symbol('m_H')
 c        = Symbol('c')
 sigma    = Symbol('sigma')
 k        = Symbol('k_B')
+nymax = Symbol('ny', integer = True)
 
 global_variables = {
     Omega:  'Omega',
@@ -22,4 +23,7 @@ global_variables = {
     sigma:      'cgs_stef',
     k:          'cgs_boltz',
     mu:         'miu',
+    alpha:      'alpha',
+    eta:        'zeta',
+    # nymax:      'nymax',
 }

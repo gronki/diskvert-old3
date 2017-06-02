@@ -2,15 +2,13 @@ module model_ss73
 
     use iso_fortran_env
     use iso_c_binding
-    
+
     use globals
     use slf_cgs
     use slf_space
     use slf_rk4integr
     use slf_eulerintegr
     use slf_threshold, only: thrtanh
-
-    real(real64) :: alpha
 
     integer, parameter :: ny = 4,   &
         &   c_Pgas = 1, c_Prad = 2, c_Frad = 3, c_tau = 4

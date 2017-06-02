@@ -61,7 +61,7 @@ program m1
     write (meta_lun, fmt_meta_ec) "beta_0", beta_0, "Beta on the equator"
     write (meta_lun, fmt_meta_ec) "beta_rad_0", val(v_pgas,1) / val(v_prad,1), &
                                 & "Radiative beta at the equator"
-    write (meta_lun, fmt_meta_ec) "dzeta_0", dzeta, "Parametr dzeta"
+    write (meta_lun, fmt_meta_ec) "dzeta_0", zeta, "Parametr zeta"
 
     write (meta_lun, fmt_meta_ec) "flux_gen_top", val(v_fgen,nmax), "erg/cm2/s"
     write (meta_lun, fmt_meta_ec) "flux_rad_top", val(v_flux,nmax), "erg/cm2/s"
