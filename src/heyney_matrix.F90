@@ -20,11 +20,13 @@ module heyney_matrix
     end subroutine
     end interface
 
+    procedure(coeff_type), pointer :: coeff_proc => COEFF_SS73DYF
+
 contains
 
-    subroutine generate_coefficients(x,nx,Y,ny,M,A,proc)
+    subroutine generate_coefficients(x,nx,Y,ny,M,A) bind(C)
 
-        integer, intent(in) :: nx,ny
+        integer, intent(in), value :: nx,ny
         real(real64), dimension(nx), intent(in) :: x
         ! uklad: [ Y1(1) Y2(1) Y3(1) Y1(2) Y2(2) Y3(2) ... ]
         real(real64), dimension(nx*ny), intent(in) :: Y
@@ -35,7 +37,6 @@ contains
         real(real64), dimension(ny,ny) :: MY, MD
         real(real64) :: dx, xm
         integer :: i
-        procedure(coeff_type) :: proc
 
         through_space: do i = 1, nx-1
             dx = x(i+1) - x(i)
@@ -44,7 +45,7 @@ contains
             Ym = (Y(ilo(i):ihi(i)) + Y(ilo(i+1):ihi(i+1))) / 2
             Dm = (Y(ilo(i+1):ihi(i+1)) - Y(ilo(i):ihi(i))) / dx
 
-            call proc(xm, Ym, Dm, Am, MY, MD, ny)
+            call coeff_proc(xm, Ym, Dm, Am, MY, MD, ny)
 
             A(ilo(i) : ihi(i)) = Am
             ! Macierz( nr_rownania, nr_niewiadomej )
