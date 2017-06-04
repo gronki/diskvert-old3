@@ -2,7 +2,7 @@ from ctypes import CDLL, CFUNCTYPE, POINTER, c_double, c_float, c_int
 from numpy.ctypeslib import ndpointer
 import os.path
 
-libdv = CDLL('libdiskvert.so')
+__libdv = CDLL('libdiskvert.so')
 
 def FACTORY(name, args = None, restype = None):
     flags = { 'in':1, 'out':2, 'inout':3 }
@@ -10,7 +10,7 @@ def FACTORY(name, args = None, restype = None):
     argtypes = tuple( a_type for a_type,a_intent,a_name in args )
     arglist = tuple( (flags[a_intent], a_name) for a_type,a_intent,a_name in args )
     proto = CFUNCTYPE(restype, *argtypes)
-    f = proto((name,libdv), arglist)
+    f = proto((name,__libdv), arglist)
     f.__doc__ = '{}({})'.format(name, ', '.join([
         '{} {}'.format(a_type.__name__,a_name) \
         for a_type,a_intent,a_name in args  ]))
