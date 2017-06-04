@@ -3,12 +3,12 @@
 
 # In[43]:
 
-from diskvert import libdv
+from diskvert import *
 import numpy as np
 
-libdv.init_disk(10,0.01,10)
-libdv.init_ss73(0.02)
-libdv.eval_globals()
+dv_init_disk(10,0.01,10)
+dv_init_ss73(0.02)
+dv_eval_globals()
 
 nz = 1000
 z = np.ndarray(nz, np.float64)
@@ -16,7 +16,7 @@ y = np.ndarray((nz,4), np.float64)
 dy = np.ndarray((nz,4), np.float64)
 a = np.ndarray((nz,8), np.float64)
 
-libdv.run_ss73(z,nz,y,dy,a)
+dv_run_ss73(z,nz,y,dy,a)
 
 
 # In[44]:
@@ -57,8 +57,8 @@ M = np.zeros((nx*ny,nx*ny))
 
 # In[48]:
 
-#libdv.init_ss73(0.04)
-#libdv.eval_globals()
+#dv_init_ss73(0.04)
+#dv_eval_globals()
 libdv.generate_coefficients(x,nx,Y,ny,M,A)
 
 
@@ -73,6 +73,3 @@ plt.show()
 
 
 # In[ ]:
-
-
-

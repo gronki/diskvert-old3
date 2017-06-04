@@ -1,12 +1,12 @@
 
 # coding: utf-8
 
-from diskvert import libdv
+from diskvert import *
 import numpy as np
 
-libdv.init_disk(10,0.01,10)
-libdv.init_ss73(0.1)
-libdv.eval_globals()
+dv_init_disk(10,0.01,10)
+dv_init_ss73(0.1)
+dv_eval_globals()
 
 nz = 1000
 z = np.ndarray(nz, np.float64)
@@ -14,7 +14,7 @@ y = np.ndarray((nz,4), np.float64)
 dy = np.ndarray((nz,4), np.float64)
 a = np.ndarray((nz,8), np.float64)
 
-libdv.run_ss73(z,nz,y,dy,a)
+dv_run_ss73(z,nz,y,dy,a)
 
 import matplotlib.pyplot as plt
 

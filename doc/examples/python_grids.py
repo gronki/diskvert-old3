@@ -4,8 +4,8 @@
 from diskvert import *
 import numpy as np
 
-libdv.init_disk(10,0.01,10)
-libdv.eval_globals()
+dv_init_disk(10,0.01,10)
+dv_eval_globals()
 
 nz = 100
 z1 = np.ndarray(nz, np.float64)
@@ -13,9 +13,9 @@ z2 = np.ndarray(nz, np.float64)
 z3 = np.ndarray(nz, np.float64)
 hmax = 10
 
-libdv.grid(GRID_LINEAR, hmax, z1, nz)
-libdv.grid(GRID_LOG, hmax, z2, nz)
-libdv.grid(GRID_ASINH, hmax, z3, nz)
+dv_grid(GRID_LINEAR, hmax, z1, nz)
+dv_grid(GRID_LOG, hmax, z2, nz)
+dv_grid(GRID_ASINH, hmax, z3, nz)
 
 import matplotlib.pyplot as plt
 

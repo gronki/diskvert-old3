@@ -1,58 +1,58 @@
-from ctypes import CDLL, POINTER, c_double, c_float, c_int
+from ctypes import CDLL, CFUNCTYPE, POINTER, c_double, c_float, c_int
 from numpy.ctypeslib import ndpointer
 import os.path
 
 libdv = CDLL('libdiskvert.so')
 
+def FACTORY(name, args = None, restype = None):
+    flags = { 'in':1, 'out':2, 'inout':3 }
+    args = args if args else []
+    argtypes = tuple( a_type for a_type,a_intent,a_name in args )
+    arglist = tuple( (flags[a_intent], a_name) for a_type,a_intent,a_name in args )
+    proto = CFUNCTYPE(restype, *argtypes)
+    f = proto((name,libdv), arglist)
+    f.__doc__ = '{}({})'.format(name, ', '.join([
+        '{} {}'.format(a_type.__name__,a_name) \
+        for a_type,a_intent,a_name in args  ]))
+    return f
+
 GRID_LINEAR = 1 << 1
 GRID_LOG    = 2 << 1
 GRID_ASINH  = 3 << 1
 GRID_REVERSE = 1
-GRID_REVERSE_MASK = 1
-GRID_TYPE_MASK = ~GRID_REVERSE_MASK
 
 EQUATION_EQUILIBR   = 0
 EQUATION_COMPTON    = 1
 EQUATION_BALANCE    = 2
 
-libdv.init_disk.restype = None
-libdv.init_disk.argtypes = [
-    c_double,
-    c_double,
-    c_double,
-]
+dv_init_disk = FACTORY('init_disk', [
+    (c_double, 'in', 'mass'),
+    (c_double, 'in', 'accretion'),
+    (c_double, 'in', 'radius'),
+])
 
-libdv.init_abun.restype = None
-libdv.init_abun.argtypes = [
-    c_double,
-    c_double,
-]
+dv_init_abun = FACTORY('init_abun', [
+    (c_double, 'in', 'X'),
+    (c_double, 'in', 'Z'),
+])
 
-libdv.eval_globals.restype = None
-libdv.eval_globals.argtypes = None
+dv_eval_globals = FACTORY('eval_globals')
 
-libdv.grid.restype = None
-libdv.grid.argtypes = [
-    c_int,
-    c_double,
-    ndpointer(c_double,1),
-    c_int,
-]
+dv_grid = FACTORY('grid', [
+    (c_int, 'in', 'type'),
+    (c_double, 'in', 'range'),
+    (ndpointer(c_double,1), 'inout', 'values'),
+    (c_int, 'in', 'N')
+])
 
-libdv.init_ss73.restype = None
-libdv.init_ss73.argtypes = [ c_double ]
+dv_init_ss73 = FACTORY('init_ss73', [
+    (c_double, 'in', 'alpha')
+])
 
-libdv.run_ss73.restype = None
-libdv.run_ss73.argtypes = [
-    ndpointer(c_double,1),
-    c_int,
-    ndpointer(c_double, 2),
-    ndpointer(c_double, 2),
-    ndpointer(c_double, 2),
-]
-
-# libdv.single_ss73
-#
-# libdv.init_m1
-# libdv.run_m1
-# libdv.single_m1
+dv_run_ss73 = FACTORY('run_ss73', [
+    (ndpointer(c_double,1), 'inout', 'z'),
+    (c_int, 'in', 'nz'),
+    (ndpointer(c_double,2), 'inout', 'y'),
+    (ndpointer(c_double,2), 'inout', 'dy'),
+    (ndpointer(c_double,2), 'inout', 'a'),
+])
