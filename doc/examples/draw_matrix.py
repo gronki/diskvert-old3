@@ -27,8 +27,8 @@ from numpy.ctypeslib import ndpointer
 
 # In[45]:
 
-libdv.generate_coefficients.restype = None
-libdv.generate_coefficients.argtypes = [
+dv_generate_coefficients.restype = None
+dv_generate_coefficients.argtypes = [
     ndpointer(c_double,1),
     c_int,
     ndpointer(c_double,1),
@@ -59,7 +59,7 @@ M = np.zeros((nx*ny,nx*ny))
 
 #dv_init_ss73(0.04)
 #dv_eval_globals()
-libdv.generate_coefficients(x,nx,Y,ny,M,A)
+dv_generate_coefficients(x,nx,Y,ny,M,A)
 
 
 # In[49]:

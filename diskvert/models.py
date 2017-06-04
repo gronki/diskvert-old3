@@ -56,3 +56,12 @@ dv_run_ss73 = FACTORY('run_ss73', [
     (ndpointer(c_double,2), 'inout', 'dy'),
     (ndpointer(c_double,2), 'inout', 'a'),
 ])
+
+dv_generate_coefficients = FACTORY('generate_coefficients', [
+    (ndpointer(c_double,1), 'in', 'z'),
+    (c_int, 'in', 'nz'),
+    (ndpointer(c_double,1), 'in', 'y'),
+    (c_int, 'in', 'ny'),
+    (ndpointer(c_double,2), 'inout', 'M'),
+    (ndpointer(c_double,1), 'inout', 'A'),
+])
