@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup (
-    name = 'diskvert',
+    name = 'pydiskvert',
     version = '170530',
     author = 'Dominik Gronkiewicz',
     author_email = 'gronki@gmail.com',
