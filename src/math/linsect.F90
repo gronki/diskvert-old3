@@ -1,22 +1,24 @@
 module slf_linsect
 
     use iso_fortran_env
+    
+    use precision
 
     implicit none
 
 contains
 
     subroutine linsect(f,x,xlo0,xhi0,delx)
-        real(real64), intent(in) :: xhi0,xlo0,delx
-        real(real64), intent(out) :: x
-        real(real64) :: xhi,xlo,yhi,ylo,y,s
+        real(fp), intent(in) :: xhi0,xlo0,delx
+        real(fp), intent(out) :: x
+        real(fp) :: xhi,xlo,yhi,ylo,y,s
         integer :: i,n
 
         interface
             pure subroutine f(x,y)
-                import real64
-                real(real64), intent(in) :: x
-                real(real64), intent(out) :: y
+                import fp
+                real(fp), intent(in) :: x
+                real(fp), intent(out) :: y
             end subroutine
         end interface
 
@@ -28,7 +30,7 @@ contains
         sect_loop: do i = 1, n
             call f(xlo,ylo)
             call f(xhi,yhi)
-            s = sign(real(1,real64),yhi-ylo)
+            s = sign(real(1,fp),yhi-ylo)
 
             x = ( yhi * xlo - ylo * xhi ) / ( yhi - ylo )
             call f(x,y)

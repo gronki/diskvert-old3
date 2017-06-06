@@ -24,13 +24,18 @@ class FortranProcedure:
     def __init__(self, name, expr_list,
                  extern_functions = {},
                  extern_variables = {},
-                 arguments = []):
+                 arguments = [],
+                 iso_c_binding = False,
+                 kind = 8):
 
         self.name = name
+        self.real_kind = kind
 
         assert type(extern_functions) == dict
         assert type(extern_variables) == dict
         assert type(arguments) == list
+
+        self.iso_c_binding = iso_c_binding
 
         def fixglobs(ex):
             for k,v in extern_variables.items():
@@ -120,19 +125,25 @@ class FortranProcedure:
         # uppercase/lowercase strings
         s2s = lambda(S): [ str(s).lower() if s.is_Symbol else str(s).upper() for s in S ]
 
-        output.append('SUBROUTINE {name}({arglist}) BIND(C)'.format(
+        output.append('SUBROUTINE {name}({arglist}) {bindc}'.format(
             name = self.name.upper(),
             arglist = ', '.join(s2s(self.arguments)),
+            bindc = 'BIND(C)' if self.iso_c_binding else '',
         ))
+
+        if self.iso_c_binding: output.append('USE ISO_C_BINDING')
 
         # this helper prints the fortran declaration of rank-0 variable
         def fort_variables(inset, intent = 'in'):
             l = []
             for v in inset:
-                l.append("{vartype}, INTENT({intent}) :: {var}".format(
+                l.append("{vartype}, INTENT({intent}){byvalue} :: {var}".format(
                         var = str(v).lower(),
                         intent = intent,
-                        vartype = 'INTEGER' if v.is_integer else 'REAL(real64)'
+                        vartype = 'INTEGER' if v.is_integer else 'real({kind})'.format(
+                            kind = 'c_double' if self.iso_c_binding else self.real_kind,
+                        ),
+                        byvalue = ', VALUE' if self.iso_c_binding and intent == 'in' else '',
                 ))
             return l
 
@@ -140,7 +151,7 @@ class FortranProcedure:
         def fort_matrices(matrices, intent = 'in'):
             l = []
             for m in matrices:
-                l.append("REAL(real64), INTENT({intent}), DIMENSION({dim}) :: {mx}".format(
+                l.append("real(fp), INTENT({intent}), DIMENSION({dim}) :: {mx}".format(
                     mx = str(m).upper(),
                     intent = intent,
                     dim = ", ".join([ "{}:{}".format(0,d-1) for d in m.shape ])
@@ -148,7 +159,10 @@ class FortranProcedure:
             return l
 
         for d in self.dims:
-            output.append("INTEGER, INTENT(in), VALUE :: {} ! array dimension".format(d))
+            output.append("INTEGER, INTENT(in){byvalue} :: {name} ! array dimension".format(
+                name = d,
+                byvalue = ', VALUE' if self.iso_c_binding else '',
+            ))
         output.extend(fort_variables(self.var_in, "in"))
         output.extend(fort_matrices(self.arr_in, "in"))
         output.extend(fort_variables(self.var_inout, "inout"))
@@ -162,7 +176,7 @@ class FortranProcedure:
         for ex in self.expressions:
             output.append(fcode(ex.rhs, assign_to = ex.lhs,
                         contract = False,
-                        source_format='free', standard = 2008,
+                        source_format='free', standard = 2003,
                         user_functions = {str(k): v for k,v in self.extern_functions.items()}))
 
         # subroutine end

@@ -1,6 +1,8 @@
 module slf_interpol
 
     use iso_fortran_env
+    
+    use precision
 
     implicit none
 
@@ -8,11 +10,11 @@ contains
 
 
     subroutine interpol(x_in, y_in, x_out, y_out)
-        real(real64), intent(in) :: x_in(:)
-        real(real64), intent(in) :: y_in(size(x_in))
-        real(real64), intent(in) :: x_out
-        real(real64), intent(out) :: y_out
-        real(real64) :: x0,x1,y0,y1,t,control
+        real(fp), intent(in) :: x_in(:)
+        real(fp), intent(in) :: y_in(size(x_in))
+        real(fp), intent(in) :: x_out
+        real(fp), intent(out) :: y_out
+        real(fp) :: x0,x1,y0,y1,t,control
         integer :: i, i_nearest, n
 
         n = size(y_in)

@@ -1,6 +1,8 @@
 module slf_findzer
 
     use iso_fortran_env
+    
+    use precision
 
     implicit none
 
@@ -15,20 +17,20 @@ contains
 
     subroutine findzer_single(x, xlo, xhi, delx, f)
 
-        real(real64), intent(inout) :: x
-        real(real64), intent(in) :: xlo,xhi,delx
+        real(fp), intent(inout) :: x
+        real(fp), intent(in) :: xlo,xhi,delx
 
         interface
             pure subroutine f(x,y,dy)
-                import real64
-                real(real64), intent(in) :: x
-                real(real64), intent(out) :: y
-                real(real64), intent(out), optional :: dy
+                import fp
+                real(fp), intent(in) :: x
+                real(fp), intent(out) :: y
+                real(fp), intent(out), optional :: dy
             end subroutine
         end interface
 
         integer :: i
-        real(real64) :: dx,yx,y,x1
+        real(fp) :: dx,yx,y,x1
 
         main_loop : do i = 1,FINDZER_ITER
 
@@ -53,21 +55,21 @@ contains
     subroutine findzer_array(x, nx, xlo, xhi, delx, f)
 
         integer, intent(in) :: nx
-        real(real64), intent(inout), dimension(nx) :: x
-        real(real64), intent(in), dimension(nx)  :: xlo,xhi
-        real(real64), intent(in)  :: delx
+        real(fp), intent(inout), dimension(nx) :: x
+        real(fp), intent(in), dimension(nx)  :: xlo,xhi
+        real(fp), intent(in)  :: delx
 
         interface
             pure subroutine f(x,y,dy)
-                import real64
-                real(real64), intent(in), dimension(:)  :: x
-                real(real64), intent(out), dimension(size(x))  :: y
-                real(real64), intent(out), dimension(size(x)) , optional :: dy
+                import fp
+                real(fp), intent(in), dimension(:)  :: x
+                real(fp), intent(out), dimension(size(x))  :: y
+                real(fp), intent(out), dimension(size(x)) , optional :: dy
             end subroutine
         end interface
 
         integer :: i
-        real(real64), dimension(nx) :: dx,yx,y,x1
+        real(fp), dimension(nx) :: dx,yx,y,x1
         logical, dimension(nx) :: converged
 
         converged = .false.

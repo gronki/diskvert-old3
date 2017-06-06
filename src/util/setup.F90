@@ -3,6 +3,7 @@ module setup
     use settings
     use globals
     use confort
+    use iso_fortran_env
 
     implicit none
 
@@ -25,9 +26,12 @@ contains
         end interface
         procedure(cfghandler), optional :: conf_reader
         procedure(clhandler), optional :: argv_reader
+        character(len=150) :: progname
+
+        write(progname, '("DISKVERT v.",I0)') VERSION
 
         write (error_unit,'(A)')    "",    &
-        &   "                        DISKVERT ", "", &
+        &   "                     " // trim(progname), &
         &   "     Computes vertical structure of an accretion disk.         ", &
         &   "          Copyright (c) 2017, Dominik Gronkiewicz              ", &
         &   "              Distributed under MIT License.             ", &

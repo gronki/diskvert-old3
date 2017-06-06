@@ -1,4 +1,8 @@
 module model_m1
+    
+    use ieee_arithmetic
+    use iso_c_binding
+    use iso_fortran_env
 
     use slf_cgs
     use slf_kramers
@@ -7,23 +11,20 @@ module model_m1
     use slf_findzer
     use slf_eulerintegr
 
+    use precision
     use globals
     use energy_balance
     use settings
     use alphadisk
 
-    use ieee_arithmetic
-    use iso_c_binding
-    use iso_fortran_env
-
     implicit none
 
     ! stale zwiazane z polem magnetycznym
-    real(real64) :: beta_0
+    real(fp) :: beta_0
 
     ! gestosc i temperatura centralna dla trybu __DISKV_SINGLE__
-    real(real64) :: rho_0_user
-    real(real64) :: temp_0_user
+    real(fp) :: rho_0_user
+    real(fp) :: temp_0_user
 
     integer, parameter :: n_vals = 7, &
                 v_taues =     1, &
@@ -76,7 +77,7 @@ module model_m1
 contains
 
     subroutine init_m1(alpha_in,beta_0_in) bind(C)
-        real(c_double), intent(in), value :: alpha_in, beta_0_in
+        real(fp), intent(in), value :: alpha_in, beta_0_in
         alpha = alpha_in
         beta_0 = beta_0_in
     end subroutine
@@ -84,14 +85,14 @@ contains
     subroutine run_m1(z,nz,val,der,par,nmax) bind(C)
         ! ilosc przedzialow obliczeniowych
         integer(c_int), intent(in), value :: nz
-        real(c_double), intent(inout), dimension(nz) :: z
-        real(c_double), intent(inout), dimension(n_vals,nz) :: val,der
-        real(c_double), intent(inout), dimension(n_pars,nz) :: par
-        integer(c_int), intent(out), optional :: nmax
-        real(c_double) :: rho_0, temp_0
-        real(c_double) :: rho_0_estim, temp_0_estim
-        real(c_double) :: temp_0_hi, temp_0_lo
-        real(c_double) :: rho_0_hi, rho_0_lo
+        real(fp), intent(inout), dimension(nz) :: z
+        real(fp), intent(inout), dimension(n_vals,nz) :: val,der
+        real(fp), intent(inout), dimension(n_pars,nz) :: par
+        integer(c_int), intent(out) :: nmax
+        real(fp) :: rho_0, temp_0
+        real(fp) :: rho_0_estim, temp_0_estim
+        real(fp) :: temp_0_hi, temp_0_lo
+        real(fp) :: rho_0_hi, rho_0_lo
         integer :: iter, iter0, itmax
         character(len=1024) :: buf
 
@@ -186,16 +187,16 @@ contains
         ! ilosc przedzialow obliczeniowych
         integer(c_int), intent(in), value :: nz
         ! wspolrzedna
-        real(c_double), intent(inout), dimension(nz) :: z
+        real(fp), intent(inout), dimension(nz) :: z
         ! wyniki
-        real(c_double), intent(inout), dimension(n_vals,nz) :: val,der
-        real(c_double), intent(inout), dimension(n_pars,nz) :: par
+        real(fp), intent(inout), dimension(n_vals,nz) :: val,der
+        real(fp), intent(inout), dimension(n_pars,nz) :: par
         ! wartosci na rowniku
-        real(c_double), intent(in), value :: rho_0, temp_0
+        real(fp), intent(in), value :: rho_0, temp_0
         ! na wyjsciu: przedzial, na ktorym algorytm sie wywalil
         integer(c_int), intent(out) :: nmax
 
-        real(real64) :: Trad0
+        real(fp) :: Trad0
 
         ! make the initial conditions
         val(v_pgas,1) = cgs_k_over_mh * rho_0 * temp_0 / miu
@@ -233,22 +234,22 @@ contains
 
     subroutine fder(x,y,pder,a,abort)
 
-        real(real64), intent(in) :: x, y(:)
-        real(real64), intent(inout) :: pder(size(y)), a(:)
+        real(fp), intent(in) :: x, y(:)
+        real(fp), intent(inout) :: pder(size(y)), a(:)
         logical, intent(inout) :: abort
 
         ! this constants decides about tolerance margin to MRI enable/shutoff
         ! it allows weighting parameter to vary in percent range indicated by
         ! this constant.
-        real(real64), parameter :: toler = 3
+        real(fp), parameter :: toler = 3
 
         logical :: isnormal(size(a))
 
-        real(real64) :: kabs
-        real(real64) :: epsi
-        real(real64) :: heat
-        real(real64) :: alpha_eff
-        real(real64) :: xxa,xxb
+        real(fp) :: kabs
+        real(fp) :: epsi
+        real(fp) :: heat
+        real(fp) :: alpha_eff
+        real(fp) :: xxa,xxb
         integer :: i,n
 
 
@@ -405,23 +406,23 @@ contains
 
     subroutine solve_balance_multi(x, nx, xlo, xhi, nb, f)
 
-        real(real64), intent(inout) :: x(:)
-        real(real64), intent(in) :: xlo,xhi
+        real(fp), intent(inout) :: x(:)
+        real(fp), intent(in) :: xlo,xhi
         integer, intent(in) :: nb
         integer, intent(out) :: nx
 
         interface
             pure subroutine f(x,y,dy)
-                import real64
-                real(real64), intent(in) :: x
-                real(real64), intent(out) :: y
-                real(real64), intent(out), optional :: dy
+                import fp
+                real(fp), intent(in) :: x
+                real(fp), intent(out) :: y
+                real(fp), intent(out), optional :: dy
             end subroutine
         end interface
 
-        real(real64) :: y(nb), dy(nb), x0(nb)
+        real(fp) :: y(nb), dy(nb), x0(nb)
         integer :: i
-        real(real64) :: delx,yx,ym,xm
+        real(fp) :: delx,yx,ym,xm
 
 
         do concurrent (i=1:nb)
@@ -449,9 +450,9 @@ contains
     contains
 
         subroutine linsect(x,xlo0,xhi0,delx)
-            real(real64), intent(in) :: xhi0,xlo0,delx
-            real(real64), intent(out) :: x
-            real(real64) :: xhi,xlo,yhi,ylo,y,s
+            real(fp), intent(in) :: xhi0,xlo0,delx
+            real(fp), intent(out) :: x
+            real(fp) :: xhi,xlo,yhi,ylo,y,s
             integer :: i,n
 
             n = int(log(abs((xhi0-xlo0)/delx))/log(2d0))
@@ -484,9 +485,9 @@ contains
 
 
     pure subroutine fun2(x,y,a)
-        real(real64), intent(in) :: x,a(:)
-        real(real64), intent(out) :: y
-        real(real64) :: T0, rho0, Trad, kabs
+        real(fp), intent(in) :: x,a(:)
+        real(fp), intent(out) :: y
+        real(fp) :: T0, rho0, Trad, kabs
         Trad = x
         rho0 = a(1)
         T0 = a(2)

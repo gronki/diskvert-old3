@@ -14,6 +14,7 @@ LDFLAGS			= -L. -Llibconfort
 FC				= f95
 CFLAGS			?= -g -Wall -O3 -march=native -mieee-fp
 FFLAGS			?= $(CFLAGS) -Warray-temporaries -std=f2008
+override CPPFLAGS += -DVERSION=$(VERSION)
 
 OBJECTS_MATH = bisect.o cgs.o deriv.o eulerintegr.o \
 	findzer.o findzer_multi.o histogram.o interpol.o  kramers.o \
@@ -72,9 +73,10 @@ install-user: install
 
 %.o: %.F90
 	$(FC) $(INCLUDE) $(FFLAGS) $(CPPFLAGS) -c -fPIC $< -o $@
-$(OBJECTS_LIB): %.o: %.F90 | mod
+$(OBJECTS_LIB) precision.o: %.o: %.F90 | mod
 	$(FC) $(INCLUDE) -Jmod $(FFLAGS) $(CPPFLAGS) -c -fPIC $< -o $@
 
+$(OBJECTS_MATH) $(OBJECTS_LIB) $(OBJECTS_UTIL): precision.o
 settings.o: libconfort/libconfort.so
 alphadisk.o balance.o: settings.o globals.o
 settings.o: globals.o
@@ -96,7 +98,7 @@ src/coefficients.F90: $(wildcard generate_coefficients/*.py)
 
 #################  PLIKI BINARNE  #################
 
-libdiskvert.so: $(OBJECTS_MATH) $(OBJECTS_LIB)
+libdiskvert.so: $(OBJECTS_MATH) $(OBJECTS_LIB) precision.o
 	$(FC) $(LDFLAGS) -shared $^ -o $@
 
 libconfort/libconfort.so:

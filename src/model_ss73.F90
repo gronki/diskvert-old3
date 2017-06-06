@@ -3,6 +3,7 @@ module model_ss73
     use iso_fortran_env
     use iso_c_binding
 
+    use precision
     use globals
     use slf_cgs
     use slf_space
@@ -25,18 +26,18 @@ module model_ss73
 contains
 
     subroutine init_ss73(alpha_in) bind(C)
-        real(c_double), intent(in), value :: alpha_in
+        real(fp), intent(in), value :: alpha_in
         alpha = alpha_in
     end subroutine
 
     subroutine run_ss73(z,nz,y,dy,a,nmax) bind(C)
         ! ilosc przedzialow obliczeniowych
         integer(c_int), intent(in), value :: nz
-        real(c_double), intent(inout), dimension(nz) :: z
-        real(c_double), intent(inout), dimension(ny,nz) :: y,dy
-        real(c_double), intent(inout), dimension(na,nz) :: a
-        integer(c_int), intent(out), optional :: nmax
-        real(real64) :: h_hi, h_lo, h
+        real(fp), intent(inout), dimension(nz) :: z
+        real(fp), intent(inout), dimension(ny,nz) :: y,dy
+        real(fp), intent(inout), dimension(na,nz) :: a
+        integer(c_int), intent(out) :: nmax
+        real(fp) :: h_hi, h_lo, h
         integer :: i,it
 
 
@@ -77,13 +78,13 @@ contains
 
     subroutine f(z,y,dy,a,abort)
 
-        real(real64), intent(in) :: z, y(:)
-        real(real64), intent(inout) :: dy(size(y)), a(:)
+        real(fp), intent(in) :: z, y(:)
+        real(fp), intent(inout) :: dy(size(y)), a(:)
         logical, intent(inout) :: abort
 
-        real(real64) :: compsw
-        real(real64), parameter :: toler = 1
-        real(real64) :: kabs, epsi, taues
+        real(fp) :: compsw
+        real(fp), parameter :: toler = 1
+        real(fp) :: kabs, epsi, taues
 
         if ( y(c_Frad) < 0 ) then
             abort = .TRUE.

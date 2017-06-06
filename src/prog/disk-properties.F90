@@ -2,6 +2,7 @@ program disk_properties
 
     use confort
 
+    use precision
     use globals
     use setup
     use settings

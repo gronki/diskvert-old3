@@ -1,22 +1,21 @@
 MODULE RELAX_COEFFICIENTS
 
-USE ISO_FORTRAN_ENV
-USE ISO_C_BINDING
 USE IEEE_ARITHMETIC
 USE SLF_CGS
+USE PRECISION
 USE GLOBALS
 
 IMPLICIT NONE
 CONTAINS
 
-SUBROUTINE COEFF_SS73DYF(z, Y, D, A, AY, AD, ny) BIND(C)
-INTEGER, INTENT(in), VALUE :: ny ! array dimension
-REAL(real64), INTENT(in) :: z
-REAL(real64), INTENT(in), DIMENSION(0:ny - 1) :: D
-REAL(real64), INTENT(in), DIMENSION(0:ny - 1) :: Y
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1) :: A
+SUBROUTINE COEFF_SS73DYF(z, Y, D, A, AY, AD, ny) 
+INTEGER, INTENT(in) :: ny ! array dimension
+real(fp), INTENT(in) :: z
+real(fp), INTENT(in), DIMENSION(0:ny - 1) :: D
+real(fp), INTENT(in), DIMENSION(0:ny - 1) :: Y
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
+real(fp), INTENT(out), DIMENSION(0:ny - 1) :: A
 A(0) = Omega**2*z*Y(0) + cgs_boltz*D(0)*Y(1)/(cgs_mhydr*miu) + cgs_boltz &
       *D(1)*Y(0)/(cgs_mhydr*miu) - (cgs_kapes + kappa_abs(Y(0), Y(1)))* &
       Y(0)*Y(2)/cgs_c
@@ -53,14 +52,14 @@ AY(2, 2) = 0
 AD(2, 2) = 1
 END SUBROUTINE COEFF_SS73DYF
 
-SUBROUTINE COEFF_MAGNDYF(z, Y, D, A, AY, AD, ny) BIND(C)
-INTEGER, INTENT(in), VALUE :: ny ! array dimension
-REAL(real64), INTENT(in) :: z
-REAL(real64), INTENT(in), DIMENSION(0:ny - 1) :: D
-REAL(real64), INTENT(in), DIMENSION(0:ny - 1) :: Y
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1) :: A
+SUBROUTINE COEFF_MAGNDYF(z, Y, D, A, AY, AD, ny) 
+INTEGER, INTENT(in) :: ny ! array dimension
+real(fp), INTENT(in) :: z
+real(fp), INTENT(in), DIMENSION(0:ny - 1) :: D
+real(fp), INTENT(in), DIMENSION(0:ny - 1) :: Y
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
+real(fp), INTENT(out), DIMENSION(0:ny - 1) :: A
 A(0) = Omega**2*z*Y(0) + cgs_boltz*D(0)*Y(1)/(cgs_mhydr*miu) + cgs_boltz &
       *D(1)*Y(0)/(cgs_mhydr*miu) + D(3) - (cgs_kapes + kappa_abs(Y(0), &
       Y(1)))*Y(0)*Y(2)/cgs_c
@@ -113,14 +112,14 @@ AY(3, 3) = -Omega*alpha + 2*Omega*zeta
 AD(3, 3) = Omega*z*zeta
 END SUBROUTINE COEFF_MAGNDYF
 
-SUBROUTINE COEFF_SS73COR(z, Y, D, A, AY, AD, ny) BIND(C)
-INTEGER, INTENT(in), VALUE :: ny ! array dimension
-REAL(real64), INTENT(in) :: z
-REAL(real64), INTENT(in), DIMENSION(0:ny - 1) :: D
-REAL(real64), INTENT(in), DIMENSION(0:ny - 1) :: Y
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1) :: A
+SUBROUTINE COEFF_SS73COR(z, Y, D, A, AY, AD, ny) 
+INTEGER, INTENT(in) :: ny ! array dimension
+real(fp), INTENT(in) :: z
+real(fp), INTENT(in), DIMENSION(0:ny - 1) :: D
+real(fp), INTENT(in), DIMENSION(0:ny - 1) :: Y
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
+real(fp), INTENT(out), DIMENSION(0:ny - 1) :: A
 A(0) = Omega**2*z*Y(0) + cgs_boltz*D(0)*Y(1)/(cgs_mhydr*miu) + cgs_boltz &
       *D(1)*Y(0)/(cgs_mhydr*miu) - (cgs_kapes + kappa_abs(Y(0), Y(1)))* &
       Y(0)*Y(2)/cgs_c
@@ -184,14 +183,14 @@ AY(3, 3) = -4*cgs_stef*(4*cgs_boltz*cgs_kapes*Y(3)**4/(cgs_c**2*cgs_mel &
 AD(3, 3) = 0
 END SUBROUTINE COEFF_SS73COR
 
-SUBROUTINE COEFF_MAGNCOR(z, Y, D, A, AY, AD, ny) BIND(C)
-INTEGER, INTENT(in), VALUE :: ny ! array dimension
-REAL(real64), INTENT(in) :: z
-REAL(real64), INTENT(in), DIMENSION(0:ny - 1) :: D
-REAL(real64), INTENT(in), DIMENSION(0:ny - 1) :: Y
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1) :: A
+SUBROUTINE COEFF_MAGNCOR(z, Y, D, A, AY, AD, ny) 
+INTEGER, INTENT(in) :: ny ! array dimension
+real(fp), INTENT(in) :: z
+real(fp), INTENT(in), DIMENSION(0:ny - 1) :: D
+real(fp), INTENT(in), DIMENSION(0:ny - 1) :: Y
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
+real(fp), INTENT(out), DIMENSION(0:ny - 1) :: A
 A(0) = Omega**2*z*Y(0) + cgs_boltz*D(0)*Y(1)/(cgs_mhydr*miu) + cgs_boltz &
       *D(1)*Y(0)/(cgs_mhydr*miu) + D(4) - (cgs_kapes + kappa_abs(Y(0), &
       Y(1)))*Y(0)*Y(2)/cgs_c
@@ -275,14 +274,14 @@ AY(4, 4) = 0
 AD(4, 4) = 0
 END SUBROUTINE COEFF_MAGNCOR
 
-SUBROUTINE COEFF_MAGNCORCND(z, Y, D, A, AY, AD, ny) BIND(C)
-INTEGER, INTENT(in), VALUE :: ny ! array dimension
-REAL(real64), INTENT(in) :: z
-REAL(real64), INTENT(in), DIMENSION(0:ny - 1) :: D
-REAL(real64), INTENT(in), DIMENSION(0:ny - 1) :: Y
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
-REAL(real64), INTENT(out), DIMENSION(0:ny - 1) :: A
+SUBROUTINE COEFF_MAGNCORCND(z, Y, D, A, AY, AD, ny) 
+INTEGER, INTENT(in) :: ny ! array dimension
+real(fp), INTENT(in) :: z
+real(fp), INTENT(in), DIMENSION(0:ny - 1) :: D
+real(fp), INTENT(in), DIMENSION(0:ny - 1) :: Y
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
+real(fp), INTENT(out), DIMENSION(0:ny - 1) :: A
 A(0) = Omega**2*z*Y(0) + cgs_boltz*D(0)*Y(1)/(cgs_mhydr*miu) + cgs_boltz &
       *D(1)*Y(0)/(cgs_mhydr*miu) + D(4) - (cgs_kapes + kappa_abs(Y(0), &
       Y(1)))*Y(0)*Y(2)/cgs_c

@@ -1,6 +1,8 @@
 module alphadisk
 
     use iso_fortran_env
+    
+    use precision
     use globals
     use slf_cgs
 
@@ -9,21 +11,21 @@ module alphadisk
     integer, parameter, private :: nn = 1024
     integer, parameter :: alphadisk_n = nn
 
-    real(real64), dimension(nn), target, private :: z
-    real(real64), dimension(4,nn), target, private :: y, dy
+    real(fp), dimension(nn), target, private :: z
+    real(fp), dimension(4,nn), target, private :: y, dy
     integer, parameter, private :: c_rho = 1, c_temp = 2, c_flux = 3, c_tau = 4
-    real(real64), pointer, dimension(:) :: alphadisk_rho
-    real(real64), pointer, dimension(:) :: alphadisk_temp
-    real(real64), pointer, dimension(:) :: alphadisk_flux
-    real(real64), pointer, dimension(:) :: alphadisk_tau
-    real(real64), pointer, dimension(:) :: alphadisk_z
+    real(fp), pointer, dimension(:) :: alphadisk_rho
+    real(fp), pointer, dimension(:) :: alphadisk_temp
+    real(fp), pointer, dimension(:) :: alphadisk_flux
+    real(fp), pointer, dimension(:) :: alphadisk_tau
+    real(fp), pointer, dimension(:) :: alphadisk_z
 
 contains
 
     subroutine quick_alpha_disk(alpha)
 
-        real(real64), intent(in) :: alpha
-        real(real64) :: h, h_hi, h_lo
+        real(fp), intent(in) :: alpha
+        real(fp) :: h, h_hi, h_lo
         integer :: it,nmax
 
         alphadisk_rho  => y(c_rho,nn:1:-1)
@@ -62,9 +64,9 @@ contains
     contains
         subroutine f(z,y,dy,abort)
 
-            real(real64), intent(in) :: z, y(:)
-            real(real64), intent(inout) :: dy(size(y))
-            real(real64) :: dpgas, pgas, prad
+            real(fp), intent(in) :: z, y(:)
+            real(fp), intent(inout) :: dy(size(y))
+            real(fp) :: dpgas, pgas, prad
             logical, intent(inout) :: abort
 
             if ( any(y < 0) ) then

@@ -1,5 +1,6 @@
 program B15
 
+    use precision
     use ieee_arithmetic
     use slf_cgs
     use slf_threshold
@@ -23,7 +24,7 @@ program B15
     character (len=*) , parameter :: fmt33f = "(A30,F15.4,1X,A8)"
     character (len=*) , parameter :: fmt33i = "(A30,I15,1X,A8)"
 
-    real(real64), parameter :: pi = 4*atan(real(1,8))
+    real(fp), parameter :: pi = 4*atan(real(1,8))
     character(len=200) :: outfn_ext, outfn_info_ext
 
 
@@ -266,8 +267,8 @@ contains
         read (buf,*) gamm
     end subroutine
 
-    elemental real(real64) function mri_limit(ro)
-        real(real64), intent(in) :: ro
+    elemental real(fp) function mri_limit(ro)
+        real(fp), intent(in) :: ro
         mri_limit = 0.5 * sqrt( poly_k * ro**(gamm+1d0)        &
            * cgs_graw * (m_bh * cgs_msun) / (rschw*r_calc) )
     end function
@@ -278,7 +279,7 @@ contains
         real (dp), intent(in) :: val_in(n_vars), params(n_params)
         real (dp), intent(out) :: der_out(n_vars)
 
-        real(real64) :: pmag_der, mri_active, prs
+        real(fp) :: pmag_der, mri_active, prs
 
         mri_active = params(p_mri)
         prs = poly_k * val_in(v_ro)**gamm

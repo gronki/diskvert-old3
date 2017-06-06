@@ -153,16 +153,16 @@ for enableMagnetic, enableCorona, enableConduction in [
     p = FortranProcedure(routine_name, expr,
     extern_functions = { f.func: str(f.func) for f in (global_functions | global_functions_extra) },
     extern_variables = global_variables,
-    arguments = [z, Y, D, A, MY, MD])
+    arguments = [z, Y, D, A, MY, MD],
+    kind = 'fp')
     procedures.append(p)
 
 with open('src/coefficients.F90','w') as f:
 # from sys import stdout as f
     f.write("MODULE RELAX_COEFFICIENTS\n\n")
-    f.write("USE ISO_FORTRAN_ENV\n")
-    f.write("USE ISO_C_BINDING\n")
     f.write("USE IEEE_ARITHMETIC\n")
     f.write("USE SLF_CGS\n")
+    f.write("USE PRECISION\n")
     f.write("USE GLOBALS\n")
     f.write("\nIMPLICIT NONE\n")
     f.write("CONTAINS\n\n")

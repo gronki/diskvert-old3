@@ -2,6 +2,8 @@ module slf_eulerintegr
 
     use ieee_arithmetic
     use iso_fortran_env
+    
+    use precision
 
     implicit none
 
@@ -14,23 +16,23 @@ contains
 
     subroutine eulerintegr_full(x, y0, fder, na, y, dy, a, nmax)
 
-        real(real64), intent(in) :: x(:), y0(:)
+        real(fp), intent(in) :: x(:), y0(:)
         integer, intent(in) :: na
-        real(real64), intent(out) :: y(size(y0),size(x))
-        real(real64), intent(out) :: dy(size(y0),size(x))
-        real(real64), intent(out) :: a(na,size(x))
+        real(fp), intent(out) :: y(size(y0),size(x))
+        real(fp), intent(out) :: dy(size(y0),size(x))
+        real(fp), intent(out) :: a(na,size(x))
         integer, intent(out), optional :: nmax
 
         interface
             subroutine fder(x,y,dy,a,abort)
-                import real64
-                real(real64), intent(in) :: x, y(:)
-                real(real64), intent(inout) :: dy(size(y)), a(:)
+                import fp
+                real(fp), intent(in) :: x, y(:)
+                real(fp), intent(inout) :: dy(size(y)), a(:)
                 logical, intent(inout) :: abort
             end subroutine
         end interface
 
-        real(real64) :: dx
+        real(fp) :: dx
         logical :: abort
         integer :: i
 
@@ -64,21 +66,21 @@ contains
 
     subroutine eulerintegr_simple(x, y0, fder, y, dy, nmax)
 
-        real(real64), intent(in) :: x(:), y0(:)
-        real(real64), intent(out) :: y(size(y0),size(x))
-        real(real64), intent(out) :: dy(size(y0),size(x))
+        real(fp), intent(in) :: x(:), y0(:)
+        real(fp), intent(out) :: y(size(y0),size(x))
+        real(fp), intent(out) :: dy(size(y0),size(x))
         integer, intent(out), optional :: nmax
 
         interface
             subroutine fder(x,y,dy,abort)
-                import real64
-                real(real64), intent(in) :: x, y(:)
-                real(real64), intent(inout) :: dy(size(y))
+                import fp
+                real(fp), intent(in) :: x, y(:)
+                real(fp), intent(inout) :: dy(size(y))
                 logical, intent(inout) :: abort
             end subroutine
         end interface
 
-        real(real64) :: dx
+        real(fp) :: dx
         logical :: abort
         integer :: i
 

@@ -1,12 +1,14 @@
 module energy_balance
 
+    use iso_fortran_env
+    
+    use precision
     use globals
     use slf_threshold
-    use iso_fortran_env
 
     implicit none
 
-    real(real64) ::   fcool_heat, &
+    real(fp) ::   fcool_heat, &
                 & fcool_pgas, &
                 & fcool_prad, &
                 & fcool_trad
@@ -16,12 +18,12 @@ contains
 
     pure subroutine fcool(logTemp,y,dy)
 
-        real(real64), intent(in) :: logTemp
-        real(real64), intent(out) :: y
-        real(real64), intent(out), optional :: dy
-        real(real64) :: xxA2kesPradk_over_mec, xx4sgT4_m_3cPrad, xx4sgT4, xxA
-        real(real64) :: rho,kabs,cool
-        real(real64) :: Temp
+        real(fp), intent(in) :: logTemp
+        real(fp), intent(out) :: y
+        real(fp), intent(out), optional :: dy
+        real(fp) :: xxA2kesPradk_over_mec, xx4sgT4_m_3cPrad, xx4sgT4, xxA
+        real(fp) :: rho,kabs,cool
+        real(fp) :: Temp
 
         Temp = exp(logTemp)
 
@@ -47,9 +49,9 @@ contains
     end subroutine
 
     pure subroutine calc_compswitch(pgas, tgas, compsw)
-        real(real64), intent(in) :: tgas,pgas
-        real(real64), intent(out) ::compsw
-        real(real64) :: rho, epsi, taues, compy, kabs
+        real(fp), intent(in) :: tgas,pgas
+        real(fp), intent(out) ::compsw
+        real(fp) :: rho, epsi, taues, compy, kabs
 
         rho =  pgas * miu * cgs_mhydr / ( cgs_boltz * tgas )
 
@@ -64,8 +66,8 @@ contains
     end subroutine
 
     pure subroutine calc_compW(heat, pgas, prad, heat_max, compw)
-        real(real64), intent(in) :: heat, pgas, prad
-        real(real64), intent(out) :: heat_max, compw
+        real(fp), intent(in) :: heat, pgas, prad
+        real(fp), intent(out) :: heat_max, compw
 
         heat_max = 12 * cgs_kapes * prad  &
             & * ( pgas * miu * cgs_mhydr ) &

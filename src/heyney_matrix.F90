@@ -2,21 +2,25 @@ module heyney_matrix
 
     use iso_fortran_env
     use slf_cgs
-    use relax_coefficients
+
+    use precision
     use globals
+
+    ! wspolczynniki wygenerowane
+    use relax_coefficients
 
     implicit none
 
     interface
-    subroutine coeff_type(z, y, D, A, AY, AD, ny) bind(c)
-        import real64
-        integer, intent(in), value :: ny
-        real(real64), intent(in) :: z
-        real(real64), intent(in), dimension(ny) :: D
-        real(real64), intent(in), dimension(ny) :: Y
-        real(real64), intent(out), dimension(ny,ny) :: AD
-        real(real64), intent(out), dimension(ny,ny) :: AY
-        real(real64), intent(out), dimension(ny) :: A
+    subroutine coeff_type(z, y, D, A, AY, AD, ny)
+        import fp
+        integer, intent(in) :: ny
+        real(fp), intent(in) :: z
+        real(fp), intent(in), dimension(ny) :: D
+        real(fp), intent(in), dimension(ny) :: Y
+        real(fp), intent(out), dimension(ny,ny) :: AD
+        real(fp), intent(out), dimension(ny,ny) :: AY
+        real(fp), intent(out), dimension(ny) :: A
     end subroutine
     end interface
 
@@ -27,15 +31,15 @@ contains
     subroutine generate_coefficients(x,nx,Y,ny,M,A) bind(C)
 
         integer, intent(in), value :: nx,ny
-        real(real64), dimension(nx), intent(in) :: x
+        real(fp), dimension(nx), intent(in) :: x
         ! uklad: [ Y1(1) Y2(1) Y3(1) Y1(2) Y2(2) Y3(2) ... ]
-        real(real64), dimension(nx*ny), intent(in) :: Y
+        real(fp), dimension(nx*ny), intent(in) :: Y
         ! uklad: [ A1(1) A2(1) A3(1) A1(2) A2(2) A3(2) ... ]
-        real(real64), dimension(nx*ny), intent(out) :: A
-        real(real64), dimension(nx*ny,nx*ny), intent(out) :: M
-        real(real64), dimension(ny) :: Am, Ym, Dm
-        real(real64), dimension(ny,ny) :: MY, MD
-        real(real64) :: dx, xm
+        real(fp), dimension(nx*ny), intent(out) :: A
+        real(fp), dimension(nx*ny,nx*ny), intent(out) :: M
+        real(fp), dimension(ny) :: Am, Ym, Dm
+        real(fp), dimension(ny,ny) :: MY, MD
+        real(fp) :: dx, xm
         integer :: i
 
         through_space: do i = 1, nx-1
