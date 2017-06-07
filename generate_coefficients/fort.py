@@ -26,7 +26,8 @@ class FortranProcedure:
                  extern_variables = {},
                  arguments = [],
                  iso_c_binding = False,
-                 kind = 8):
+                 kind = 8,
+                 pure = True):
 
         self.name = name
         self.real_kind = kind
@@ -36,6 +37,7 @@ class FortranProcedure:
         assert type(arguments) == list
 
         self.iso_c_binding = iso_c_binding
+        self.pure = pure
 
         def fixglobs(ex):
             for k,v in extern_variables.items():
@@ -114,7 +116,7 @@ class FortranProcedure:
                 list(self.var_out - argument_set) + \
                 list(self.arr_out - argument_set) + \
                 list(self.dims - argument_set)
-        self.user_arguments = argument_set - (self.var_all | self.arr_all) - extern_variables_set
+        self.user_arguments = argument_set - (self.var_all | self.arr_all | self.dims) - extern_variables_set
 
 
     def __str__(self):
@@ -125,10 +127,11 @@ class FortranProcedure:
         # uppercase/lowercase strings
         s2s = lambda(S): [ str(s).lower() if s.is_Symbol else str(s).upper() for s in S ]
 
-        output.append('SUBROUTINE {name}({arglist}) {bindc}'.format(
+        output.append('{pure} SUBROUTINE {name}({arglist}) {bindc}'.format(
             name = self.name.upper(),
             arglist = ', '.join(s2s(self.arguments)),
             bindc = 'BIND(C)' if self.iso_c_binding else '',
+            pure = 'PURE' if self.pure else '',
         ))
 
         if self.iso_c_binding: output.append('USE ISO_C_BINDING')

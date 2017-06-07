@@ -1,7 +1,7 @@
 # coding: utf-8
 from fort import FortranProcedure, function_derivatives
 from symbols import *
-from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq
+from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq, symbols
 
 procedures = []
 
@@ -39,7 +39,6 @@ for enableMagnetic, enableCorona, enableConduction in [
 
     fval = IndexedBase('fval', (3,len(global_functions)))
 
-    ny  = len(yvar)
     # calkowita nieprzezroczystosc
     kappa = kappa_abs + kappa_es
     # predkosc wznoszenia pola
@@ -118,20 +117,20 @@ for enableMagnetic, enableCorona, enableConduction in [
         )
         boundL.append( F_cond )
 
-    neq = len(equations)
+    assert len(equations) == len(yvar)
+    assert len(boundL) + len(boundR) == len(yvar)
 
-    assert neq == ny
-    assert (len(boundL) + len(boundR) == ny)
+    ny,neq,nbl,nbr = symbols('ny,neq,nbl,nbr', integer = True)
 
-    Y = IndexedBase('Y', (nymax,))
-    D = IndexedBase('D', (nymax,))
+    Y = IndexedBase('Y', (ny,))
+    D = IndexedBase('D', (ny,))
 
-    A = IndexedBase('A',(nymax,))
-    MY = IndexedBase('AY',(nymax,nymax))
-    MD = IndexedBase('AD',(nymax,nymax))
+    A = IndexedBase('A',(neq,))
+    MY = IndexedBase('AY',(neq,ny))
+    MD = IndexedBase('AD',(neq,ny))
 
     def discretize(eq):
-        for iy,y in zip(range(ny),yvar):
+        for iy,y in zip(range(len(yvar)),yvar):
             eq = eq.subs(Derivative(y,z),D[iy]).subs(y,Y[iy])
         eq, extrafun = function_derivatives(eq, global_functions)
         global_functions_extra.update(extrafun)
@@ -139,9 +138,9 @@ for enableMagnetic, enableCorona, enableConduction in [
 
 
     expr = []
-    for ieq,eq in zip(range(neq),equations):
+    for ieq,eq in zip(range(len(equations)),equations):
         expr.append(Eq(A[ieq],discretize(eq)))
-        for iy,y in zip(range(ny),yvar):
+        for iy,y in zip(range(len(yvar)),yvar):
             expr.append(Eq(MY[ieq,iy],discretize(eq.diff(y))))
             expr.append(Eq(MD[ieq,iy],discretize(eq.diff(Derivative(y,z)))))
 
@@ -150,12 +149,31 @@ for enableMagnetic, enableCorona, enableConduction in [
         magn = 'MAGN' if enableMagnetic else 'SS73',
         cond = 'CND' if enableConduction else '',
     )
+    model_nr = 1 \
+        + (1 if enableCorona else 0) \
+        + (2 if enableMagnetic else 0) \
+        + (4 if enableConduction else 0)
+    print 'model_collection({}) % get_AM => {}'.format(model_nr,routine_name)
+    print 'model_collection({}) % get_sz => {}'.format(model_nr,routine_name+'_SIZE')
+    print '! model_collection({}) % get_BL => {}'.format(model_nr,routine_name+'_BL')
+    print '! model_collection({}) % get_BR => {}'.format(model_nr,routine_name+'_BR')
+
     p = FortranProcedure(routine_name, expr,
     extern_functions = { f.func: str(f.func) for f in (global_functions | global_functions_extra) },
     extern_variables = global_variables,
-    arguments = [z, Y, D, A, MY, MD],
+    arguments = [z, Y, D, A, MY, MD, ny, neq],
     kind = 'fp')
     procedures.append(p)
+
+    procedures.append(FortranProcedure(
+        routine_name + '_SIZE', [
+            Eq(ny,len(yvar)),
+            Eq(neq,len(equations)),
+            Eq(nbl,len(boundL)),
+            Eq(nbr,len(boundR)),
+        ],
+        arguments = [ny, neq, nbl, nbr],
+    ))
 
 with open('src/coefficients.F90','w') as f:
 # from sys import stdout as f

@@ -62,6 +62,7 @@ dv_generate_coefficients = FACTORY('generate_coefficients', [
     (c_int, 'in', 'nz'),
     (ndpointer(c_double,1), 'in', 'y'),
     (c_int, 'in', 'ny'),
-    (ndpointer(c_double,2), 'inout', 'M'),
     (ndpointer(c_double,1), 'inout', 'A'),
+    (c_int, 'in', 'na'),
+    (ndpointer(c_double,2), 'inout', 'M'),
 ])
