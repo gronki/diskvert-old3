@@ -1,4 +1,4 @@
-module heyney_matrix
+module relaxation
 
     use iso_fortran_env
 
@@ -155,4 +155,4 @@ contains
     end subroutine
 
 
-end module heyney_matrix
+end module relaxation

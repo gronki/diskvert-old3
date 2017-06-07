@@ -20,7 +20,7 @@ OBJECTS_MATH = bisect.o cgs.o deriv.o eulerintegr.o \
 	findzer.o findzer_multi.o histogram.o interpol.o  kramers.o \
 	linsect.o random.o rk4integr.o space.o threshold.o
 OBJECTS_LIB = alphadisk.o balance.o globals.o model_m1.o \
-	model_ss73.o coefficients.o heyney_matrix.o
+	model_ss73.o coefficients.o relaxation.o
 OBJECTS_UTIL = results.o summary.o setup.o settings.o
 
 VPATH = src:src/util:src/prog:src/math
@@ -91,7 +91,7 @@ model_m1.o model_ss73.o: $(OBJECTS_MATH) alphadisk.o balance.o globals.o
 diskvert-m1.o: model_m1.o
 diskvert-ss73.o: model_ss73.o
 coefficients.o: globals.o cgs.o src/coefficients.F90
-heyney_matrix.o: globals.o cgs.o coefficients.o
+relaxation.o: globals.o cgs.o coefficients.o
 
 src/coefficients.F90: $(wildcard generate_coefficients/*.py)
 	python generate_coefficients
