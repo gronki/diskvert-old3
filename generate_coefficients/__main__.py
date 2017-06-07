@@ -125,10 +125,6 @@ for enableMagnetic, enableCorona, enableConduction in [
     Y = IndexedBase('Y', (ny,))
     D = IndexedBase('D', (ny,))
 
-    A = IndexedBase('A',(neq,))
-    MY = IndexedBase('AY',(neq,ny))
-    MD = IndexedBase('AD',(neq,ny))
-
     def discretize(eq):
         for iy,y in zip(range(len(yvar)),yvar):
             eq = eq.subs(Derivative(y,z),D[iy]).subs(y,Y[iy])
@@ -136,6 +132,9 @@ for enableMagnetic, enableCorona, enableConduction in [
         global_functions_extra.update(extrafun)
         return eq
 
+    A = IndexedBase('A',(neq,))
+    MY = IndexedBase('AY',(neq,ny))
+    MD = IndexedBase('AD',(neq,ny))
 
     expr = []
     for ieq,eq in zip(range(len(equations)),equations):
@@ -143,6 +142,22 @@ for enableMagnetic, enableCorona, enableConduction in [
         for iy,y in zip(range(len(yvar)),yvar):
             expr.append(Eq(MY[ieq,iy],discretize(eq.diff(y))))
             expr.append(Eq(MD[ieq,iy],discretize(eq.diff(Derivative(y,z)))))
+
+    expr_bl = []
+    BL = IndexedBase('BL',(nbl,))
+    MBL = IndexedBase('MBL',(nbl,ny))
+    for ib,b in zip(range(len(boundL)),boundL):
+        expr_bl.append(Eq(BL[ib],discretize(b)))
+        for iy,y in zip(range(len(yvar)),yvar):
+            expr_bl.append(Eq(MBL[ib,iy],discretize(b.diff(y))))
+
+    expr_br = []
+    BR = IndexedBase('BR',(nbr,))
+    MBR = IndexedBase('MBR',(nbr,ny))
+    for ib,b in zip(range(len(boundR)),boundR):
+        expr_br.append(Eq(BR[ib],discretize(b)))
+        for iy,y in zip(range(len(yvar)),yvar):
+            expr_br.append(Eq(MBR[ib,iy],discretize(b.diff(y))))
 
     routine_name = 'COEFF_{magn}{comp}{cond}'.format(
         comp = 'COR' if enableCorona else 'DYF',
@@ -155,15 +170,18 @@ for enableMagnetic, enableCorona, enableConduction in [
         + (4 if enableConduction else 0)
     print 'model_collection({}) % get_AM => {}'.format(model_nr,routine_name)
     print 'model_collection({}) % get_sz => {}'.format(model_nr,routine_name+'_SIZE')
-    print '! model_collection({}) % get_BL => {}'.format(model_nr,routine_name+'_BL')
-    print '! model_collection({}) % get_BR => {}'.format(model_nr,routine_name+'_BR')
+    print 'model_collection({}) % get_BL => {}'.format(model_nr,routine_name+'_BL')
+    print 'model_collection({}) % get_BR => {}'.format(model_nr,routine_name+'_BR')
 
-    p = FortranProcedure(routine_name, expr,
-    extern_functions = { f.func: str(f.func) for f in (global_functions | global_functions_extra) },
-    extern_variables = global_variables,
-    arguments = [z, Y, D, A, MY, MD, ny, neq],
-    kind = 'fp')
-    procedures.append(p)
+    extern_functions = { f.func: str(f.func) for f in (global_functions | global_functions_extra) }
+
+    procedures.append(FortranProcedure(
+        routine_name, expr,
+        kind = 'fp',
+        arguments = [z, Y, D, A, MY, MD, ny, neq],
+        extern_functions = extern_functions,
+        extern_variables = global_variables,
+    ))
 
     procedures.append(FortranProcedure(
         routine_name + '_SIZE', [
@@ -173,6 +191,22 @@ for enableMagnetic, enableCorona, enableConduction in [
             Eq(nbr,len(boundR)),
         ],
         arguments = [ny, neq, nbl, nbr],
+    ))
+
+    procedures.append(FortranProcedure(
+        routine_name + '_BL', expr_bl,
+        kind = 'fp',
+        arguments = [z, Y, BL, MBL, ny, nbl],
+        extern_functions = extern_functions,
+        extern_variables = global_variables,
+    ))
+
+    procedures.append(FortranProcedure(
+        routine_name + '_BR', expr_br,
+        kind = 'fp',
+        arguments = [z, Y, BR, MBR, ny, nbr],
+        extern_functions = extern_functions,
+        extern_variables = global_variables,
     ))
 
 with open('src/coefficients.F90','w') as f:

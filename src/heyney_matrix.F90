@@ -56,24 +56,24 @@ contains
 
         model_collection(1) % get_AM => COEFF_SS73DYF
         model_collection(1) % get_sz => COEFF_SS73DYF_SIZE
-        ! model_collection(1) % get_BL => COEFF_SS73DYF_BL
-        ! model_collection(1) % get_BR => COEFF_SS73DYF_BR
+        model_collection(1) % get_BL => COEFF_SS73DYF_BL
+        model_collection(1) % get_BR => COEFF_SS73DYF_BR
         model_collection(3) % get_AM => COEFF_MAGNDYF
         model_collection(3) % get_sz => COEFF_MAGNDYF_SIZE
-        ! model_collection(3) % get_BL => COEFF_MAGNDYF_BL
-        ! model_collection(3) % get_BR => COEFF_MAGNDYF_BR
+        model_collection(3) % get_BL => COEFF_MAGNDYF_BL
+        model_collection(3) % get_BR => COEFF_MAGNDYF_BR
         model_collection(2) % get_AM => COEFF_SS73COR
         model_collection(2) % get_sz => COEFF_SS73COR_SIZE
-        ! model_collection(2) % get_BL => COEFF_SS73COR_BL
-        ! model_collection(2) % get_BR => COEFF_SS73COR_BR
+        model_collection(2) % get_BL => COEFF_SS73COR_BL
+        model_collection(2) % get_BR => COEFF_SS73COR_BR
         model_collection(4) % get_AM => COEFF_MAGNCOR
         model_collection(4) % get_sz => COEFF_MAGNCOR_SIZE
-        ! model_collection(4) % get_BL => COEFF_MAGNCOR_BL
-        ! model_collection(4) % get_BR => COEFF_MAGNCOR_BR
+        model_collection(4) % get_BL => COEFF_MAGNCOR_BL
+        model_collection(4) % get_BR => COEFF_MAGNCOR_BR
         model_collection(8) % get_AM => COEFF_MAGNCORCND
         model_collection(8) % get_sz => COEFF_MAGNCORCND_SIZE
-        ! model_collection(8) % get_BL => COEFF_MAGNCORCND_BL
-        ! model_collection(8) % get_BR => COEFF_MAGNCORCND_BR
+        model_collection(8) % get_BL => COEFF_MAGNCORCND_BL
+        model_collection(8) % get_BR => COEFF_MAGNCORCND_BR
 
     end subroutine
 
@@ -113,15 +113,15 @@ contains
         ! uklad: [ A1(1) A2(1) A3(1) A1(2) A2(2) A3(2) ... ]
         real(fp), dimension(:), intent(out) :: A
         real(fp), dimension(size(A),size(Y)), intent(out) :: M
-        real(fp), dimension(:), allocatable :: Am, Ym, Dm
-        real(fp), dimension(:,:), allocatable :: MY, MD
+        real(fp), dimension(:), allocatable :: Am, Ym, Dm, BL, BR
+        real(fp), dimension(:,:), allocatable :: MY, MD, MBL, MBR
         real(fp) :: dx, xm
         integer :: i
 
         call model % get_sz(ny, na, nbl, nbr)
 
-        allocate( Am(na), Ym(ny), Dm(ny) )
-        allocate( MY(na,ny), MD(na,ny) )
+        allocate( Am(na), Ym(ny), Dm(ny), BL(nbl), BR(nbr) )
+        allocate( MY(na,ny), MD(na,ny), MBL(nbl,ny), MBR(nbr,ny) )
 
         through_space: do i = 1, size(x)-1
             dx = x(i+1) - x(i)
@@ -138,7 +138,8 @@ contains
             M(ilo(i) : ihi(i), ilo(i+1) : ihi(i+1)) = MY / 2 + MD / dx
         end do through_space
 
-        deallocate( Am, Ym, Dm, MY, MD )
+        deallocate( Am, Ym, Dm, BL, BR )
+        deallocate( MY, MD, MBL, MBR )
 
     contains
 
