@@ -109,48 +109,73 @@ contains
         integer :: ny, na, nbl, nbr
         real(fp), dimension(:), intent(in) :: x
         ! uklad: [ Y1(1) Y2(1) Y3(1) Y1(2) Y2(2) Y3(2) ... ]
-        real(fp), dimension(:), intent(in) :: Y
+        real(fp), dimension(:), target, intent(in) :: Y
         ! uklad: [ A1(1) A2(1) A3(1) A1(2) A2(2) A3(2) ... ]
-        real(fp), dimension(:), intent(out) :: A
-        real(fp), dimension(size(A),size(Y)), intent(out) :: M
-        real(fp), dimension(:), allocatable :: Am, Ym, Dm, BL, BR
-        real(fp), dimension(:,:), allocatable :: MY, MD, MBL, MBR
+        real(fp), dimension(:), target, intent(out) :: A
+        real(fp), dimension(size(A),size(Y)), target, intent(out) :: M
+        real(fp), dimension(:), allocatable :: Ym, Dm, Am
+        real(fp), dimension(:,:), allocatable :: MY, MD
+        real(fp), dimension(:), pointer :: BL, BR
+        real(fp), dimension(:,:), pointer :: MBL, MBR
         real(fp) :: dx, xm
-        integer :: i
+        integer :: i,nx
 
+        nx = size(X)
         call model % get_sz(ny, na, nbl, nbr)
 
-        allocate( Am(na), Ym(ny), Dm(ny), BL(nbl), BR(nbr) )
-        allocate( MY(na,ny), MD(na,ny), MBL(nbl,ny), MBR(nbr,ny) )
+        if ( size(Y) /= nx*ny ) &
+            & error stop "size of Y should be nx*ny"
+        if ( size(A) /= nx*na - na + nbl + nbr ) &
+            & error stop "size of Y should be (nx*na - na + nbl + nbr)"
 
-        through_space: do i = 1, size(x)-1
+        allocate( Ym(ny), Dm(ny), Am(na) )
+        allocate( MY(na,ny), MD(na,ny) )
+
+        BL  => A(1:nbl)
+        MBL => M(1:nbl, 1:ny)
+        BR  => A(nx*na - na + nbl : nx*na - na + nbl + nbr)
+        MBR => M(nx*na - na + nbl : nx*na - na + nbl + nbr, 1 + ny*(nx-1) : ny*nx)
+
+        call model % get_BL( x(1),  Y1(1),  BL, MBL, ny, nbl )
+        call model % get_BR( x(nx), Y1(nx), BR, MBR, ny, nbr )
+
+        through_space: do i = 1, nx-1
             dx = x(i+1) - x(i)
             xm = (x(i+1) + x(i)) / 2
 
-            Ym = (Y(ilo(i):ihi(i)) + Y(ilo(i+1):ihi(i+1))) / 2
-            Dm = (Y(ilo(i+1):ihi(i+1)) - Y(ilo(i):ihi(i))) / dx
+            Ym = ( Y1(i+1) + Y1(i) ) / 2
+            Dm = ( Y1(i+1) - Y1(i) ) / dx
 
             call model % get_AM(xm, Ym, Dm, Am, MY, MD, ny, na)
 
-            A(ilo(i) : ihi(i)) = Am
             ! Macierz( nr_rownania, nr_niewiadomej )
-            M(ilo(i) : ihi(i), ilo(i) : ihi(i)) = MY / 2 - MD / dx
-            M(ilo(i) : ihi(i), ilo(i+1) : ihi(i+1)) = MY / 2 + MD / dx
+            A1(i) = Am
+            M1(i,i)   = MY / 2 - MD / dx
+            M1(i,i+1) = MY / 2 + MD / dx
         end do through_space
 
-        deallocate( Am, Ym, Dm, BL, BR )
-        deallocate( MY, MD, MBL, MBR )
+        deallocate( MY, MD, Ym, Dm, Am )
 
     contains
 
-        elemental integer function ilo(i)
+        function Y1(i)
             integer, intent(in) :: i
-            ilo = 1 + ny*(i-1)
+            real(fp), dimension(:), pointer :: Y1
+            Y1 => Y(1 + ny*(i-1) : ny*i)
         end function
-        elemental integer function ihi(i)
+
+        function A1(i)
             integer, intent(in) :: i
-            ihi = na*i
+            real(fp), dimension(:), pointer :: A1
+            A1 => A(nbl + 1 + na*(i-1) : nbl + na*i)
         end function
+
+        function M1(i,j)
+            integer, intent(in) :: i,j
+            real(fp), dimension(:,:), pointer :: M1
+            M1 => M(nbl + 1 + na*(i-1) : nbl + na*i, 1 + ny*(j-1) : ny*j)
+        end function
+
 
     end subroutine
 
