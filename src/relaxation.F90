@@ -125,16 +125,18 @@ contains
 
         if ( size(Y) /= nx*ny ) &
             & error stop "size of Y should be nx*ny"
-        if ( size(A) /= nx*na - na + nbl + nbr ) &
-            & error stop "size of Y should be (nx*na - na + nbl + nbr)"
+        if ( size(A) /= nbl + na*(nx-1) + nbr ) &
+            & error stop "size of Y should be nbl + na*(nx-1) + nbr"
+        if ( na /= nbl + nbr ) &
+            & error stop "not satisfied: na == nbl + nbr"
 
         allocate( Ym(ny), Dm(ny), Am(na) )
         allocate( MY(na,ny), MD(na,ny) )
 
         BL  => A(1:nbl)
         MBL => M(1:nbl, 1:ny)
-        BR  => A(nx*na - na + nbl : nx*na - na + nbl + nbr)
-        MBR => M(nx*na - na + nbl : nx*na - na + nbl + nbr, 1 + ny*(nx-1) : ny*nx)
+        BR  => A(nbl + na*(nx-1) + 1 : na*nx)
+        MBR => M(nbl + na*(nx-1) + 1 : na*nx, ny*(nx-1) + 1 : ny*nx)
 
         call model % get_BL( x(1),  Y1(1),  BL, MBL, ny, nbl )
         call model % get_BR( x(nx), Y1(nx), BR, MBR, ny, nbr )
