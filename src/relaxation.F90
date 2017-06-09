@@ -44,6 +44,7 @@ module relaxation
         procedure(bound_driver_t), pointer, nopass, private :: get_BL, get_BR
         procedure(size_driver_t),  pointer, nopass, private :: get_sz
         integer, private :: ny, na, nbl, nbr
+        integer, private :: nl, nu
     contains
         procedure :: matrix => model_matrix
         procedure :: init   => model_initialize
@@ -93,6 +94,9 @@ contains
                             &   model % na,     &
                             &   model % nbl,    &
                             &   model % nbr)
+
+        model % nl = (model % na) + (model % nbl) - 1
+        model % nu = 2 * (model % ny) - (model % nbl) - 1
         model % initialized = .TRUE.
 
     end subroutine
@@ -122,13 +126,17 @@ contains
         ! uklad: [ A1(1) A2(1) A3(1) A1(2) A2(2) A3(2) ... ]
         real(fp), dimension(size(x) * (model % na)), target, intent(out) :: A
         real(fp), dimension(size(A), size(Y)), target, intent(out) :: M
+
         real(fp), dimension(model % ny) :: Ym, Dm
         real(fp), dimension(model % na) :: Am
         real(fp), dimension(model % na, model % ny) :: MY, MD
-        real(fp), dimension(:), pointer :: BL, BR
-        real(fp), dimension(:,:), pointer :: MBL, MBR
+        real(fp), dimension(model % nbl) :: BL
+        real(fp), dimension(model % nbl, model % ny) :: MBL
+        real(fp), dimension(model % nbr) :: BR
+        real(fp), dimension(model % nbr, model % ny) :: MBR
+
         real(fp) :: dx, xm
-        integer :: i,nx,ny,na,nbl,nbr
+        integer :: i,j,k,nx,ny,na,nbl,nbr
 
         if ( .NOT. model % initialized ) then
             error stop "model not initialized"
@@ -140,6 +148,8 @@ contains
         nbl = model % nbl
         nbr = model % nbr
 
+        M = 0
+
         ! if ( size(Y) /= nx*ny ) &
         !     & error stop "size of Y should be nx*ny"
         ! if ( size(A) /= nbl + na*(nx-1) + nbr ) &
@@ -147,51 +157,71 @@ contains
         ! if ( na /= nbl + nbr ) &
         !     & error stop "not satisfied: na == nbl + nbr"
 
-        BL  => A(1:nbl)
-        MBL => M(1:nbl, 1:ny)
-        BR  => A(nbl + na*(nx-1) + 1 : na*nx)
-        MBR => M(nbl + na*(nx-1) + 1 : na*nx, ny*(nx-1) + 1 : ny*nx)
+        call model % get_BL( x(1),  Y(iy(1,1):iy(1,ny)),   BL, MBL, ny, nbl )
+        forall (i = 1:nbl)              A(ibl(i)) = BL(i)
+        forall (i = 1:nbl, j = 1:ny)    M(ibl(i),iy(1,j)) = MBL(i,j)
 
-        call model % get_BL( x(1),  Y1(1),  BL, MBL, ny, nbl )
-        call model % get_BR( x(nx), Y1(nx), BR, MBR, ny, nbr )
+        call model % get_BR( x(nx), Y(iy(nx,1):iy(nx,ny)), BR, MBR, ny, nbr )
+        forall (i = 1:nbr)              A(ibr(i)) = BR(i)
+        forall (i = 1:nbr, j = 1:ny)    M(ibr(i),iy(nx,j)) = MBR(i,j)
 
         through_space: do i = 1, nx-1
             dx = x(i+1) - x(i)
             xm = (x(i+1) + x(i)) / 2
 
-            Ym = ( Y1(i+1) + Y1(i) ) / 2
-            Dm = ( Y1(i+1) - Y1(i) ) / dx
+            forall (j = 1:ny)
+                Ym(j) = ( Y(iy(i+1,j)) + Y(iy(i,j)) ) / 2
+                Dm(j) = ( Y(iy(i+1,j)) - Y(iy(i,j)) ) / dx
+            end forall
 
             call model % get_AM(xm, Ym, Dm, Am, MY, MD, ny, na)
 
             ! Macierz( nr_rownania, nr_niewiadomej )
-            A1(i) = Am
-            M1(i,i)   = MY / 2 - MD / dx
-            M1(i,i+1) = MY / 2 + MD / dx
+            forall (j = 1:na)   A(ia(i,j)) = Am(j)
+            forall (j = 1:na, k = 1:ny)
+                M( ia(i,j), iy(i,  k) ) = MY(j,k) / 2 - MD(j,k) / dx
+                M( ia(i,j), iy(i+1,k) ) = MY(j,k) / 2 + MD(j,k) / dx
+            end forall
         end do through_space
 
     contains
 
-        function Y1(i)
-            integer, intent(in) :: i
-            real(fp), dimension(:), pointer :: Y1
-            Y1 => Y(1 + ny*(i-1) : ny*i)
+        elemental integer function iy(ix,i)
+            integer, intent(in) :: ix,i
+            iy = ny*(ix-1) + i
         end function
-
-        function A1(i)
-            integer, intent(in) :: i
-            real(fp), dimension(:), pointer :: A1
-            A1 => A(nbl + 1 + na*(i-1) : nbl + na*i)
+        elemental integer function ia(ix,i)
+            integer, intent(in) :: ix,i
+            ia = nbl + i + na*(ix-1)
         end function
-
-        function M1(i,j)
-            integer, intent(in) :: i,j
-            real(fp), dimension(:,:), pointer :: M1
-            M1 => M(nbl + 1 + na*(i-1) : nbl + na*i, 1 + ny*(j-1) : ny*j)
+        elemental integer function ibl(i)
+            integer, intent(in) :: i
+            ibl = i
+        end function
+        elemental integer function ibr(i)
+            integer, intent(in) :: i
+            ibr = nbl + na*(nx-1) + i
         end function
 
 
     end subroutine
+
+    ! subroutine model_corrections(model, x, Y, A, M, dY)
+    !
+    !     class(model_t) :: model
+    !     real(funp), dimension(:), intent(in) :: x
+    !     real(fp), dimension( size(x) * (model % ny) ), intent(in) :: Y
+    !     real(fp), dimension( size(x) * (model % na) ), intent(out) :: A
+    !     real(fp), dimension( size(A), size(Y) ), intent(out)  :: M
+    !     real(fp), dimension( size(Y) ), intent(out) :: dY
+    !
+    !     if ( .not. model % initialized ) error stop "model not initialized"
+    !
+    !     call model % matrix(x,Y,A,M)
+    !     !call DGBSV
+    !
+    ! end subroutine
+
 
 
 end module relaxation
