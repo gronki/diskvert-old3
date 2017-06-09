@@ -79,4 +79,12 @@ for it in range(niter):
 
     Y[1::ny] = np.where(Y[1::ny] < T_floor, T_floor, Y[1::ny])
 
+from datetime import datetime
+import tempfile
+import os
+
+fn = os.path.join(tempfile.mkdtemp(),
+    '{}.png'.format(datetime.now().strftime('%Y%m%d%H%M%S')))
+plt.savefig(fn)
+print 'saved as: {}'.format(fn)
 plt.show()
