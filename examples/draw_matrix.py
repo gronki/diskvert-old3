@@ -24,7 +24,7 @@ from ctypes import CDLL, POINTER, c_double, c_float, c_int
 from numpy.ctypeslib import ndpointer
 
 # interpolate initial values for new model
-nx = 2**8
+nx = 2**6
 ny = 3
 x = np.linspace(0, z.max(), nx)
 Y = np.ndarray(nx*ny)
@@ -71,11 +71,16 @@ for it in range(niter):
     dY = np.linalg.solve(M,-A)
 
     t = it / (niter - 1.0)
-    ax[0,1].plot(x, Y[0::ny], color = cmap(t))
-    ax[1,0].plot(x, Y[1::ny], color = cmap(t))
-    ax[1,1].plot(x, Y[2::ny], color = cmap(t))
+    c = 'black' if it == 0 or it == niter-1 else cmap(t)
+    ax[0,1].plot(x, Y[0::ny], color = c)
+    ax[1,0].plot(x, Y[1::ny], color = c)
+    ax[1,1].plot(x, Y[2::ny], color = c)
 
-    Y = Y + dY * np.where( t < 0.75, t / 0.75, 1.0 )
+    ramp_0 = 0.1
+    ramp_full = 0.75
+    k = np.where( t < ramp_full, ramp_0 + (1 - ramp_0) * t / ramp_full, 1.0 )
+    print "throttling = {}".format(k)
+    Y = Y + dY * k
 
     Y[1::ny] = np.where(Y[1::ny] < T_floor, T_floor, Y[1::ny])
 
