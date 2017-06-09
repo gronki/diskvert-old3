@@ -11,7 +11,7 @@ module relaxation
 
     implicit none
 
-    interface
+    abstract interface
         pure subroutine coeff_driver_t(z, Y, D, A, MY, MD, ny, na)
             import fp
             integer, intent(in) :: ny,na
@@ -39,17 +39,15 @@ module relaxation
     end interface
 
     type :: model_t
-        procedure(coeff_driver_t), pointer, nopass :: get_AM => NULL()
-        procedure(bound_driver_t), pointer, nopass :: get_BL => NULL()
-        procedure(bound_driver_t), pointer, nopass :: get_BR => NULL()
-        procedure(size_driver_t),  pointer, nopass :: get_sz => NULL()
+        logical, private :: initialized = .FALSE.
+        procedure(coeff_driver_t), pointer, nopass, private :: get_AM
+        procedure(bound_driver_t), pointer, nopass, private :: get_BL, get_BR
+        procedure(size_driver_t),  pointer, nopass, private :: get_sz
+        integer, private :: ny, na, nbl, nbr
     contains
         procedure :: matrix => model_matrix
         procedure :: init   => model_initialize
     end type
-
-    type(model_t), dimension(16), target, private :: model_collection
-
 
 contains
 
@@ -58,7 +56,8 @@ contains
         logical, intent(in) :: compton,magnetic,conduction
         integer :: model_nr
 
-        model_nr = 1 + merge(1, 0, compton) + merge(2, 0, magnetic) + merge(4, 0, conduction)
+        model_nr = 1 + merge(1, 0, compton) + merge(2, 0, magnetic) &
+            & + merge(4, 0, conduction)
 
         select case(model_nr)
         case(1)
@@ -90,9 +89,16 @@ contains
             error stop "This model is not implemented."
         end select
 
+        call model % get_sz(    model % ny,     &
+                            &   model % na,     &
+                            &   model % nbl,    &
+                            &   model % nbr)
+        model % initialized = .TRUE.
+
     end subroutine
 
-    subroutine generate_coefficients_c_interface(X,nx,Y,ny,A,na,M) bind(C, name='generate_coefficients')
+    subroutine generate_coefficients_c_interface(X,nx,Y,ny,A,na,M) &
+            & bind(C, name='generate_coefficients')
 
         integer(c_int), intent(in), value :: nx,ny,na
         real(c_double), intent(in), dimension(nx) :: X
@@ -110,32 +116,36 @@ contains
     subroutine model_matrix(model,x,Y,A,M)
 
         class(model_t) :: model
-        integer :: ny, na, nbl, nbr
         real(fp), dimension(:), intent(in) :: x
         ! uklad: [ Y1(1) Y2(1) Y3(1) Y1(2) Y2(2) Y3(2) ... ]
-        real(fp), dimension(:), target, intent(in) :: Y
+        real(fp), dimension(size(x) * (model % ny)), target, intent(in) :: Y
         ! uklad: [ A1(1) A2(1) A3(1) A1(2) A2(2) A3(2) ... ]
-        real(fp), dimension(:), target, intent(out) :: A
-        real(fp), dimension(size(A),size(Y)), target, intent(out) :: M
-        real(fp), dimension(:), allocatable :: Ym, Dm, Am
-        real(fp), dimension(:,:), allocatable :: MY, MD
+        real(fp), dimension(size(x) * (model % na)), target, intent(out) :: A
+        real(fp), dimension(size(A), size(Y)), target, intent(out) :: M
+        real(fp), dimension(model % ny) :: Ym, Dm
+        real(fp), dimension(model % na) :: Am
+        real(fp), dimension(model % na, model % ny) :: MY, MD
         real(fp), dimension(:), pointer :: BL, BR
         real(fp), dimension(:,:), pointer :: MBL, MBR
         real(fp) :: dx, xm
-        integer :: i,nx
+        integer :: i,nx,ny,na,nbl,nbr
 
-        nx = size(X)
-        call model % get_sz(ny, na, nbl, nbr)
+        if ( .NOT. model % initialized ) then
+            error stop "model not initialized"
+        end if
 
-        if ( size(Y) /= nx*ny ) &
-            & error stop "size of Y should be nx*ny"
-        if ( size(A) /= nbl + na*(nx-1) + nbr ) &
-            & error stop "size of Y should be nbl + na*(nx-1) + nbr"
-        if ( na /= nbl + nbr ) &
-            & error stop "not satisfied: na == nbl + nbr"
+        nx  = size(X)
+        ny  = model % ny
+        na  = model % na
+        nbl = model % nbl
+        nbr = model % nbr
 
-        allocate( Ym(ny), Dm(ny), Am(na) )
-        allocate( MY(na,ny), MD(na,ny) )
+        ! if ( size(Y) /= nx*ny ) &
+        !     & error stop "size of Y should be nx*ny"
+        ! if ( size(A) /= nbl + na*(nx-1) + nbr ) &
+        !     & error stop "size of Y should be nbl + na*(nx-1) + nbr"
+        ! if ( na /= nbl + nbr ) &
+        !     & error stop "not satisfied: na == nbl + nbr"
 
         BL  => A(1:nbl)
         MBL => M(1:nbl, 1:ny)
@@ -159,8 +169,6 @@ contains
             M1(i,i)   = MY / 2 - MD / dx
             M1(i,i+1) = MY / 2 + MD / dx
         end do through_space
-
-        deallocate( MY, MD, Ym, Dm, Am )
 
     contains
 
