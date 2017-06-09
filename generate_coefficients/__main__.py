@@ -168,10 +168,11 @@ for enableMagnetic, enableCorona, enableConduction in [
         + (1 if enableCorona else 0) \
         + (2 if enableMagnetic else 0) \
         + (4 if enableConduction else 0)
-    print 'model_collection({}) % get_AM => {}'.format(model_nr,routine_name)
-    print 'model_collection({}) % get_sz => {}'.format(model_nr,routine_name+'_SIZE')
-    print 'model_collection({}) % get_BL => {}'.format(model_nr,routine_name+'_BL')
-    print 'model_collection({}) % get_BR => {}'.format(model_nr,routine_name+'_BR')
+    print 'case({})'.format(model_nr)
+    print '    model % get_AM => {}'.format(routine_name)
+    print '    model % get_sz => {}'.format(routine_name+'_SIZE')
+    print '    model % get_BL => {}'.format(routine_name+'_BL')
+    print '    model % get_BR => {}'.format(routine_name+'_BR')
 
     extern_functions = { f.func: str(f.func) for f in (global_functions | global_functions_extra) }
 

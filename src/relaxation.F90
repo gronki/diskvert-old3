@@ -45,6 +45,7 @@ module relaxation
         procedure(size_driver_t),  pointer, nopass :: get_sz => NULL()
     contains
         procedure :: matrix => model_matrix
+        procedure :: init   => model_initialize
     end type
 
     type(model_t), dimension(16), target, private :: model_collection
@@ -52,37 +53,44 @@ module relaxation
 
 contains
 
-    subroutine initialize_model_collection
-
-        model_collection(1) % get_AM => COEFF_SS73DYF
-        model_collection(1) % get_sz => COEFF_SS73DYF_SIZE
-        model_collection(1) % get_BL => COEFF_SS73DYF_BL
-        model_collection(1) % get_BR => COEFF_SS73DYF_BR
-        model_collection(3) % get_AM => COEFF_MAGNDYF
-        model_collection(3) % get_sz => COEFF_MAGNDYF_SIZE
-        model_collection(3) % get_BL => COEFF_MAGNDYF_BL
-        model_collection(3) % get_BR => COEFF_MAGNDYF_BR
-        model_collection(2) % get_AM => COEFF_SS73COR
-        model_collection(2) % get_sz => COEFF_SS73COR_SIZE
-        model_collection(2) % get_BL => COEFF_SS73COR_BL
-        model_collection(2) % get_BR => COEFF_SS73COR_BR
-        model_collection(4) % get_AM => COEFF_MAGNCOR
-        model_collection(4) % get_sz => COEFF_MAGNCOR_SIZE
-        model_collection(4) % get_BL => COEFF_MAGNCOR_BL
-        model_collection(4) % get_BR => COEFF_MAGNCOR_BR
-        model_collection(8) % get_AM => COEFF_MAGNCORCND
-        model_collection(8) % get_sz => COEFF_MAGNCORCND_SIZE
-        model_collection(8) % get_BL => COEFF_MAGNCORCND_BL
-        model_collection(8) % get_BR => COEFF_MAGNCORCND_BR
-
-    end subroutine
-
-    function model_nr(compton,magnetic,conduction)
+    subroutine model_initialize (model, compton, magnetic, conduction)
+        class(model_t) :: model
         logical, intent(in) :: compton,magnetic,conduction
         integer :: model_nr
 
         model_nr = 1 + merge(1, 0, compton) + merge(2, 0, magnetic) + merge(4, 0, conduction)
-    end function
+
+        select case(model_nr)
+        case(1)
+            model % get_AM => COEFF_SS73DYF
+            model % get_sz => COEFF_SS73DYF_SIZE
+            model % get_BL => COEFF_SS73DYF_BL
+            model % get_BR => COEFF_SS73DYF_BR
+        case(3)
+            model % get_AM => COEFF_MAGNDYF
+            model % get_sz => COEFF_MAGNDYF_SIZE
+            model % get_BL => COEFF_MAGNDYF_BL
+            model % get_BR => COEFF_MAGNDYF_BR
+        case(2)
+            model % get_AM => COEFF_SS73COR
+            model % get_sz => COEFF_SS73COR_SIZE
+            model % get_BL => COEFF_SS73COR_BL
+            model % get_BR => COEFF_SS73COR_BR
+        case(4)
+            model % get_AM => COEFF_MAGNCOR
+            model % get_sz => COEFF_MAGNCOR_SIZE
+            model % get_BL => COEFF_MAGNCOR_BL
+            model % get_BR => COEFF_MAGNCOR_BR
+        case(8)
+            model % get_AM => COEFF_MAGNCORCND
+            model % get_sz => COEFF_MAGNCORCND_SIZE
+            model % get_BL => COEFF_MAGNCORCND_BL
+            model % get_BR => COEFF_MAGNCORCND_BR
+        case default
+            error stop "This model is not implemented."
+        end select
+
+    end subroutine
 
     subroutine generate_coefficients_c_interface(X,nx,Y,ny,A,na,M) bind(C, name='generate_coefficients')
 
@@ -92,13 +100,9 @@ contains
         real(c_double), intent(out), dimension(nx*na) :: A
         real(c_double), intent(out), dimension(nx*na,nx*ny) :: M
 
-        type(model_t), pointer :: model
+        type(model_t) :: model
 
-        call initialize_model_collection
-
-        model => model_collection(model_nr( &
-            & compton = .false., magnetic = .false., conduction = .false.))
-
+        call model % init(compton = .false., magnetic = .false., conduction = .false.)
         call model % matrix(x,Y,A,M)
 
     end subroutine
