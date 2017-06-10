@@ -98,7 +98,7 @@ install-user: install
 %.o: %.f
 	$(FC) $(INCLUDE) $(FFLAGS) -c -fPIC $< -o $@
 
-include fortran.dependencies.inc
+include make_dependencies.inc
 
 relaxation.o    : $(OBJECTS_LAPACK)
 settings.o      : libconfort.a
