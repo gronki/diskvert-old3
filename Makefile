@@ -36,7 +36,7 @@ OBJECTS_MATH = bisect.o cgs.o deriv.o eulerintegr.o \
 	linsect.o random.o rk4integr.o space.o threshold.o
 
 OBJECTS_LIB = alphadisk.o balance.o globals.o model_m1.o \
-	model_ss73.o coefficients.o relaxation.o
+	model_ss73.o coefficients.o relaxation.o precision.o
 
 OBJECTS_UTIL = results.o summary.o setup.o settings.o
 
@@ -98,29 +98,16 @@ install-user: install
 %.o: %.f
 	$(FC) $(INCLUDE) $(FFLAGS) -c -fPIC $< -o $@
 
-$(OBJECTS_MATH) $(OBJECTS_LIB) $(OBJECTS_UTIL): precision.o
-settings.o: libconfort.a
-alphadisk.o balance.o: settings.o globals.o
-settings.o: globals.o
-setup.o: settings.o globals.o
-settings.o: results.o
-balance.o: globals.o
-alphadisk.o: globals.o
-random.o: interpol.o
-kramers.o: cgs.o
-globals.o: $(OBJECTS_MATH)
-model_m1.o model_ss73.o: $(OBJECTS_MATH) alphadisk.o balance.o globals.o
-diskvert-m1.o: model_m1.o
-diskvert-ss73.o: model_ss73.o
-coefficients.o: globals.o cgs.o src/coefficients.F90
-relaxation.o: globals.o cgs.o coefficients.o $(OBJECTS_LAPACK)
+include fortran.dependencies.inc
 
+relaxation.o    : $(OBJECTS_LAPACK)
+settings.o      : libconfort.a
 src/coefficients.F90: $(wildcard generate_coefficients/*.py)
 	python generate_coefficients
 
 #################  PLIKI BINARNE  #################
 
-libdiskvert.so: $(OBJECTS_MATH) $(OBJECTS_LIB) $(OBJECTS_LAPACK) precision.o
+libdiskvert.so: $(OBJECTS_MATH) $(OBJECTS_LIB) $(OBJECTS_LAPACK)
 	$(FC) $(LDFLAGS) -shared $^ -o $@
 
 libconfort.a:
