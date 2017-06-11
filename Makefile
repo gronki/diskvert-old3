@@ -16,31 +16,16 @@ CFLAGS			?= -g -Wall -O3 -march=native -mieee-fp
 FFLAGS			?= $(CFLAGS) -Warray-temporaries -fexternal-blas
 override CPPFLAGS += -DVERSION=$(VERSION)
 
-OBJECTS_BLAS = dasum.o daxpy.o dcabs1.o dcopy.o ddot.o dgbmv.o dgemm.o dgemv.o dger.o \
-	dnrm2.o drot.o drotg.o drotm.o drotmg.o dsbmv.o dscal.o dsdot.o dspmv.o \
-	dspr2.o dspr.o dswap.o dsymm.o dsymv.o dsyr2.o dsyr2k.o dsyr.o dsyrk.o \
-	dtbmv.o dtbsv.o dtpmv.o dtpsv.o dtrmm.o dtrmv.o dtrsm.o dtrsv.o \
-	dzasum.o dznrm2.o icamax.o idamax.o isamax.o izamax.o lsame.o sasum.o \
-	saxpy.o scabs1.o scasum.o scnrm2.o scopy.o sdot.o sdsdot.o sgbmv.o \
-	sgemm.o sgemv.o sger.o snrm2.o srot.o srotg.o srotm.o srotmg.o ssbmv.o \
-	sscal.o sspmv.o sspr2.o sspr.o sswap.o ssymm.o ssymv.o ssyr2.o ssyr2k.o \
-	ssyr.o ssyrk.o stbmv.o stbsv.o stpmv.o stpsv.o strmm.o strmv.o strsm.o \
-	strsv.o xerbla_array.o xerbla.o
+OBJECTS_BLAS = $(patsubst src/blas/%.f,%.o,$(wildcard src/blas/*.f))
+OBJECTS_LAPACK = $(OBJECTS_BLAS) \
+	$(patsubst src/lapack/%.f,%.o,$(wildcard src/lapack/*.f)) \
+	$(patsubst src/lapack/%.F,%.o,$(wildcard src/lapack/*.F))
 
-OBJECTS_LAPACK = dgbsv.o dgbtf2.o dgbtrf.o dgbtrs.o dgesv.o dgetf2.o dgetrf2.o \
-	dgetrf.o dgetrs.o dlamch.o dlaswp.o ieeeck.o ilaenv.o iparam2stage.o iparmq.o \
-	lsame.o xerbla.o $(OBJECTS_BLAS)
+OBJECTS_MATH = $(patsubst src/math/%.F90,%.o,$(wildcard src/math/*.F90))
+OBJECTS_LIB =  $(patsubst src/%.F90,%.o,$(wildcard src/*.F90))
+OBJECTS_UTIL = $(patsubst src/util/%.F90,%.o,$(wildcard src/util/*.F90))
 
-OBJECTS_MATH = bisect.o cgs.o deriv.o eulerintegr.o \
-	findzer.o findzer_multi.o histogram.o interpol.o  kramers.o \
-	linsect.o random.o rk4integr.o space.o threshold.o
-
-OBJECTS_LIB = alphadisk.o balance.o globals.o model_m1.o \
-	model_ss73.o coefficients.o relaxation.o precision.o
-
-OBJECTS_UTIL = results.o summary.o setup.o settings.o
-
-VPATH = src:src/util:src/prog:src/math:src/lapack:src/lapack/blas
+VPATH = src:src/util:src/prog:src/math:src/lapack:src/blas
 
 PROGRAMS = diskvert-m1 diskvert-ss73 disk-properties
 BINARIES = $(addprefix bin/,$(PROGRAMS))
