@@ -100,15 +100,19 @@ install-user: install
 
 include make_dependencies.inc
 
-relaxation.o    : $(OBJECTS_LAPACK)
+relaxation.o    : lapack.a
 settings.o      : libconfort.a
 src/coefficients.F90: $(wildcard generate_coefficients/*.py)
 	python generate_coefficients
 
 #################  PLIKI BINARNE  #################
 
-libdiskvert.so: $(OBJECTS_MATH) $(OBJECTS_LIB) $(OBJECTS_LAPACK)
+libdiskvert.so: $(OBJECTS_MATH) $(OBJECTS_LIB) lapack.a
 	$(FC) $(LDFLAGS) -shared $^ -o $@
+
+lapack.a: $(OBJECTS_LAPACK)
+	$(AR) rcs $@ $^
+.INTERMEDIATE: $(OBJECTS_LAPACK)
 
 libconfort.a:
 	$(MAKE) -C libconfort libconfort.a
