@@ -5,6 +5,7 @@ module relaxation
     use precision
     use slf_cgs
     use globals
+    use lapack
 
     ! wspolczynniki wygenerowane
     use relax_coefficients
@@ -206,21 +207,34 @@ contains
 
     end subroutine
 
-    ! subroutine model_corrections(model, x, Y, A, M, dY)
-    !
-    !     class(model_t) :: model
-    !     real(funp), dimension(:), intent(in) :: x
-    !     real(fp), dimension( size(x) * (model % ny) ), intent(in) :: Y
-    !     real(fp), dimension( size(x) * (model % na) ), intent(out) :: A
-    !     real(fp), dimension( size(A), size(Y) ), intent(out)  :: M
-    !     real(fp), dimension( size(Y) ), intent(out) :: dY
-    !
-    !     if ( .not. model % initialized ) error stop "model not initialized"
-    !
-    !     call model % matrix(x,Y,A,M)
-    !     !call DGBSV
-    !
-    ! end subroutine
+    subroutine model_corrections(model, x, Y, A, M, dY)
+
+        class(model_t) :: model
+        real(fp), dimension(:), intent(in) :: x
+        real(fp), dimension( size(x) * (model % ny) ), intent(in) :: Y
+        real(fp), dimension( size(x) * (model % na) ), intent(out) :: A
+        real(fp), dimension( size(A), size(Y) ), intent(out)  :: M
+        real(fp), dimension( size(Y) ), intent(out) :: dY
+        integer, dimension( size(A) ) :: ipiv
+        integer :: errno
+
+        if ( .not. model % initialized ) error stop "model not initialized"
+
+        call model % matrix(x,Y,A,M)
+
+        dY = - A
+        call DGESV(size(M,2), 1, M, size(M,1), ipiv, dY, size(A), errno)
+
+        if ( errno > 0 ) then
+            write (error_unit, '("Parameter ", I0, " had illegal value")') abs(errno)
+            error stop "zero on matrix diagonal: singular matrix"
+        end if
+        if ( errno < 0 ) then
+            write (error_unit, '("Parameter ", I0, " had illegal value")') abs(errno)
+            error stop "illegal parameter value"
+        end if
+
+    end subroutine
 
 
 

@@ -1,4 +1,4 @@
-VERSION  	 	= 170530
+VERSION  	 	= 170611
 
 prefix 	 	 	= /usr/local
 bindir		 	= $(prefix)/bin
@@ -8,16 +8,16 @@ libdir 	 	 	= $(prefix)/lib
 fmoddir			= $(libdir)/gfortran/modules
 pkgconfigdir    = $(libdir)/pkgconfig
 
-INCLUDE	 	 	= -I. -Ilibconfort
-LDFLAGS			= -L. -Llibconfort
+INCLUDE	 	 	= -Ilibconfort
+LDFLAGS			= -L.
+LDLIBS			= -lopenblas
 
 FC				= f95
-CFLAGS			?= -g -Wall -O3 -march=native -mieee-fp
-FFLAGS			?= $(CFLAGS) -Warray-temporaries -fexternal-blas
+CFLAGS			= -g -Wall -O3 -march=native -mieee-fp
+FFLAGS			= $(CFLAGS) -Warray-temporaries -fexternal-blas
 override CPPFLAGS += -DVERSION=$(VERSION)
 
-OBJECTS_BLAS = $(patsubst src/blas/%.f,%.o,$(wildcard src/blas/*.f))
-OBJECTS_LAPACK = $(OBJECTS_BLAS) \
+OBJECTS_LAPACK =  \
 	$(patsubst src/lapack/%.f,%.o,$(wildcard src/lapack/*.f)) \
 	$(patsubst src/lapack/%.F,%.o,$(wildcard src/lapack/*.F))
 
@@ -93,7 +93,7 @@ src/coefficients.F90: $(wildcard generate_coefficients/*.py)
 #################  PLIKI BINARNE  #################
 
 libdiskvert.so: $(OBJECTS_MATH) $(OBJECTS_LIB) lapack.a
-	$(FC) $(LDFLAGS) -shared $^ -o $@
+	$(FC) $(LDFLAGS) -shared $^ $(LDLIBS) -o $@
 
 lapack.a: $(OBJECTS_LAPACK)
 	$(AR) rcs $@ $^
@@ -107,7 +107,7 @@ bin:
 	mkdir -p $@
 
 $(BINARIES): bin/%: $(OBJECTS_UTIL) %.o libconfort.a | libdiskvert.so bin
-	$(FC) $(LDFLAGS) $^ -ldiskvert -o $@
+	$(FC) $(LDFLAGS) $^ -ldiskvert $(LDLIBS) -o $@
 
 #################  SPRZATANIE  #################
 
