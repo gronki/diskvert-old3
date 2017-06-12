@@ -47,8 +47,10 @@ module relaxation
         integer, private :: ny, na, nbl, nbr
         integer, private :: nl, nu
     contains
-        procedure :: matrix => model_matrix
-        procedure :: init   => model_initialize
+        procedure :: matrix  => model_matrix
+        procedure :: init    => model_initialize
+        procedure :: advance => model_corrections
+        procedure :: alloc   => model_allocate_matrices
     end type
 
 contains
@@ -102,20 +104,23 @@ contains
 
     end subroutine
 
-    subroutine generate_coefficients_c_interface(X,nx,Y,ny,A,na,M) &
-            & bind(C, name='generate_coefficients')
+    subroutine model_allocate_matrices(model, nx, Y, dY, A, M)
+        class(model_t) :: model
+        integer, intent(in) :: nx
+        real(fp), intent(inout), dimension(:), allocatable :: Y,dY,A
+        real(fp), intent(inout), dimension(:,:), allocatable :: M
 
-        integer(c_int), intent(in), value :: nx,ny,na
-        real(c_double), intent(in), dimension(nx) :: X
-        real(c_double), intent(in), dimension(nx*ny) :: Y
-        real(c_double), intent(out), dimension(nx*na) :: A
-        real(c_double), intent(out), dimension(nx*na,nx*ny) :: M
+        if ( allocated(Y) ) deallocate(Y)
+        if ( allocated(dY) ) deallocate(dY)
+        if ( allocated(A) ) deallocate(A)
+        if ( allocated(M) ) deallocate(M)
 
-        type(model_t) :: model
+        allocate(   Y(nx * (model % ny)), &
+                    dY(nx * (model % ny)), &
+                    A(nx * (model % na) - (model % na) + (model % nbl) &
+                        + (model % nbr)) )
 
-        call model % init(compton = .false., magnetic = .false., conduction = .false.)
-        call model % matrix(x,Y,A,M)
-
+        allocate( M(size(A),size(Y)) )
     end subroutine
 
     subroutine model_matrix(model,x,Y,A,M)

@@ -25,7 +25,7 @@ OBJECTS_MATH = $(patsubst src/math/%.F90,%.o,$(wildcard src/math/*.F90))
 OBJECTS_LIB =  $(patsubst src/%.F90,%.o,$(wildcard src/*.F90))
 OBJECTS_UTIL = $(patsubst src/util/%.F90,%.o,$(wildcard src/util/*.F90))
 
-VPATH = src:src/util:src/prog:src/math:src/lapack:src/blas
+VPATH = src:src/util:src/prog:src/math:src/lapack
 
 PROGRAMS = diskvert-m1 diskvert-ss73 disk-properties
 BINARIES = $(addprefix bin/,$(PROGRAMS))

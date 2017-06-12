@@ -14,6 +14,7 @@ model_ss73.o    : globals.o threshold.o rk4integr.o cgs.o space.o precision.o  \
 coefficients.o  : cgs.o globals.o precision.o 
 relaxation.o    : lapack_interfaces.o cgs.o globals.o precision.o              \
     coefficients.o 
+relaxation_C_interfaces.o: precision.o relaxation.o 
 results.o       : precision.o 
 settings.o      : globals.o results.o 
 setup.o         : globals.o settings.o 
