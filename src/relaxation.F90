@@ -50,7 +50,6 @@ module relaxation
         procedure :: matrix  => model_matrix
         procedure :: init    => model_initialize
         procedure :: advance => model_corrections
-        procedure :: alloc   => model_allocate_matrices
     end type
 
 contains
@@ -104,33 +103,15 @@ contains
 
     end subroutine
 
-    subroutine model_allocate_matrices(model, nx, Y, dY, A, M)
-        class(model_t) :: model
-        integer, intent(in) :: nx
-        real(fp), intent(inout), dimension(:), allocatable :: Y,dY,A
-        real(fp), intent(inout), dimension(:,:), allocatable :: M
-
-        if ( allocated(Y) ) deallocate(Y)
-        if ( allocated(dY) ) deallocate(dY)
-        if ( allocated(A) ) deallocate(A)
-        if ( allocated(M) ) deallocate(M)
-
-        allocate(   Y(nx * (model % ny)), &
-                    dY(nx * (model % ny)), &
-                    A(nx * (model % na) - (model % na) + (model % nbl) &
-                        + (model % nbr)) )
-
-        allocate( M(size(A),size(Y)) )
-    end subroutine
 
     subroutine model_matrix(model,x,Y,A,M)
 
         class(model_t) :: model
         real(fp), dimension(:), intent(in) :: x
         ! uklad: [ Y1(1) Y2(1) Y3(1) Y1(2) Y2(2) Y3(2) ... ]
-        real(fp), dimension(size(x) * (model % ny)), target, intent(in) :: Y
+        real(fp), dimension(size(x) * (model % ny)), intent(in) :: Y
         ! uklad: [ A1(1) A2(1) A3(1) A1(2) A2(2) A3(2) ... ]
-        real(fp), dimension(size(x) * (model % na)), target, intent(out) :: A
+        real(fp), dimension(size(x) * (model % na)), intent(out) :: A
         real(fp), dimension(size(A), size(Y)), target, intent(out) :: M
 
         real(fp), dimension(model % ny) :: Ym, Dm
@@ -148,6 +129,7 @@ contains
             error stop "model not initialized"
         end if
 
+
         nx  = size(X)
         ny  = model % ny
         na  = model % na
@@ -155,13 +137,6 @@ contains
         nbr = model % nbr
 
         M = 0
-
-        ! if ( size(Y) /= nx*ny ) &
-        !     & error stop "size of Y should be nx*ny"
-        ! if ( size(A) /= nbl + na*(nx-1) + nbr ) &
-        !     & error stop "size of Y should be nbl + na*(nx-1) + nbr"
-        ! if ( na /= nbl + nbr ) &
-        !     & error stop "not satisfied: na == nbl + nbr"
 
         call model % get_BL( x(1),  Y(iy(1,1):iy(1,ny)),   BL, MBL, ny, nbl )
         forall (i = 1:nbl)              A(ibl(i)) = BL(i)

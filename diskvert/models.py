@@ -52,17 +52,25 @@ dv_init_ss73 = FACTORY('init_ss73', [
 dv_run_ss73 = FACTORY('run_ss73', [
     (ndpointer(c_double,1), 'inout', 'z'),
     (c_int, 'in', 'nz'),
-    (ndpointer(c_double,2), 'inout', 'y'),
-    (ndpointer(c_double,2), 'inout', 'dy'),
-    (ndpointer(c_double,2), 'inout', 'a'),
+    (ndpointer(c_double,2), 'inout', 'Y'),
+    (ndpointer(c_double,2), 'inout', 'dY'),
+    (ndpointer(c_double,2), 'inout', 'A'),
 ])
 
 dv_generate_coefficients = FACTORY('generate_coefficients', [
     (ndpointer(c_double,1), 'in', 'z'),
     (c_int, 'in', 'nz'),
-    (ndpointer(c_double,1), 'in', 'y'),
+    (ndpointer(c_double,1), 'in', 'Y'),
     (c_int, 'in', 'ny'),
     (ndpointer(c_double,1), 'inout', 'A'),
     (c_int, 'in', 'na'),
     (ndpointer(c_double,2), 'inout', 'M'),
+])
+
+dv_generate_corrections = FACTORY('generate_corrections', [
+    (ndpointer(c_double,1), 'in', 'z'),
+    (c_int, 'in', 'nz'),
+    (ndpointer(c_double,1), 'in', 'Y'),
+    (ndpointer(c_double,1), 'inout', 'dY'),
+    (c_int, 'in', 'ny'),
 ])
