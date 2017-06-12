@@ -13,15 +13,13 @@ module relaxation
     implicit none
 
     abstract interface
-        pure subroutine coeff_driver_t(z, Y, D, A, MY, MD, ny, na)
+        pure subroutine coeff_driver_t(z, Y, D, A, MY, MD, ny)
             import fp
-            integer, intent(in) :: ny,na
+            integer, intent(in) :: ny
             real(fp), intent(in) :: z
-            real(fp), intent(in), dimension(ny) :: Y
-            real(fp), intent(in), dimension(ny) :: D
-            real(fp), intent(out), dimension(na) :: A
-            real(fp), intent(out), dimension(na,ny) :: MY
-            real(fp), intent(out), dimension(na,ny) :: MD
+            real(fp), intent(in), dimension(ny) :: Y,D
+            real(fp), intent(out), dimension(ny) :: A
+            real(fp), intent(out), dimension(ny,ny) :: MY,MD
         end subroutine
         pure subroutine bound_driver_t(z, Y, B, M, ny, nb)
             import fp
@@ -31,90 +29,71 @@ module relaxation
             real(fp), intent(out), dimension(nb) :: B
             real(fp), intent(out), dimension(nb,ny) :: M
         end subroutine
-        pure subroutine size_driver_t(ny, neq, nbl, nbr)
-            integer, intent(out) :: ny
-            integer, intent(out) :: neq
-            integer, intent(out) :: nbl
-            integer, intent(out) :: nbr
+        pure subroutine size_driver_t(ny, nbl, nbr)
+            integer, intent(out) :: ny, nbl, nbr
         end subroutine size_driver_t
     end interface
 
+
     type :: model_t
-        logical, private :: initialized = .FALSE.
-        procedure(coeff_driver_t), pointer, nopass, private :: get_AM
-        procedure(bound_driver_t), pointer, nopass, private :: get_BL, get_BR
-        procedure(size_driver_t),  pointer, nopass, private :: get_sz
-        integer, private :: ny, na, nbl, nbr
-        integer, private :: nl, nu
+        integer :: nr = 0
+        procedure(coeff_driver_t), pointer, nopass, private :: coeff
+        procedure(bound_driver_t), pointer, nopass, private :: coeff_L, coeff_R
+        integer, private :: ny, nbl, nbr
+        integer, dimension(6), private :: ix
+        real(fp), dimension(:), pointer :: x => NULL()
+        real(fp), dimension(:), pointer, contiguous  :: Y,A,dY
+        real(fp), dimension(:,:), pointer, contiguous :: M
     contains
-        procedure :: matrix  => model_matrix
         procedure :: init    => model_initialize
+        procedure :: matrix  => model_matrix
+        procedure :: alloc  => model_allocate
+        procedure :: sel  => model_select
         procedure :: advance => model_corrections
     end type
 
+
+
 contains
+
+    subroutine model_select(model,nr)
+        class(model_t) :: model
+        integer, intent(in) :: nr
+        include 'model_select.inc'
+    end subroutine
 
     subroutine model_initialize (model, compton, magnetic, conduction)
         class(model_t) :: model
         logical, intent(in) :: compton,magnetic,conduction
-        integer :: model_nr
 
-        model_nr = 1 + merge(1, 0, compton) + merge(2, 0, magnetic) &
-            & + merge(4, 0, conduction)
+        model % nr = 1  + merge(1, 0, compton)      &
+                        + merge(2, 0, magnetic)     &
+                        + merge(4, 0, conduction)
 
-        select case(model_nr)
-        case(1)
-            model % get_AM => COEFF_SS73DYF
-            model % get_sz => COEFF_SS73DYF_SIZE
-            model % get_BL => COEFF_SS73DYF_BL
-            model % get_BR => COEFF_SS73DYF_BR
-        case(2)
-            model % get_AM => COEFF_SS73COR
-            model % get_sz => COEFF_SS73COR_SIZE
-            model % get_BL => COEFF_SS73COR_BL
-            model % get_BR => COEFF_SS73COR_BR
-        case(3)
-            model % get_AM => COEFF_MAGNDYF
-            model % get_sz => COEFF_MAGNDYF_SIZE
-            model % get_BL => COEFF_MAGNDYF_BL
-            model % get_BR => COEFF_MAGNDYF_BR
-        case(4)
-            model % get_AM => COEFF_MAGNCOR
-            model % get_sz => COEFF_MAGNCOR_SIZE
-            model % get_BL => COEFF_MAGNCOR_BL
-            model % get_BR => COEFF_MAGNCOR_BR
-        case(5)
-            model % get_AM => COEFF_SS73DYFCND
-            model % get_sz => COEFF_SS73DYFCND_SIZE
-            model % get_BL => COEFF_SS73DYFCND_BL
-            model % get_BR => COEFF_SS73DYFCND_BR
-        case(6)
-            model % get_AM => COEFF_SS73CORCND
-            model % get_sz => COEFF_SS73CORCND_SIZE
-            model % get_BL => COEFF_SS73CORCND_BL
-            model % get_BR => COEFF_SS73CORCND_BR
-        case(7)
-            model % get_AM => COEFF_MAGNDYFCND
-            model % get_sz => COEFF_MAGNDYFCND_SIZE
-            model % get_BL => COEFF_MAGNDYFCND_BL
-            model % get_BR => COEFF_MAGNDYFCND_BR
-        case(8)
-            model % get_AM => COEFF_MAGNCORCND
-            model % get_sz => COEFF_MAGNCORCND_SIZE
-            model % get_BL => COEFF_MAGNCORCND_BL
-            model % get_BR => COEFF_MAGNCORCND_BR
-        case default
-            error stop "This model is not implemented."
-        end select
+        call model % sel(model % nr)
 
-        call model % get_sz(    model % ny,     &
-                            &   model % na,     &
-                            &   model % nbl,    &
-                            &   model % nbr)
+    end subroutine
 
-        model % nl = (model % na) + (model % nbl) - 1
-        model % nu = 2 * (model % ny) - (model % nbl) - 1
-        model % initialized = .TRUE.
+    subroutine model_allocate(model,x)
+
+        class(model_t) :: model
+        real(fp), dimension(:), intent(in), target :: x
+
+        model % x => x
+
+        ! nl => ny + nbl - 1
+        ! nu => 2 * ny - nbl - 1
+
+        associate ( ny => model % ny,       &
+                    nbl => model % nbl,     &
+                    nbr => model % nbr,     &
+                    nx => size(x) )
+
+            allocate( model % Y(nx*ny), model % dY(nx*ny), model % A(nx*ny) )
+            allocate( model % M(nx*ny,nx*ny) )
+
+        end associate
+
 
     end subroutine
 
@@ -126,38 +105,32 @@ contains
         ! uklad: [ Y1(1) Y2(1) Y3(1) Y1(2) Y2(2) Y3(2) ... ]
         real(fp), dimension(size(x) * (model % ny)), intent(in) :: Y
         ! uklad: [ A1(1) A2(1) A3(1) A1(2) A2(2) A3(2) ... ]
-        real(fp), dimension(size(x) * (model % na)), intent(out) :: A
+        real(fp), dimension(size(x) * (model % ny)), intent(out) :: A
         real(fp), dimension(size(A), size(Y)), target, intent(out) :: M
 
         real(fp), dimension(model % ny) :: Ym, Dm
-        real(fp), dimension(model % na) :: Am
-        real(fp), dimension(model % na, model % ny) :: MY, MD
+        real(fp), dimension(model % ny) :: Am
+        real(fp), dimension(model % ny, model % ny) :: MY, MD
         real(fp), dimension(model % nbl) :: BL
         real(fp), dimension(model % nbl, model % ny) :: MBL
         real(fp), dimension(model % nbr) :: BR
         real(fp), dimension(model % nbr, model % ny) :: MBR
 
         real(fp) :: dx, xm
-        integer :: i,j,k,nx,ny,na,nbl,nbr
+        integer :: i,j,k,nx,ny,nbl,nbr
 
-        if ( .NOT. model % initialized ) then
-            error stop "model not initialized"
-        end if
-
-
-        nx  = size(X)
+        nx  = size(x)
         ny  = model % ny
-        na  = model % na
         nbl = model % nbl
         nbr = model % nbr
 
         M = 0
 
-        call model % get_BL( x(1),  Y(iy(1,1):iy(1,ny)),   BL, MBL, ny, nbl )
+        call model % coeff_L( x(1),  Y(iy(1,1):iy(1,ny)),   BL, MBL, ny, nbl )
         forall (i = 1:nbl)              A(ibl(i)) = BL(i)
         forall (i = 1:nbl, j = 1:ny)    M(ibl(i),iy(1,j)) = MBL(i,j)
 
-        call model % get_BR( x(nx), Y(iy(nx,1):iy(nx,ny)), BR, MBR, ny, nbr )
+        call model % coeff_R( x(nx), Y(iy(nx,1):iy(nx,ny)), BR, MBR, ny, nbr )
         forall (i = 1:nbr)              A(ibr(i)) = BR(i)
         forall (i = 1:nbr, j = 1:ny)    M(ibr(i),iy(nx,j)) = MBR(i,j)
 
@@ -170,11 +143,11 @@ contains
                 Dm(j) = ( Y(iy(i+1,j)) - Y(iy(i,j)) ) / dx
             end forall
 
-            call model % get_AM(xm, Ym, Dm, Am, MY, MD, ny, na)
+            call model % coeff(xm, Ym, Dm, Am, MY, MD, ny)
 
-            ! Macierz( nr_rownania, nr_niewiadomej )
-            forall (j = 1:na)   A(ia(i,j)) = Am(j)
-            forall (j = 1:na, k = 1:ny)
+            ! Macierz( nr_rownynia, nr_niewiadomej )
+            forall (j = 1:ny)   A(ia(i,j)) = Am(j)
+            forall (j = 1:ny, k = 1:ny)
                 M( ia(i,j), iy(i,  k) ) = MY(j,k) / 2 - MD(j,k) / dx
                 M( ia(i,j), iy(i+1,k) ) = MY(j,k) / 2 + MD(j,k) / dx
             end forall
@@ -188,7 +161,7 @@ contains
         end function
         elemental integer function ia(ix,i)
             integer, intent(in) :: ix,i
-            ia = nbl + i + na*(ix-1)
+            ia = nbl + i + ny*(ix-1)
         end function
         elemental integer function ibl(i)
             integer, intent(in) :: i
@@ -196,7 +169,7 @@ contains
         end function
         elemental integer function ibr(i)
             integer, intent(in) :: i
-            ibr = nbl + na*(nx-1) + i
+            ibr = nbl + ny*(nx-1) + i
         end function
 
 
@@ -207,13 +180,11 @@ contains
         class(model_t) :: model
         real(fp), dimension(:), intent(in) :: x
         real(fp), dimension( size(x) * (model % ny) ), intent(in) :: Y
-        real(fp), dimension( size(x) * (model % na) ), intent(out) :: A
+        real(fp), dimension( size(x) * (model % ny) ), intent(out) :: A
         real(fp), dimension( size(A), size(Y) ), intent(out)  :: M
         real(fp), dimension( size(Y) ), intent(out) :: dY
         integer, dimension( size(A) ) :: ipiv
         integer :: errno
-
-        if ( .not. model % initialized ) error stop "model not initialized"
 
         call model % matrix(x,Y,A,M)
 
@@ -222,7 +193,7 @@ contains
 
         if ( errno > 0 ) then
             write (error_unit, '("Parameter ", I0, " had illegal value")') abs(errno)
-            error stop "zero on matrix diagonal: singular matrix"
+            error stop "zero on matrix diagonyl: singular matrix"
         end if
         if ( errno < 0 ) then
             write (error_unit, '("Parameter ", I0, " had illegal value")') abs(errno)
@@ -230,6 +201,7 @@ contains
         end if
 
     end subroutine
+
 
 
 

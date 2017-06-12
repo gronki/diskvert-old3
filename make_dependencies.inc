@@ -1,9 +1,3 @@
-diskvertp.o     : threshold.o cgs.o setup.o globals.o precision.o 
-disk-properties.o: setup.o globals.o precision.o settings.o 
-diskvert-m1.o   : globals.o settings.o model_m1.o setup.o precision.o          \
-    results.o 
-diskvert-ss73.o : model_ss73.o globals.o settings.o setup.o precision.o        \
-    results.o 
 alphadisk.o     : cgs.o globals.o precision.o 
 balance.o       : threshold.o globals.o precision.o 
 globals.o       : kramers.o rk4integr.o cgs.o precision.o space.o 
@@ -11,6 +5,12 @@ model_m1.o      : balance.o findzer.o alphadisk.o settings.o precision.o       \
     eulerintegr.o kramers.o globals.o threshold.o cgs.o rk4integr.o 
 model_ss73.o    : globals.o threshold.o rk4integr.o cgs.o space.o precision.o  \
     eulerintegr.o 
+diskvertp.o     : threshold.o cgs.o setup.o globals.o precision.o 
+disk-properties.o: setup.o globals.o precision.o settings.o 
+diskvert-m1.o   : globals.o settings.o model_m1.o setup.o precision.o          \
+    results.o 
+diskvert-ss73.o : model_ss73.o globals.o settings.o setup.o precision.o        \
+    results.o 
 coefficients.o  : cgs.o globals.o precision.o 
 relaxation.o    : lapack_interfaces.o cgs.o globals.o precision.o              \
     coefficients.o 

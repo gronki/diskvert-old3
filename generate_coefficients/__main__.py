@@ -5,6 +5,12 @@ from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq, symbols
 
 procedures = []
 
+file_model_switch = open('src/model_select.inc','w')
+
+# file_model_switch.write("submodule (relaxation) relaxation_model_select\n" \
+#     "use relax_coefficients\nimplicit none\ncontains\n" \
+file_model_switch.write("select case (nr)\n")
+
 for enableCorona, enableMagnetic, enableConduction in [
     (False, False, False),
     (True,  False, False),
@@ -33,6 +39,9 @@ for enableCorona, enableMagnetic, enableConduction in [
     if enableCorona: yvar.append(T_rad)
     if enableMagnetic: yvar.append(P_mag)
     if enableConduction: yvar.append(F_cond)
+
+    yvar_all = [rho, T_gas, T_rad, F_rad, P_mag, F_cond]
+    yval_hash = [ yvar.index(y) if y in yvar else -100 for y in yvar_all ]
 
     # nieprzezroczystosci i rpzewodnizctwa
     kappa_abs    = Function('kappa_abs')(rho,T_gas)
@@ -124,6 +133,7 @@ for enableCorona, enableMagnetic, enableConduction in [
     assert len(boundL) + len(boundR) == len(yvar)
 
     ny,neq,nbl,nbr = symbols('ny,neq,nbl,nbr', integer = True)
+    neq = ny
 
     Y = IndexedBase('Y', (ny,))
     D = IndexedBase('D', (ny,))
@@ -171,31 +181,33 @@ for enableCorona, enableMagnetic, enableConduction in [
         + (1 if enableCorona else 0) \
         + (2 if enableMagnetic else 0) \
         + (4 if enableConduction else 0)
-    print 'case({})'.format(model_nr)
-    print '    model % get_AM => {}'.format(routine_name)
-    print '    model % get_sz => {}'.format(routine_name+'_SIZE')
-    print '    model % get_BL => {}'.format(routine_name+'_BL')
-    print '    model % get_BR => {}'.format(routine_name+'_BR')
+    file_model_switch.write('case({})\n'.format(model_nr))
+    file_model_switch.write ('model % coeff => {}\n'.format(routine_name))
+    file_model_switch.write ('model % ny = {}\n'.format(len(yvar)))
+    file_model_switch.write ('model % nbl = {}\n'.format(len(boundL)))
+    file_model_switch.write ('model % nbr = {}\n'.format(len(boundR)))
+    file_model_switch.write ('model % coeff_L => {}\n'.format(routine_name+'_BL'))
+    file_model_switch.write ('model % coeff_R => {}\n'.format(routine_name+'_BR'))
+    file_model_switch.write ('model % ix = [{}]\n'.format(",".join([ str(i+1) for i in yval_hash ])))
 
     extern_functions = { f.func: str(f.func) for f in (global_functions | global_functions_extra) }
 
     procedures.append(FortranProcedure(
         routine_name, expr,
         kind = 'fp',
-        arguments = [z, Y, D, A, MY, MD, ny, neq],
+        arguments = [z, Y, D, A, MY, MD, ny],
         extern_functions = extern_functions,
         extern_variables = global_variables,
     ))
 
-    procedures.append(FortranProcedure(
-        routine_name + '_SIZE', [
-            Eq(ny,len(yvar)),
-            Eq(neq,len(equations)),
-            Eq(nbl,len(boundL)),
-            Eq(nbr,len(boundR)),
-        ],
-        arguments = [ny, neq, nbl, nbr],
-    ))
+    # procedures.append(FortranProcedure(
+    #     routine_name + '_SIZE', [
+    #         Eq(ny,len(yvar)),
+    #         Eq(nbl,len(boundL)),
+    #         Eq(nbr,len(boundR)),
+    #     ],
+    #     arguments = [ny, nbl, nbr],
+    # ))
 
     procedures.append(FortranProcedure(
         routine_name + '_BL', expr_bl,
@@ -212,6 +224,14 @@ for enableCorona, enableMagnetic, enableConduction in [
         extern_functions = extern_functions,
         extern_variables = global_variables,
     ))
+
+file_model_switch.write(
+    "case default\n"
+    "error stop\n"
+    "end select\n"
+)
+# file_model_switch.write("end submodule\n")
+file_model_switch.close()
 
 with open('src/coefficients.F90','w') as f:
 # from sys import stdout as f

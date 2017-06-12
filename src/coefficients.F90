@@ -8,15 +8,14 @@ USE GLOBALS
 IMPLICIT NONE
 CONTAINS
 
-PURE SUBROUTINE COEFF_SS73DYF(z, Y, D, A, AY, AD, ny, neq) 
-INTEGER, INTENT(in) :: neq ! array dimension
+PURE SUBROUTINE COEFF_SS73DYF(z, Y, D, A, AY, AD, ny) 
 INTEGER, INTENT(in) :: ny ! array dimension
 real(fp), INTENT(in) :: z
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: D
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: Y
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AY
-real(fp), INTENT(out), DIMENSION(0:neq - 1) :: A
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
+real(fp), INTENT(out), DIMENSION(0:ny - 1) :: A
 A(0) = Omega**2*z*Y(0) + cgs_boltz*D(0)*Y(1)/(cgs_mhydr*miu) + cgs_boltz &
       *D(1)*Y(0)/(cgs_mhydr*miu) - (cgs_kapes + kappa_abs(Y(0), Y(1)))* &
       Y(0)*Y(2)/cgs_c
@@ -53,17 +52,6 @@ AY(2, 2) = 0
 AD(2, 2) = 1
 END SUBROUTINE COEFF_SS73DYF
 
-PURE SUBROUTINE COEFF_SS73DYF_SIZE(ny, neq, nbl, nbr) 
-INTEGER, INTENT(out) :: neq
-INTEGER, INTENT(out) :: nbl
-INTEGER, INTENT(out) :: ny
-INTEGER, INTENT(out) :: nbr
-ny = 3
-neq = 3
-nbl = 1
-nbr = 2
-END SUBROUTINE COEFF_SS73DYF_SIZE
-
 PURE SUBROUTINE COEFF_SS73DYF_BL(z, Y, BL, MBL, ny, nbl) 
 INTEGER, INTENT(in) :: nbl ! array dimension
 INTEGER, INTENT(in) :: ny ! array dimension
@@ -94,15 +82,14 @@ MBR(1, 1) = -8*cgs_stef*Y(1)**3
 MBR(1, 2) = 1
 END SUBROUTINE COEFF_SS73DYF_BR
 
-PURE SUBROUTINE COEFF_SS73COR(z, Y, D, A, AY, AD, ny, neq) 
-INTEGER, INTENT(in) :: neq ! array dimension
+PURE SUBROUTINE COEFF_SS73COR(z, Y, D, A, AY, AD, ny) 
 INTEGER, INTENT(in) :: ny ! array dimension
 real(fp), INTENT(in) :: z
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: D
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: Y
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AY
-real(fp), INTENT(out), DIMENSION(0:neq - 1) :: A
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
+real(fp), INTENT(out), DIMENSION(0:ny - 1) :: A
 A(0) = Omega**2*z*Y(0) + cgs_boltz*D(0)*Y(1)/(cgs_mhydr*miu) + cgs_boltz &
       *D(1)*Y(0)/(cgs_mhydr*miu) - (cgs_kapes + kappa_abs(Y(0), Y(1)))* &
       Y(0)*Y(2)/cgs_c
@@ -166,17 +153,6 @@ AY(3, 3) = -4*cgs_stef*(4*cgs_boltz*cgs_kapes*Y(3)**4/(cgs_c**2*cgs_mel &
 AD(3, 3) = 0
 END SUBROUTINE COEFF_SS73COR
 
-PURE SUBROUTINE COEFF_SS73COR_SIZE(ny, neq, nbl, nbr) 
-INTEGER, INTENT(out) :: neq
-INTEGER, INTENT(out) :: nbl
-INTEGER, INTENT(out) :: ny
-INTEGER, INTENT(out) :: nbr
-ny = 4
-neq = 4
-nbl = 2
-nbr = 2
-END SUBROUTINE COEFF_SS73COR_SIZE
-
 PURE SUBROUTINE COEFF_SS73COR_BL(z, Y, BL, MBL, ny, nbl) 
 INTEGER, INTENT(in) :: nbl ! array dimension
 INTEGER, INTENT(in) :: ny ! array dimension
@@ -215,15 +191,14 @@ MBR(1, 2) = 1
 MBR(1, 3) = -8*cgs_stef*Y(3)**3
 END SUBROUTINE COEFF_SS73COR_BR
 
-PURE SUBROUTINE COEFF_MAGNDYF(z, Y, D, A, AY, AD, ny, neq) 
-INTEGER, INTENT(in) :: neq ! array dimension
+PURE SUBROUTINE COEFF_MAGNDYF(z, Y, D, A, AY, AD, ny) 
 INTEGER, INTENT(in) :: ny ! array dimension
 real(fp), INTENT(in) :: z
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: D
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: Y
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AY
-real(fp), INTENT(out), DIMENSION(0:neq - 1) :: A
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
+real(fp), INTENT(out), DIMENSION(0:ny - 1) :: A
 A(0) = Omega**2*z*Y(0) + cgs_boltz*D(0)*Y(1)/(cgs_mhydr*miu) + cgs_boltz &
       *D(1)*Y(0)/(cgs_mhydr*miu) + D(3) - (cgs_kapes + kappa_abs(Y(0), &
       Y(1)))*Y(0)*Y(2)/cgs_c
@@ -276,17 +251,6 @@ AY(3, 3) = -Omega*alpha + 2*Omega*zeta
 AD(3, 3) = Omega*z*zeta
 END SUBROUTINE COEFF_MAGNDYF
 
-PURE SUBROUTINE COEFF_MAGNDYF_SIZE(ny, neq, nbl, nbr) 
-INTEGER, INTENT(out) :: neq
-INTEGER, INTENT(out) :: nbl
-INTEGER, INTENT(out) :: ny
-INTEGER, INTENT(out) :: nbr
-ny = 4
-neq = 4
-nbl = 2
-nbr = 2
-END SUBROUTINE COEFF_MAGNDYF_SIZE
-
 PURE SUBROUTINE COEFF_MAGNDYF_BL(z, Y, BL, MBL, ny, nbl) 
 INTEGER, INTENT(in) :: nbl ! array dimension
 INTEGER, INTENT(in) :: ny ! array dimension
@@ -327,15 +291,14 @@ MBR(1, 2) = 1
 MBR(1, 3) = 0
 END SUBROUTINE COEFF_MAGNDYF_BR
 
-PURE SUBROUTINE COEFF_MAGNCOR(z, Y, D, A, AY, AD, ny, neq) 
-INTEGER, INTENT(in) :: neq ! array dimension
+PURE SUBROUTINE COEFF_MAGNCOR(z, Y, D, A, AY, AD, ny) 
 INTEGER, INTENT(in) :: ny ! array dimension
 real(fp), INTENT(in) :: z
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: D
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: Y
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AY
-real(fp), INTENT(out), DIMENSION(0:neq - 1) :: A
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
+real(fp), INTENT(out), DIMENSION(0:ny - 1) :: A
 A(0) = Omega**2*z*Y(0) + cgs_boltz*D(0)*Y(1)/(cgs_mhydr*miu) + cgs_boltz &
       *D(1)*Y(0)/(cgs_mhydr*miu) + D(4) - (cgs_kapes + kappa_abs(Y(0), &
       Y(1)))*Y(0)*Y(2)/cgs_c
@@ -419,17 +382,6 @@ AY(4, 4) = 0
 AD(4, 4) = 0
 END SUBROUTINE COEFF_MAGNCOR
 
-PURE SUBROUTINE COEFF_MAGNCOR_SIZE(ny, neq, nbl, nbr) 
-INTEGER, INTENT(out) :: neq
-INTEGER, INTENT(out) :: nbl
-INTEGER, INTENT(out) :: ny
-INTEGER, INTENT(out) :: nbr
-ny = 5
-neq = 5
-nbl = 3
-nbr = 2
-END SUBROUTINE COEFF_MAGNCOR_SIZE
-
 PURE SUBROUTINE COEFF_MAGNCOR_BL(z, Y, BL, MBL, ny, nbl) 
 INTEGER, INTENT(in) :: nbl ! array dimension
 INTEGER, INTENT(in) :: ny ! array dimension
@@ -479,15 +431,14 @@ MBR(1, 3) = -8*cgs_stef*Y(3)**3
 MBR(1, 4) = 0
 END SUBROUTINE COEFF_MAGNCOR_BR
 
-PURE SUBROUTINE COEFF_SS73DYFCND(z, Y, D, A, AY, AD, ny, neq) 
-INTEGER, INTENT(in) :: neq ! array dimension
+PURE SUBROUTINE COEFF_SS73DYFCND(z, Y, D, A, AY, AD, ny) 
 INTEGER, INTENT(in) :: ny ! array dimension
 real(fp), INTENT(in) :: z
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: D
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: Y
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AY
-real(fp), INTENT(out), DIMENSION(0:neq - 1) :: A
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
+real(fp), INTENT(out), DIMENSION(0:ny - 1) :: A
 A(0) = Omega**2*z*Y(0) + cgs_boltz*D(0)*Y(1)/(cgs_mhydr*miu) + cgs_boltz &
       *D(1)*Y(0)/(cgs_mhydr*miu) - (cgs_kapes + kappa_abs(Y(0), Y(1)))* &
       Y(0)*Y(2)/cgs_c
@@ -539,17 +490,6 @@ AY(3, 3) = 1
 AD(3, 3) = 0
 END SUBROUTINE COEFF_SS73DYFCND
 
-PURE SUBROUTINE COEFF_SS73DYFCND_SIZE(ny, neq, nbl, nbr) 
-INTEGER, INTENT(out) :: neq
-INTEGER, INTENT(out) :: nbl
-INTEGER, INTENT(out) :: ny
-INTEGER, INTENT(out) :: nbr
-ny = 4
-neq = 4
-nbl = 2
-nbr = 2
-END SUBROUTINE COEFF_SS73DYFCND_SIZE
-
 PURE SUBROUTINE COEFF_SS73DYFCND_BL(z, Y, BL, MBL, ny, nbl) 
 INTEGER, INTENT(in) :: nbl ! array dimension
 INTEGER, INTENT(in) :: ny ! array dimension
@@ -588,15 +528,14 @@ MBR(1, 2) = 1
 MBR(1, 3) = 0
 END SUBROUTINE COEFF_SS73DYFCND_BR
 
-PURE SUBROUTINE COEFF_SS73CORCND(z, Y, D, A, AY, AD, ny, neq) 
-INTEGER, INTENT(in) :: neq ! array dimension
+PURE SUBROUTINE COEFF_SS73CORCND(z, Y, D, A, AY, AD, ny) 
 INTEGER, INTENT(in) :: ny ! array dimension
 real(fp), INTENT(in) :: z
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: D
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: Y
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AY
-real(fp), INTENT(out), DIMENSION(0:neq - 1) :: A
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
+real(fp), INTENT(out), DIMENSION(0:ny - 1) :: A
 A(0) = Omega**2*z*Y(0) + cgs_boltz*D(0)*Y(1)/(cgs_mhydr*miu) + cgs_boltz &
       *D(1)*Y(0)/(cgs_mhydr*miu) - (cgs_kapes + kappa_abs(Y(0), Y(1)))* &
       Y(0)*Y(2)/cgs_c
@@ -679,17 +618,6 @@ AY(4, 4) = 1
 AD(4, 4) = 0
 END SUBROUTINE COEFF_SS73CORCND
 
-PURE SUBROUTINE COEFF_SS73CORCND_SIZE(ny, neq, nbl, nbr) 
-INTEGER, INTENT(out) :: neq
-INTEGER, INTENT(out) :: nbl
-INTEGER, INTENT(out) :: ny
-INTEGER, INTENT(out) :: nbr
-ny = 5
-neq = 5
-nbl = 3
-nbr = 2
-END SUBROUTINE COEFF_SS73CORCND_SIZE
-
 PURE SUBROUTINE COEFF_SS73CORCND_BL(z, Y, BL, MBL, ny, nbl) 
 INTEGER, INTENT(in) :: nbl ! array dimension
 INTEGER, INTENT(in) :: ny ! array dimension
@@ -738,15 +666,14 @@ MBR(1, 3) = -8*cgs_stef*Y(3)**3
 MBR(1, 4) = 0
 END SUBROUTINE COEFF_SS73CORCND_BR
 
-PURE SUBROUTINE COEFF_MAGNDYFCND(z, Y, D, A, AY, AD, ny, neq) 
-INTEGER, INTENT(in) :: neq ! array dimension
+PURE SUBROUTINE COEFF_MAGNDYFCND(z, Y, D, A, AY, AD, ny) 
 INTEGER, INTENT(in) :: ny ! array dimension
 real(fp), INTENT(in) :: z
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: D
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: Y
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AY
-real(fp), INTENT(out), DIMENSION(0:neq - 1) :: A
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
+real(fp), INTENT(out), DIMENSION(0:ny - 1) :: A
 A(0) = Omega**2*z*Y(0) + cgs_boltz*D(0)*Y(1)/(cgs_mhydr*miu) + cgs_boltz &
       *D(1)*Y(0)/(cgs_mhydr*miu) + D(3) - (cgs_kapes + kappa_abs(Y(0), &
       Y(1)))*Y(0)*Y(2)/cgs_c
@@ -818,17 +745,6 @@ AY(4, 4) = 1
 AD(4, 4) = 0
 END SUBROUTINE COEFF_MAGNDYFCND
 
-PURE SUBROUTINE COEFF_MAGNDYFCND_SIZE(ny, neq, nbl, nbr) 
-INTEGER, INTENT(out) :: neq
-INTEGER, INTENT(out) :: nbl
-INTEGER, INTENT(out) :: ny
-INTEGER, INTENT(out) :: nbr
-ny = 5
-neq = 5
-nbl = 3
-nbr = 2
-END SUBROUTINE COEFF_MAGNDYFCND_SIZE
-
 PURE SUBROUTINE COEFF_MAGNDYFCND_BL(z, Y, BL, MBL, ny, nbl) 
 INTEGER, INTENT(in) :: nbl ! array dimension
 INTEGER, INTENT(in) :: ny ! array dimension
@@ -879,15 +795,14 @@ MBR(1, 3) = 0
 MBR(1, 4) = 0
 END SUBROUTINE COEFF_MAGNDYFCND_BR
 
-PURE SUBROUTINE COEFF_MAGNCORCND(z, Y, D, A, AY, AD, ny, neq) 
-INTEGER, INTENT(in) :: neq ! array dimension
+PURE SUBROUTINE COEFF_MAGNCORCND(z, Y, D, A, AY, AD, ny) 
 INTEGER, INTENT(in) :: ny ! array dimension
 real(fp), INTENT(in) :: z
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: D
 real(fp), INTENT(in), DIMENSION(0:ny - 1) :: Y
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AY
-real(fp), INTENT(out), DIMENSION(0:neq - 1) :: A
-real(fp), INTENT(out), DIMENSION(0:neq - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AD
+real(fp), INTENT(out), DIMENSION(0:ny - 1, 0:ny - 1) :: AY
+real(fp), INTENT(out), DIMENSION(0:ny - 1) :: A
 A(0) = Omega**2*z*Y(0) + cgs_boltz*D(0)*Y(1)/(cgs_mhydr*miu) + cgs_boltz &
       *D(1)*Y(0)/(cgs_mhydr*miu) + D(4) - (cgs_kapes + kappa_abs(Y(0), &
       Y(1)))*Y(0)*Y(2)/cgs_c
@@ -993,17 +908,6 @@ AD(5, 4) = 0
 AY(5, 5) = 1
 AD(5, 5) = 0
 END SUBROUTINE COEFF_MAGNCORCND
-
-PURE SUBROUTINE COEFF_MAGNCORCND_SIZE(ny, neq, nbl, nbr) 
-INTEGER, INTENT(out) :: neq
-INTEGER, INTENT(out) :: nbl
-INTEGER, INTENT(out) :: ny
-INTEGER, INTENT(out) :: nbr
-ny = 6
-neq = 6
-nbl = 4
-nbr = 2
-END SUBROUTINE COEFF_MAGNCORCND_SIZE
 
 PURE SUBROUTINE COEFF_MAGNCORCND_BL(z, Y, BL, MBL, ny, nbl) 
 INTEGER, INTENT(in) :: nbl ! array dimension
