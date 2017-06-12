@@ -30,9 +30,6 @@ module relaxation
             real(fp), intent(out), dimension(nb) :: B
             real(fp), intent(out), dimension(nb,ny) :: M
         end subroutine
-        pure subroutine size_driver_t(ny, nbl, nbr)
-            integer, intent(out) :: ny, nbl, nbr
-        end subroutine size_driver_t
     end interface
 
 
