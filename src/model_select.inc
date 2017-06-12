@@ -1,4 +1,4 @@
-select case (nr)
+select case (model % nr)
 case(1)
 model % coeff => COEFF_SS73DYF
 model % ny = 3

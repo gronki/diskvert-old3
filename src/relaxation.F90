@@ -1,6 +1,7 @@
 module relaxation
 
     use iso_fortran_env
+    use ieee_arithmetic
 
     use precision
     use slf_cgs
@@ -48,19 +49,12 @@ module relaxation
         procedure :: init    => model_initialize
         procedure :: matrix  => model_matrix
         procedure :: alloc  => model_allocate
-        procedure :: sel  => model_select
         procedure :: advance => model_corrections
     end type
 
 
 
 contains
-
-    subroutine model_select(model,nr)
-        class(model_t) :: model
-        integer, intent(in) :: nr
-        include 'model_select.inc'
-    end subroutine
 
     subroutine model_initialize (model, compton, magnetic, conduction)
         class(model_t) :: model
@@ -70,7 +64,7 @@ contains
                         + merge(2, 0, magnetic)     &
                         + merge(4, 0, conduction)
 
-        call model % sel(model % nr)
+        include 'model_select.inc'
 
     end subroutine
 

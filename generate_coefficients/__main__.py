@@ -9,7 +9,7 @@ file_model_switch = open('src/model_select.inc','w')
 
 # file_model_switch.write("submodule (relaxation) relaxation_model_select\n" \
 #     "use relax_coefficients\nimplicit none\ncontains\n" \
-file_model_switch.write("select case (nr)\n")
+file_model_switch.write("select case (model % nr)\n")
 
 for enableCorona, enableMagnetic, enableConduction in [
     (False, False, False),
