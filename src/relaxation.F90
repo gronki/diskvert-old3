@@ -68,21 +68,36 @@ contains
             model % get_sz => COEFF_SS73DYF_SIZE
             model % get_BL => COEFF_SS73DYF_BL
             model % get_BR => COEFF_SS73DYF_BR
-        case(3)
-            model % get_AM => COEFF_MAGNDYF
-            model % get_sz => COEFF_MAGNDYF_SIZE
-            model % get_BL => COEFF_MAGNDYF_BL
-            model % get_BR => COEFF_MAGNDYF_BR
         case(2)
             model % get_AM => COEFF_SS73COR
             model % get_sz => COEFF_SS73COR_SIZE
             model % get_BL => COEFF_SS73COR_BL
             model % get_BR => COEFF_SS73COR_BR
+        case(3)
+            model % get_AM => COEFF_MAGNDYF
+            model % get_sz => COEFF_MAGNDYF_SIZE
+            model % get_BL => COEFF_MAGNDYF_BL
+            model % get_BR => COEFF_MAGNDYF_BR
         case(4)
             model % get_AM => COEFF_MAGNCOR
             model % get_sz => COEFF_MAGNCOR_SIZE
             model % get_BL => COEFF_MAGNCOR_BL
             model % get_BR => COEFF_MAGNCOR_BR
+        case(5)
+            model % get_AM => COEFF_SS73DYFCND
+            model % get_sz => COEFF_SS73DYFCND_SIZE
+            model % get_BL => COEFF_SS73DYFCND_BL
+            model % get_BR => COEFF_SS73DYFCND_BR
+        case(6)
+            model % get_AM => COEFF_SS73CORCND
+            model % get_sz => COEFF_SS73CORCND_SIZE
+            model % get_BL => COEFF_SS73CORCND_BL
+            model % get_BR => COEFF_SS73CORCND_BR
+        case(7)
+            model % get_AM => COEFF_MAGNDYFCND
+            model % get_sz => COEFF_MAGNDYFCND_SIZE
+            model % get_BL => COEFF_MAGNDYFCND_BL
+            model % get_BR => COEFF_MAGNDYFCND_BR
         case(8)
             model % get_AM => COEFF_MAGNCORCND
             model % get_sz => COEFF_MAGNCORCND_SIZE

@@ -5,11 +5,14 @@ from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq, symbols
 
 procedures = []
 
-for enableMagnetic, enableCorona, enableConduction in [
+for enableCorona, enableMagnetic, enableConduction in [
     (False, False, False),
     (True,  False, False),
     (False, True,  False),
     (True,  True,  False),
+    (False, False, True),
+    (True,  False, True),
+    (False, True,  True),
     (True,  True,  True),
 ]:
 
