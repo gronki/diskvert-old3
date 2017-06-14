@@ -1,4 +1,4 @@
-from ctypes import CDLL, CFUNCTYPE, POINTER, c_double, c_float, c_int
+from ctypes import CDLL, CFUNCTYPE, POINTER, c_double, c_float, c_int, c_char
 from numpy.ctypeslib import ndpointer
 import os.path
 
@@ -25,18 +25,18 @@ EQUATION_EQUILIBR   = 0
 EQUATION_COMPTON    = 1
 EQUATION_BALANCE    = 2
 
-dv_init_disk = FACTORY('init_disk', [
+dv_init_disk = FACTORY('dv_init_disk', [
     (c_double, 'in', 'mass'),
     (c_double, 'in', 'accretion'),
     (c_double, 'in', 'radius'),
 ])
 
-dv_init_abun = FACTORY('init_abun', [
+dv_init_abun = FACTORY('dv_init_abun', [
     (c_double, 'in', 'X'),
     (c_double, 'in', 'Z'),
 ])
 
-dv_eval_globals = FACTORY('eval_globals')
+dv_eval_globals = FACTORY('dv_eval_globals')
 
 dv_grid = FACTORY('grid', [
     (c_int, 'in', 'type'),
@@ -74,3 +74,7 @@ dv_generate_corrections = FACTORY('generate_corrections', [
     (ndpointer(c_double,1), 'inout', 'dY'),
     (c_int, 'in', 'ny'),
 ])
+
+dv_query_f = FACTORY('dv_query_f', [
+    (POINTER(c_char), 'in', 'key'),
+], c_float)

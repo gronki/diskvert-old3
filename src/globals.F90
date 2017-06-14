@@ -63,7 +63,6 @@ module globals
    !   czy rozwiazywac wolniejsza metoda dajaca wszystkie rozwiazania
    logical :: cfg_balance_multi = .false.
 
-
    ! parametry globalne
     real(fp) :: m_bh
     real(fp) :: acc_rate
@@ -94,20 +93,22 @@ module globals
 
 contains
 
-    subroutine init_disk(m_bh_in,acc_rate_in,r_calc_in) bind(C)
+    subroutine init_disk(m_bh_in,acc_rate_in,r_calc_in)   &
+          bind(C, name = 'dv_init_disk')
         real(fp), intent(in), value :: m_bh_in,acc_rate_in,r_calc_in
         m_bh = m_bh_in
         acc_rate = acc_rate_in
         r_calc = r_calc_in
     end subroutine
 
-    subroutine init_abun(abun_X_in,abun_Z_in) bind(C)
+    subroutine init_abun(abun_X_in,abun_Z_in)   &
+          bind(C, name = 'dv_init_abun')
         real(fp), intent(in), value :: abun_X_in,abun_Z_in
         abun_X = abun_X_in
         abun_Z = abun_Z_in
     end subroutine
 
-    subroutine eval_globals() bind(C)
+    subroutine eval_globals() bind(C, name = 'dv_eval_globals')
         call eval_opacity_globals
         call eval_disk_globals
     end subroutine

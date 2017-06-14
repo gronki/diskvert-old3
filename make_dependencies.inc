@@ -11,6 +11,7 @@ diskvert-m1.o   : globals.o settings.o model_m1.o setup.o precision.o          \
     results.o 
 diskvert-ss73.o : model_ss73.o globals.o settings.o setup.o precision.o        \
     results.o 
+query.o         : globals.o c_f_string.o 
 coefficients.o  : cgs.o globals.o precision.o 
 relaxation.o    : lapack_interfaces.o cgs.o globals.o precision.o              \
     coefficients.o 
