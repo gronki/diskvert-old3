@@ -12,9 +12,10 @@ INCLUDE	 	 	= -Ilibconfort
 LDFLAGS			= -L.
 LDLIBS			= -lopenblas
 
-FC				= f95
-CFLAGS			= -g -Wall -O3 -march=native -mieee-fp
-FFLAGS			= $(CFLAGS) -Warray-temporaries -fexternal-blas
+FC					= f95
+CFLAGS			?= -g -Wall -O3 -march=native -mieee-fp
+FFLAGS			?= $(CFLAGS) -Warray-temporaries
+override FFLAGS 	+= -fexternal-blas
 override CPPFLAGS += -DVERSION=$(VERSION)
 
 OBJECTS_LAPACK =  \
