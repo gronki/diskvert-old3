@@ -20,7 +20,7 @@ contains
         type(model_t) :: model
 
         call model % init(compton = .false., magnetic = .false., conduction = .false.)
-        call model % matrix(x,Y,A,M)
+        call model % matrix(x,Y,M,A)
 
     end subroutine
 
@@ -31,12 +31,12 @@ contains
         real(c_double), intent(in), dimension(nx) :: X
         real(c_double), intent(in), dimension(nx*ny) :: Y
         real(c_double), intent(out), dimension(nx*ny) :: dY
-        real(fp) :: M(nx*ny,nx*ny), A(nx*ny)
+        real(fp) :: M(nx*ny,nx*ny)
 
         type(model_t) :: model
 
         call model % init(compton = .false., magnetic = .false., conduction = .false.)
-        call model % advance(x,Y,A,M,dY)
+        call model % advance(x,Y,M,dY)
 
     end subroutine
 

@@ -32,7 +32,6 @@ module relaxation
         end subroutine
     end interface
 
-
     type :: model_t
         integer :: nr = 0
         procedure(coeff_driver_t), pointer, nopass, private :: coeff
@@ -40,16 +39,14 @@ module relaxation
         integer, private :: ny, nbl, nbr
         integer, dimension(6), private :: ix
         real(fp), dimension(:), pointer :: x => NULL()
-        real(fp), dimension(:), pointer, contiguous  :: Y,A,dY
+        real(fp), dimension(:), pointer, contiguous  :: Y,dY
         real(fp), dimension(:,:), pointer, contiguous :: M
     contains
         procedure :: init    => model_initialize
         procedure :: matrix  => model_matrix
         procedure :: alloc  => model_allocate
-        procedure :: advance => model_corrections
+        procedure :: advance => model_advance
     end type
-
-
 
 contains
 
@@ -80,7 +77,7 @@ contains
                     nbr => model % nbr,     &
                     nx => size(x) )
 
-            allocate( model % Y(nx*ny), model % dY(nx*ny), model % A(nx*ny) )
+            allocate( model % Y(nx*ny), model % dY(nx*ny) )
             allocate( model % M(nx*ny,nx*ny) )
 
         end associate
@@ -89,7 +86,7 @@ contains
     end subroutine
 
 
-    subroutine model_matrix(model,x,Y,A,M)
+    subroutine model_matrix(model,x,Y,M,A)
 
         class(model_t) :: model
         real(fp), dimension(:), intent(in) :: x
@@ -163,24 +160,22 @@ contains
             ibr = nbl + ny*(nx-1) + i
         end function
 
-
     end subroutine
 
-    subroutine model_corrections(model, x, Y, A, M, dY)
+    subroutine model_advance(model, x, Y, M, dY)
 
         class(model_t) :: model
         real(fp), dimension(:), intent(in) :: x
         real(fp), dimension( size(x) * (model % ny) ), intent(in) :: Y
-        real(fp), dimension( size(x) * (model % ny) ), intent(out) :: A
-        real(fp), dimension( size(A), size(Y) ), intent(out)  :: M
         real(fp), dimension( size(Y) ), intent(out) :: dY
-        integer, dimension( size(A) ) :: ipiv
+        real(fp), dimension( size(dY), size(Y) ), intent(out)  :: M
+        integer, dimension( size(dY) ) :: ipiv
         integer :: errno
 
-        call model % matrix(x,Y,A,M)
+        call model % matrix(x,Y,M,dY)
 
-        dY = - A
-        call DGESV(size(M,2), 1, M, size(M,1), ipiv, dY, size(A), errno)
+        dY = -dY
+        call DGESV(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
 
         if ( errno > 0 ) then
             write (error_unit, '("Parameter ", I0, " had illegal value")') abs(errno)
@@ -192,8 +187,5 @@ contains
         end if
 
     end subroutine
-
-
-
 
 end module relaxation
