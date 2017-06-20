@@ -9,6 +9,16 @@ module setup
 
 contains
 
+!------------------------------------ INIT ------------------------------------!
+!   reads the configuration, command line arguments, calls the conf and cli    !
+!          handlers for specific code, and finally evaluates globals           !
+!----------------------------------- INPUTS -----------------------------------!
+!                 conf_reader: configuration reading procedure                 !
+!                 argv_reader: cli arguments reading procedure                 !
+!---------------------------------- OUTPUTS -----------------------------------!
+!                              errno: error code                               !
+!------------------------------------------------------------------------------!
+
     subroutine init(errno, conf_reader, argv_reader)
 
         type(config) :: cfg

@@ -7,7 +7,16 @@ module settings
 
 contains
 
-    !   helper który automatycznie wykrywa negacje flag
+!----------------------------- COMMAND_LINE_FLAG ------------------------------!
+! scans command line arguments for a given flag (such as -foo) or negation of  !
+!                     it (such as -no-foo or -disable-foo)                     !
+!----------------------------------- INPUTS -----------------------------------!
+!              arg: command line arg (this should be looped over)              !
+!             flag: name of the flag (eg. "foo")                               !
+!---------------------------------- OUTPUTS -----------------------------------!
+!     logi: is set to .TRUE. if flag is set or .FALSE. if negation is set      !
+!------------------------------------------------------------------------------!
+
     subroutine command_line_flag(arg,flag,logi)
         character(len=*), intent(in) :: arg,flag
         logical, intent(inout) :: logi
@@ -29,7 +38,12 @@ contains
         end if
     end subroutine
 
-    !   przeczesuje linię poleceń
+!----------------------------- READ_COMMAND_LINE ------------------------------!
+!       reads command line arguments and stores them in global variables       !
+!---------------------------------- OUTPUTS -----------------------------------!
+!                              errno: error code                               !
+!------------------------------------------------------------------------------!
+
     subroutine read_command_line(errno)
 
         integer, intent(inout) :: errno
@@ -104,6 +118,12 @@ contains
 
     end subroutine read_command_line
 
+!------------------------------- WRITE_SETTINGS -------------------------------!
+!                  writes global settings to given file unit                   !
+!----------------------------------- INPUTS -----------------------------------!
+!                        lun: file unit (must be open!)                        !
+!------------------------------------------------------------------------------!
+
     subroutine write_settings(lun)
         integer, intent(in) :: lun
 
@@ -141,6 +161,11 @@ contains
         end subroutine
     end subroutine
 
+!-------------------------------- READ_GLOBALS --------------------------------!
+!        reads neccesary global parameters from the configuration file         !
+!----------------------------------- INPUTS -----------------------------------!
+!                          cfg: configuration object                           !
+!------------------------------------------------------------------------------!
 
     subroutine read_globals(cfg)
 
@@ -175,6 +200,12 @@ contains
         read (buf,*) abun_Z
 
     end subroutine
+    
+!------------------------------- WRITE_GLOBALS --------------------------------!
+!               writes global values to a given (open) file unit               !
+!----------------------------------- INPUTS -----------------------------------!
+!                                lun: file unit                                !
+!------------------------------------------------------------------------------!
 
     subroutine write_globals(lun)
         integer, intent(in) :: lun
