@@ -80,37 +80,33 @@ contains
 
     subroutine disk_read_local(cfg,errno)
         integer, intent(inout) :: errno
-        type(confort_c), intent(inout) :: cfg
+        type(config), intent(inout) :: cfg
         character(len=2048) :: buf
         integer :: i
 
-        call mincf_get(cfg, "beta_0", buf, errno)
-        if ( iand(errno,MINCF_NOT_FOUND) .ne. 0 )  then
-            call mincf_free(cfg)
+        call mincf_get(cfg, "beta_0", buf)
+        if ( cfg % not_found() )  then
             error stop "Magnetic beta (Pgas/Pmag) on equatorial plane " &
                 & // "(key: beta_0) is REQUIRED!"
         end if
         read (buf,*) beta_0
 
-        call mincf_get(cfg, "alpha", buf, errno)
-        if ( iand(errno,MINCF_NOT_FOUND) .ne. 0 )  then
-            call mincf_free(cfg)
+        call mincf_get(cfg, "alpha", buf)
+        if ( cfg % not_found() )  then
             error stop "Magnetic alpha-parameter (key: alpha) is REQUIRED!"
         end if
         read (buf,*) alpha
 
         if ( cfg_single_run ) then
 
-            call mincf_get(cfg, "rho0", buf, errno)
-            if ( iand(errno,MINCF_NOT_FOUND) .ne. 0 )  then
-                call mincf_free(cfg)
+            call mincf_get(cfg, "rho0", buf)
+            if ( cfg % not_found() )  then
                 error stop "Midplane density (key: rho0) is REQUIRED!"
             end if
             read (buf,*) rho_0_user
 
-            call mincf_get(cfg, "temp0", buf, errno)
-            if ( iand(errno,MINCF_NOT_FOUND) .ne. 0 )  then
-                call mincf_free(cfg)
+            call mincf_get(cfg, "temp0", buf)
+            if ( cfg % not_found() )  then
                 error stop "Midplane temperature (key: temp0) is REQUIRED!"
             end if
             read (buf,*) temp_0_user

@@ -12,7 +12,7 @@ program SS73
     implicit none
 
     integer :: errno
-    type(confort_c) :: cfg
+    type(config) :: cfg
 
 
     character(len=12), dimension(ny) :: y_labels
@@ -60,13 +60,12 @@ contains
 
     subroutine disk_read_local(cfg,errno)
         integer, intent(inout) :: errno
-        type(confort_c), intent(inout) :: cfg
+        type(config), intent(inout) :: cfg
         character(len=2048) :: buf
         integer :: i
 
-        call mincf_get(cfg, "alpha", buf, errno)
-        if ( iand(errno,MINCF_NOT_FOUND) .ne. 0 )  then
-            call mincf_free(cfg)
+        call mincf_get(cfg, "alpha", buf)
+        if ( cfg % not_found() )  then
             error stop "Magnetic alpha-parameter (key: alpha) is REQUIRED!"
         end if
         read (buf,*) alpha

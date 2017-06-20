@@ -44,7 +44,7 @@ program B15
     character (len=1024) :: buf
 
     integer :: errno
-    type(confort_c) :: cfg
+    type(config) :: cfg
 
     last_i = ngrid
 
@@ -249,7 +249,7 @@ contains
 
     subroutine disk_read_local(cfg,errno)
         integer, intent(inout) :: errno
-        type(confort_c), intent(inout) :: cfg
+        type(config), intent(inout) :: cfg
 
         call mincf_get(cfg, "z_top_start", buf, "12")
         read (buf,*) z_top_start

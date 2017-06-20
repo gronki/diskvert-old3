@@ -11,13 +11,13 @@ contains
 
     subroutine init(errno, conf_reader, argv_reader)
 
-        type (confort_c) :: cfg
+        type(config) :: cfg
 
         integer, intent(inout) :: errno
         interface
             subroutine cfghandler(cfg,errno)
-                import confort_c
-                type(confort_c), intent(inout) :: cfg
+                import config
+                type(config), intent(inout) :: cfg
                 integer, intent(inout) :: errno
             end subroutine
             subroutine clhandler(errno)
@@ -39,9 +39,9 @@ contains
 
         call read_command_line(errno)
         if (present(argv_reader)) call argv_reader(errno)
-        call mincf_read(cfg, errno)
-        if ( errno .ne. MINCF_OK )   error stop "error reading config!"
-        call read_globals(cfg,errno)
+        call mincf_read(cfg)
+        if ( cfg % failed() )   error stop "error reading config!"
+        call read_globals(cfg)
         if (present(conf_reader)) call conf_reader(cfg,errno)
         call mincf_free(cfg)
 

@@ -142,40 +142,36 @@ contains
     end subroutine
 
 
-    subroutine read_globals(cfg,errno)
+    subroutine read_globals(cfg)
 
-        type(confort_c), intent(inout) :: cfg
-        integer, intent(inout) :: errno
+        type(config), intent(inout) :: cfg
         character(len=2048) :: buf
 
         errno = 0
 
-        call mincf_get(cfg,'output',outfn_config,errno)
+        call mincf_get(cfg,'output',outfn_config)
 
-        call mincf_get(cfg,'mass',buf,errno)
-        if ( iand(errno, MINCF_NOT_FOUND) /= 0 ) then
-            call mincf_free(cfg)
+        call mincf_get(cfg,'mass',buf)
+        if ( cfg % not_found() ) then
             error stop "Black hole mass (key: mass) is REQUIRED!"
         end if
         read (buf,*) m_bh
 
-        call mincf_get(cfg,'radius',buf,errno)
-        if ( iand(errno, MINCF_NOT_FOUND)  /= 0 ) then
-            call mincf_free(cfg)
+        call mincf_get(cfg,'radius',buf)
+        if ( cfg % not_found() ) then
             error stop "Distance from BH in Schwarzchild radii " &
                     & // "(key: radius) is REQUIRED!"
         end if
         read (buf,*) r_calc
 
-        call mincf_get(cfg,'accretion_rate',buf,errno)
-        if ( iand(errno, MINCF_NOT_FOUND) /= 0  ) then
-            call mincf_free(cfg)
+        call mincf_get(cfg,'accretion_rate',buf)
+        if ( cfg % not_found() ) then
             error stop "Accretion rate " &
                     & // "(key: accretion_rate) is REQUIRED!"
         end if
         read (buf,*) acc_rate
 
-        call MINCF_GET(cfg, 'abun_Z', buf, '0.02', errno)
+        call MINCF_GET(cfg, 'abun_Z', buf, '0.02')
         read (buf,*) abun_Z
 
     end subroutine
