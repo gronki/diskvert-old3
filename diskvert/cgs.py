@@ -1,12 +1,12 @@
 from math import atan,sqrt
 
-cgs_pi = 4*atan(1e0)
+cgs_pi = 4*atan(1.0)
 cgs_boltz = 1.3806581212e-16
 cgs_c = 2.99792458e10
 cgs_h = 6.62607554040e-27
 cgs_graw = 6.67259858585e-8
 cgs_mel = 9.10938975454e-28
-cgs_hbar= 0.5 * cgs_h / cgs_pi
+cgs_hbar = cgs_h / (2 * cgs_pi)
 cgs_stef = 2 * cgs_pi**5 * cgs_boltz**4 / ( 15 * cgs_h**3 * cgs_c**2 )
 cgs_a = 4 * cgs_stef / cgs_c
 cgs_alpha = 1 / 137.036e0
@@ -25,3 +25,7 @@ cgs_mec2_over_k = ( cgs_mel * cgs_c**2 ) / cgs_boltz
 cgs_msun = 1.99e33
 cgs_lsun = 3.9e33
 cgs_kapes = 0.34e0
+
+cgs_rschw_sun = 2 * cgs_graw * cgs_msun / cgs_c**2
+cgs_mcrit_sun = 4 * cgs_pi * (cgs_graw * cgs_msun / cgs_c) \
+        * (cgs_mhydr / cgs_thomson)
