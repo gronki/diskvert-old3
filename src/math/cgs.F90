@@ -1,7 +1,7 @@
 module slf_cgs
 
     use iso_fortran_env
-    
+
     use precision
 
     implicit none
@@ -39,6 +39,11 @@ module slf_cgs
             un_kelvin_in_keV = 1 / 8.617328149741d-8,   &
             un_angstrom_x_keV = 12.4
 
+    real(fp), parameter ::  &
+        sol_mass = cgs_msun, sol_lum = cgs_lsun,                &
+        sol_rschw = 2 * cgs_graw * cgs_msun / cgs_c**2,         &
+        sol_mcrit = 4 * pi * (cgs_graw * cgs_msun / cgs_c)      &
+                * (cgs_mhydr / cgs_thomson)
 
 contains
         !
