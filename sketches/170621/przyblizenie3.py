@@ -79,15 +79,20 @@ A31,A32,A33 = fun(r,rho3,T3,H3)
 Ag1,Ag2,Ag3 = fun(r,rhog,Tg,Hg)
 Ai1,Ai2,Ai3 = fun(r,rhoi,Ti,Hi)
 
-mplrc('font', family = 'serif')
+mplrc('font', family = 'serif', size = 10)
 
 format_A4_vertical = (8.267, 11.692)
 format_A4_horizontal = (11.692, 8.267)
 
 fig, axes = plt.subplots(2, 4, figsize = format_A4_horizontal)
-fig.subplots_adjust(left = 0.07, right = 0.95, \
-        bottom = 0.06,  top    = 0.95, \
-        wspace = 0.30,  hspace = 0.20)
+fig.subplots_adjust(
+    left    = 0.08,
+    bottom  = 0.10,
+    right   = 0.95,
+    top     = 0.93,
+    wspace  = 0.44,
+    hspace  = 0.41,
+)
 
 colors = [ '#D56323', '#47C930', '#3670B5' ]
 color_g = '#0C0A1A'
@@ -95,6 +100,7 @@ color_i = '#BB23AB'
 
 def axp(a,ys = 'log'):
     a.set_xscale('log')
+    a.set_xlabel('$r / r_{\\rm schw}$')
     a.set_yscale(ys)
     a.axvline(r12, color = '#AEBEB7')
     a.axvline(r23, color = '#BFD2CA')
@@ -109,15 +115,18 @@ def plot5(ax,a1,a2,a3,ag,ai):
 
 ax = axp(axes[0,0])
 ax.set_title('$\\rho$')
+ax.set_ylabel('$\\rho$ [${\\rm g}/{\\rm cm}^3$]')
 plot5(ax, rho1, rho2, rho3, rhog, rhoi)
 ax.legend(fontsize = 8)
 
 ax = axp(axes[0,1])
 ax.set_title('$T$')
+ax.set_ylabel('$T$ [${\\rm K}$]')
 plot5(ax, T1, T2, T3, Tg, Ti)
 
 ax = axp(axes[0,2])
 ax.set_title('$H$')
+ax.set_title('$H$ [$\\rm cm$]')
 plot5(ax, H1, H2, H3, Hg, Hi)
 
 ax = axp(axes[1,0], 'linear')
