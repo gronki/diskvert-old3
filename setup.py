@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup (
     name = 'pydiskvert',
-    version = '170611',
+    version = '170623',
     author = 'Dominik Gronkiewicz',
     author_email = 'gronki@gmail.com',
     description = u"Calculate vertical structure of accretion disks",
@@ -14,6 +14,6 @@ setup (
         'scripts/diskvert-new-plot',
     ],
     install_requires = [
-        'numpy',
+        'numpy', 'matplotlib', 'sympy', 'ipython',
     ],
 )
