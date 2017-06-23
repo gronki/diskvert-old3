@@ -1,7 +1,7 @@
 from sympy import *
 from parameters import fun
 from subprocess import call
-from ffactory import *
+from diskvert.factory import *
 from os import path
 from tempfile import mkstemp
 
@@ -42,7 +42,7 @@ def regenerate_coefficient_routine():
 
 __lib = regenerate_coefficient_routine()
 
-compcoeffs = FACTORY(__lib, 'coeffs', [
+compcoeffs = CFACTORY(__lib, 'coeffs', [
     (c_double, 'in', 'mbh'),
     (c_double, 'in', 'mdot'),
     (c_double, 'in', 'r'),
