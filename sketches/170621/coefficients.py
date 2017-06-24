@@ -3,7 +3,6 @@ from parameters import fun
 from subprocess import call
 from diskvert.factory import *
 from os import path
-from tempfile import mkstemp
 
 def FF():
     r,rho,T,H = symbols('r,rho,T,H')
@@ -21,8 +20,8 @@ def regenerate_coefficient_routine():
     ffcode = lambda l,r: fcode(r, assign_to = l, \
         source_format = 'free', standard = 2008)
 
-    f0,srcfn = mkstemp('.f90')
-    f1,libfn = mkstemp('.so')
+    srcfn = 'coeff.f90'
+    libfn = 'coeff.so'
 
     with open(srcfn,'w') as f:
         f.write("subroutine coeffs(mbh,mdot,r,alpha,rho,T,H,A,M) bind(C)\n" \
