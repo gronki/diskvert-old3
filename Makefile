@@ -12,19 +12,21 @@ INCLUDE	 	 	= -Ilibconfort
 LDFLAGS			= -L.
 LDLIBS			= -lopenblas
 
-FC					= f95
+FC				= f95
 CFLAGS			?= -g -Wall -O3 -march=native -mieee-fp
-FFLAGS			?= $(CFLAGS) -Warray-temporaries
-override FFLAGS 	+= -fexternal-blas
+FFLAGS			?= $(CFLAGS) -Warray-temporaries -Wpedantic
+override FFLAGS += -fexternal-blas
 override CPPFLAGS += -DVERSION=$(VERSION)
 
-OBJECTS_LAPACK =  \
-	$(patsubst src/lapack/%.f,%.o,$(wildcard src/lapack/*.f)) \
-	$(patsubst src/lapack/%.F,%.o,$(wildcard src/lapack/*.F))
+OBJECTS_LAPACK = $(addsuffix .o,$(basename $(notdir \
+	$(wildcard src/lapack/*.[fF]))))
 
-OBJECTS_MATH = $(patsubst src/math/%.F90,%.o,$(wildcard src/math/*.F90))
-OBJECTS_LIB =  $(patsubst src/%.F90,%.o,$(wildcard src/*.F90))
-OBJECTS_UTIL = $(patsubst src/util/%.F90,%.o,$(wildcard src/util/*.F90))
+OBJECTS_MATH = $(addsuffix .o,$(basename $(notdir \
+	$(wildcard src/math/*.[fF]90))))
+OBJECTS_LIB =  $(addsuffix .o,$(basename $(notdir \
+	$(wildcard src/*.[fF]90))))
+OBJECTS_UTIL = $(addsuffix .o,$(basename $(notdir \
+	$(wildcard src/util/*.[fF]90))))
 
 VPATH = src:src/util:src/prog:src/math:src/lapack
 
