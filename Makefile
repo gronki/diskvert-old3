@@ -30,7 +30,7 @@ OBJECTS_UTIL = $(addsuffix .o,$(basename $(notdir \
 
 VPATH = src:src/util:src/prog:src/math:src/lapack
 
-PROGRAMS = diskvert-m1 diskvert-ss73 disk-properties
+PROGRAMS = $(basename $(notdir $(wildcard src/prog/*.[fF]90)))
 BINARIES = $(addprefix bin/,$(PROGRAMS))
 
 all: $(BINARIES) libdiskvert.so
