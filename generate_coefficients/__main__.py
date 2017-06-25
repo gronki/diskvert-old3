@@ -233,7 +233,7 @@ file_model_switch.write(
 # file_model_switch.write("end submodule\n")
 file_model_switch.close()
 
-with open('src/coefficients.F90','w') as f:
+with open('src/coefficients.f90','w') as f:
 # from sys import stdout as f
     f.write("MODULE RELAX_COEFFICIENTS\n\n")
     f.write("USE IEEE_ARITHMETIC\n")

@@ -90,7 +90,7 @@ include make_dependencies.inc
 
 relaxation.o    : lapack.a
 settings.o      : libconfort.a
-src/coefficients.F90: $(wildcard generate_coefficients/*.py)
+src/coefficients.f90: $(wildcard generate_coefficients/*.py)
 	python generate_coefficients
 
 #################  PLIKI BINARNE  #################
