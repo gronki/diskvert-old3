@@ -1,18 +1,27 @@
 import numpy as np
 import numpy.linalg
 from sympy import symbols, Symbol, Rational, Number, log as sympy_log, \
-    expand_log, Matrix, exp as sympy_exp, nsimplify, solveset
+    expand_log, Matrix, exp as sympy_exp, nsimplify, solveset, fcode, Eq, \
+    sqrt as sympy_sqrt, Function
 from diskvert.cgs import *
 
+opacities_as_symbols = True
 
 mbh, mdot, r, alpha = symbols('mbh mdot r alpha', real = True, positive = True)
 cgs_rschw_sun = 2 * cgs_graw * cgs_msun / cgs_c**2
 cgs_mcrit_sun = 4 * cgs_pi * (cgs_graw * cgs_msun / cgs_c) \
 * (cgs_mhydr / cgs_thomson)
 
-fil = open('wzory_przyblizone.py','w')
-
 logY_all = list()
+eqstream = list()
+
+if opacities_as_symbols:
+    kappa_es, kappa_ff = symbols('cgs_kapes kappa_ff', real = True, positive = True)
+else:
+    kappa_es = cgs_kapes
+    kappa_ff = 6.13e22
+
+ff = Function('f')
 
 for region in [1,2,3]:
     rho, T, H = symbols('rho{n} T{n} H{n}'.format(n = region), real = True, positive = True)
@@ -21,15 +30,13 @@ for region in [1,2,3]:
     mdot_cgs = mdot * mbh * cgs_mcrit_sun
     omega = ( cgs_graw * cgs_msun * mbh / r_cgs**3 )**0.5
     f = Symbol('f', real = True, positive = True)
-    # kappa_ff = Symbol('kappa_ff', real = True, positive = True)
-    kappa_ff = 6.13e22
 
     yvar = [rho, T, H]
     log_yvar = [ sympy_log(x) for x in yvar ]
 
     P1 = 4 * cgs_stef / (3 * cgs_c) * T**4
     P23 = 2 * cgs_boltz * rho * T / cgs_mhydr
-    kap12 = cgs_kapes
+    kap12 = kappa_es
     kap3 = kappa_ff * rho * T**Rational(-7,2)
 
     # in regions 1,2 electron scattering opacity, else free-free
@@ -75,26 +82,31 @@ for region in [1,2,3]:
     logY_all.append([logY[i] for i in range(3)])
 
     # for i in range(3):
-    #     fil.write('log_{} = {}\n'.format(yvar[i], logY[i].evalf(5)))
-    # fil.write('\n')
+    #     fil_py.write('log_{} = {}\n'.format(yvar[i], logY[i].evalf(5)))
+    # fil_py.write('\n')
     for i in range(3):
-        fil.write('{} = {}\n'.format(yvar[i], sympy_exp(logY[i]).evalf(5)))
-    fil.write('\n')
+        eqstream.append(Eq(yvar[i], sympy_exp(logY[i].subs(f,ff(r))).evalf(5)))
 
 temp = Symbol('logR')
 
-fil.write("f12 = 1.0\nf23 = 1.0\n")
+r12,r23 = symbols('r12 r23', real = True, positive = True)
+f12,f23 = symbols('f12 f23', real = True, negative = False)
 
 # przejscie 1->2
 eq = nsimplify(logY_all[1][0]) - 3 * nsimplify(logY_all[1][1]) - sympy_log( (2 * cgs_stef * cgs_mhydr) / (3 * cgs_boltz * cgs_c) )
 for x in solveset(eq.replace(sympy_log(r), temp),temp):
-    # fil.write("log_r12 = {}\n".format(x.evalf(3)))
-    fil.write("r12 = {}\n".format(sympy_exp(x.subs(f,'f12')).evalf(7)))
+    eqstream.append(Eq(r12, sympy_exp(x.subs(f,ff(r12)))))
 
 # przejscie 2->3
-eq = nsimplify(logY_all[1][0]) - Rational(7,2) * nsimplify(logY_all[1][1]) - sympy_log( cgs_kapes / kappa_ff )
+eq = nsimplify(logY_all[1][0]) - Rational(7,2) * nsimplify(logY_all[1][1]) - sympy_log( kappa_es / kappa_ff )
 for x in solveset(eq.replace(sympy_log(r), temp),temp):
-    # fil.write("log_r23 = {}\n".format(x.evalf(3)))
-    fil.write("r23 = {}\n".format(sympy_exp(x.subs(f,'f23')).evalf(7)))
+    eqstream.append(Eq(r23, sympy_exp(x.subs(f,ff(r23)))))
 
-fil.write("f12 = 1 - sqrt(3/r12)\nf23 = 1 - sqrt(3/r23)\n")
+with open('wzory_przyblizone.py','w') as f:
+    for eq in eqstream:
+        f.write("{} = {}\n".format(eq.lhs, eq.rhs.evalf(5)))
+
+with open('wzory_przyblizone.f90','w') as f:
+    for eq in eqstream:
+        f.write(fcode(eq.rhs.evalf(5), eq.lhs, standard = 2008,
+            source_format = 'free', contract = False, user_functions = {'f': 'f'}) + "\n")
