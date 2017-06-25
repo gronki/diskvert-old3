@@ -77,9 +77,8 @@ module globals
     real(fp) :: kram_bf
     real(fp) :: kram_abs
     real(fp) :: radius
-    real(fp) :: rgraw, rschw
+    real(fp) :: rschw
     real(fp) :: omega
-    real(fp) :: acc_edd
     real(fp) :: flux_acc
     real(fp) :: temp_eff
     real(fp) :: zscale
@@ -124,23 +123,21 @@ contains
 
     end subroutine
 
-    subroutine eval_disk_globals
+    elemental subroutine cylinder(r, rschw, omega, facc)
+        real(fp), intent(in) :: r
+        real(fp), intent(out) :: rschw, omega, facc
+        rschw = sol_rschw * m_bh
+        omega = sol_omega / sqrt( m_bh**2 * r**3 )
+        facc = sol_facc_edd * (m_dot / m_bh) * (1 - sqrt(3/r)) / r**3
+    end subroutine
 
+    subroutine eval_disk_globals
         real(fp), parameter :: eta = 1/12d0
-        rgraw = cgs_graw * m_bh * cgs_msun / cgs_c**2
-        rschw = 2 * rgraw
-        omega = sqrt( cgs_graw * m_bh * cgs_msun / (rschw*r_calc)**3 )
-        acc_edd = 4*pi*cgs_graw*(m_bh * cgs_msun) / ( cgs_c * eta * cgs_kapes )
-        flux_acc = 3 * cgs_graw**2 * (m_bh * cgs_msun)**2 * m_dot      &
-            / ( 2 * cgs_c * cgs_kapes * eta * (rschw*r_calc)**3. )     &
-            * ( 1 - sqrt(3 / r_calc) )
+        call cylinder(r_calc, rschw, omega, flux_acc)
         temp_eff = ( flux_acc / cgs_stef ) ** 0.25_fp
         csound = sqrt( cgs_boltz * temp_eff / (miu * cgs_mhydr) )
         zscale = csound / omega
-
     end subroutine
-
-
 
     elemental real(fp)  function kappa_abs(rho,T)
         real(fp), intent(in) :: rho,T

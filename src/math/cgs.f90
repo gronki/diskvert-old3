@@ -42,8 +42,12 @@ module slf_cgs
     real(fp), parameter ::  &
         sol_mass = cgs_msun, sol_lum = cgs_lsun,                &
         sol_rschw = 2 * cgs_graw * cgs_msun / cgs_c**2,         &
-        sol_mcrit = 4 * pi * (cgs_graw * cgs_msun / cgs_c)      &
-                * (cgs_mhydr / cgs_thomson)
+        sol_mdot_crit = 4 * pi * (cgs_graw * cgs_msun / cgs_c)  &
+                * (cgs_mhydr / cgs_thomson),                    &
+        sol_mdot_edd = 12 * sol_mdot_crit,                      &
+        sol_facc_edd = 3 * cgs_graw * cgs_msun * sol_mdot_edd   &
+            / ( 8 * pi * sol_rschw**3 ),                        &
+        sol_omega = sqrt( cgs_graw * cgs_msun / sol_rschw**3 )
 
 contains
         !
