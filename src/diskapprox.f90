@@ -38,7 +38,7 @@ contains
 !                  r23: boundary radius between zones 2 and 3                  !
 !------------------------------------------------------------------------------!
 
-    elemental subroutine dvapx_zonebounds(r12,r23,n)
+    elemental subroutine apx_zonebounds(r12,r23,n)
         real(fp), intent(out) :: r12,r23
         integer, intent(in) :: n
         integer :: i
@@ -65,7 +65,7 @@ contains
 !                             H: disk height                                   !
 !------------------------------------------------------------------------------!
 
-    elemental subroutine dvapx_zone1(r,rho,T,H)
+    elemental subroutine apx_zone1(r,rho,T,H)
         real(fp), intent(in) :: r
         real(fp), intent(out) :: rho,T,H
         rho = 0.00045904d0*1.0/m_bh*r**1.5d0/(alpha*kram_es**3*m_dot**2*f(r)**2)
@@ -85,7 +85,7 @@ contains
 !                             H: disk height                                   !
 !------------------------------------------------------------------------------!
 
-    elemental subroutine dvapx_zone2(r,rho,T,H)
+    elemental subroutine apx_zone2(r,rho,T,H)
         real(fp), intent(in) :: r
         real(fp), intent(out) :: rho,T,H
         rho = 7.5985d0*alpha**(-0.7d0)*kram_es**(-0.3d0)*m_bh**(-0.7d0)*m_dot** &
@@ -107,7 +107,7 @@ contains
 !                             H: disk height                                   !
 !------------------------------------------------------------------------------!
 
-    elemental subroutine dvapx_zone3(r,rho,T,H)
+    elemental subroutine apx_zone3(r,rho,T,H)
         real(fp), intent(in) :: r
         real(fp), intent(out) :: rho,T,H
         rho = 1.3855d+5*alpha**(-0.7d0)*kram_abs**(-0.15d0)*m_bh**(-0.7d0)*m_dot &
@@ -131,16 +131,16 @@ contains
 !                             H: disk height                                   !
 !------------------------------------------------------------------------------!
 
-    elemental subroutine dvapx_sel(r, r12, r23, rho, T, H)
+    elemental subroutine apx_sel(r, r12, r23, rho, T, H)
         real(fp), intent(in) :: r, r12, r23
         real(fp), intent(out) :: rho, T, H
 
         if (r < r12) then
-            call dvapx_zone1(r, rho, T, H)
+            call apx_zone1(r, rho, T, H)
         else if (r > r23) then
-            call dvapx_zone3(r, rho, T, H)
+            call apx_zone3(r, rho, T, H)
         else
-            call dvapx_zone2(r, rho, T, H)
+            call apx_zone2(r, rho, T, H)
         end if
     end subroutine
 
@@ -160,8 +160,8 @@ contains
         real(fp), intent(out) :: rho, T, H
         real(fp) :: r12, r23
 
-        call dvapx_zonebounds(r12, r23, 24)
-        call dvapx_sel(r, r12, r23, rho, T, H)
+        call apx_zonebounds(r12, r23, 24)
+        call apx_sel(r, r12, r23, rho, T, H)
 
     end subroutine
 
