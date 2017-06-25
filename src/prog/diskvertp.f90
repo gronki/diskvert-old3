@@ -59,13 +59,13 @@ program B15
     dzeta = 0.5 * alpha * ( 1. + beta_0 )
 
     write (33,'(A,Es10.3,A,F8.2,A,F8.5,A)')  'Mbh = ', m_bh, ' x Msun; R = ', r_calc, &
-        ' x Rschw; m* = ', acc_rate, ' x m*edd'
+        ' x Rschw; m* = ', m_dot, ' x m*edd'
     if ( m_bh > 1000. ) then
         write (33,fmt33e)  'Mass black hole', m_bh, 'x M_sun'
     else
         write (33,fmt33f)  'Mass black hole', m_bh, 'x M_sun'
     endif
-    write (33,fmt33e)  'Accretion rate (x m_edd)', acc_rate
+    write (33,fmt33e)  'Accretion rate (x m_edd)', m_dot
     write (33,fmt33f)  'Calculation radius', r_calc, '(x Rschw)'
     write (33,fmt33e)  'Equatorial density', ro_0, '[g/cm3]'
 
@@ -89,7 +89,7 @@ program B15
     ! eddington accretion rate
 
     write (33,fmt33e)  'Eddington acc. rate', 24*3600.*365.*acc_edd / cgs_msun, '(Msun/yr)'
-    write (33,fmt33e)  'Real acc. rate', acc_rate*24.*3600.*365.*acc_edd / cgs_msun, '(Msun/yr)'
+    write (33,fmt33e)  'Real acc. rate', m_dot*24.*3600.*365.*acc_edd / cgs_msun, '(Msun/yr)'
 
     write (33,fmt33e)  'Energy flux', flux_acc, 'erg/cm2'
     write (33,fmt33f)  'Eff. temperature', temp_eff/1e6, 'MK'

@@ -194,7 +194,7 @@ contains
             error stop "Accretion rate " &
                     & // "(key: accretion_rate) is REQUIRED!"
         end if
-        read (buf,*) acc_rate
+        read (buf,*) m_dot
 
         call MINCF_GET(cfg, 'abun_Z', buf, '0.02')
         read (buf,*) abun_Z
@@ -211,7 +211,7 @@ contains
         integer, intent(in) :: lun
 
         write (lun, fmt_meta_ec) "mass",(m_bh),"x Msun"
-        write (lun, fmt_meta_ec) "accretion_rate",(acc_rate),"x medd"
+        write (lun, fmt_meta_ec) "accretion_rate",(m_dot),"x medd"
         write (lun, fmt_meta_ec) "radius_rschw", r_calc,"x Rschw"
         write (lun, fmt_meta_ec) "radius", r_calc*rschw, "cm"
 

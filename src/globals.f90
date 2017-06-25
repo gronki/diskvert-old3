@@ -65,7 +65,7 @@ module globals
 
    ! parametry globalne
     real(fp) :: m_bh
-    real(fp) :: acc_rate
+    real(fp) :: m_dot
     real(fp) :: r_calc
     real(fp) :: abun_X = 0.7, abun_Z = 0.02
 
@@ -86,7 +86,6 @@ module globals
     real(fp) :: csound
 
     real(fp), parameter :: miu = 1/2d0
-    real(fp), parameter :: eta = 1/12d0
 
     real(fp), parameter :: pi = 4*atan(real(1,fp))
 
@@ -97,7 +96,7 @@ contains
           bind(C, name = 'dv_init_disk')
         real(fp), intent(in), value :: m_bh_in,acc_rate_in,r_calc_in
         m_bh = m_bh_in
-        acc_rate = acc_rate_in
+        m_dot = acc_rate_in
         r_calc = r_calc_in
     end subroutine
 
@@ -127,11 +126,12 @@ contains
 
     subroutine eval_disk_globals
 
+        real(fp), parameter :: eta = 1/12d0
         rgraw = cgs_graw * m_bh * cgs_msun / cgs_c**2
         rschw = 2 * rgraw
         omega = sqrt( cgs_graw * m_bh * cgs_msun / (rschw*r_calc)**3 )
         acc_edd = 4*pi*cgs_graw*(m_bh * cgs_msun) / ( cgs_c * eta * cgs_kapes )
-        flux_acc = 3 * cgs_graw**2 * (m_bh * cgs_msun)**2 * acc_rate      &
+        flux_acc = 3 * cgs_graw**2 * (m_bh * cgs_msun)**2 * m_dot      &
             / ( 2 * cgs_c * cgs_kapes * eta * (rschw*r_calc)**3. )     &
             * ( 1 - sqrt(3 / r_calc) )
         temp_eff = ( flux_acc / cgs_stef ) ** 0.25_fp
