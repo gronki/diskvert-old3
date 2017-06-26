@@ -162,4 +162,28 @@ contains
 
     end subroutine
 
+    pure subroutine apx_matrix(r, omega, rho, T, H, A, M)
+        real(fp), intent(in) :: r, omega, rho, T, H
+        real(fp), intent(out) :: A(3,1), M(3,3)
+        A(1, 1) = 4*H**3*alpha*pi*omega*rho - m_bh*m_dot*sol_mdot_edd*( &
+                -1.73205080756888d0*sqrt(1.0/r) + 1)
+        A(2, 1) = (9.0d0/16.0d0)*H**4*alpha*omega**3*rho**2*(kram_es + kram_abs* &
+              rho/T**(7.0d0/2.0d0)) - 4*T**4*cgs_stef
+        A(3, 1) = -H**2*omega**2*rho + (4.0d0/3.0d0)*T**4*cgs_stef/cgs_c + 2*T* &
+              cgs_boltz*rho/cgs_mhydr
+        M(1, 1) = 4*H**3*alpha*pi*omega
+        M(2, 1) = (9.0d0/8.0d0)*H**4*alpha*omega**3*rho*(kram_es + kram_abs*rho/ &
+              T**(7.0d0/2.0d0)) + (9.0d0/16.0d0)*H**4*alpha*kram_abs*omega**3* &
+              rho**2/T**(7.0d0/2.0d0)
+        M(3, 1) = -H**2*omega**2 + 2*T*cgs_boltz/cgs_mhydr
+        M(1, 2) = 0
+        M(2, 2) = -63.0d0/32.0d0*H**4*alpha*kram_abs*omega**3*rho**3/T**(9.0d0/ &
+              2.0d0) - 16*T**3*cgs_stef
+        M(3, 2) = (16.0d0/3.0d0)*T**3*cgs_stef/cgs_c + 2*cgs_boltz*rho/cgs_mhydr
+        M(1, 3) = 12*H**2*alpha*pi*omega*rho
+        M(2, 3) = (9.0d0/4.0d0)*H**3*alpha*omega**3*rho**2*(kram_es + kram_abs* &
+              rho/T**(7.0d0/2.0d0))
+        M(3, 3) = -2*H*omega**2*rho
+    end subroutine
+
 end module
