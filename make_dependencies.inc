@@ -7,6 +7,8 @@ model_m1.o      : balance.o findzer.o alphadisk.o settings.o precision.o       \
 model_ss73.o    : globals.o threshold.o rk4integr.o cgs.o space.o precision.o  \
     eulerintegr.o 
 disk-properties.o: setup.o globals.o precision.o settings.o 
+diskvert-radial-1.o: cgs.o globals.o diskapprox.o settings.o setup.o           \
+    precision.o 
 diskvert-m1.o   : globals.o settings.o model_m1.o setup.o precision.o          \
     results.o 
 diskvert-ss73.o : model_ss73.o globals.o settings.o setup.o precision.o        \

@@ -18,10 +18,10 @@ program diskvert_radial_1
     errno = 0
     call init(errno, confread)
 
-    call apx_zonebounds(r12,r23,24)
+    call apx_zonebounds(r12,r23)
 
     forall (i = 1:n)
-        r(i) = r0 * exp( (i-1)/real(n-1) * (log(r23*5)-log(r0)) )
+        r(i) = r0 * exp( (i-1)/real(n-1) * (log(r23*10)-log(r0)) )
     end forall
 
     call apx_sel(r, r12, r23, rho, T, H)
