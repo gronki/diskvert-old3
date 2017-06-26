@@ -10,7 +10,7 @@ program diskvert_radial_1
     implicit none
 
     integer :: errno,i,j
-    integer, parameter :: n = 2**8
+    integer, parameter :: n = 2**10
     real(fp), parameter :: r0 = 3.1
     real(fp) :: r12, r23
     real(fp), dimension(n) :: r, rho, T, H, rho2, T2, H2
@@ -33,13 +33,14 @@ program diskvert_radial_1
     H2 = H
 
     compute_precise_model: do i = 1,n
-        converge: do j = 1,16
-            call apx_matrix(r(i), rho2(i), T2(i), H2(i), A, M)
-            call dgesv(3, 1, M, 3, ipiv, A, 3, errno)
-            rho2(i) = rho2(i) + A(1) * ramp(j,16)
-            T2(i) = T2(i) + A(2) * ramp(j,16)
-            H2(i) = H2(i) + A(3) * ramp(j,16)
-        end do converge
+        ! converge: do j = 1,16
+        !     call apx_matrix(r(i), rho2(i), T2(i), H2(i), A, M)
+        !     call dgesv(3, 1, M, 3, ipiv, A, 3, errno)
+        !     rho2(i) = rho2(i) + A(1) * ramp(j,16)
+        !     T2(i) = T2(i) + A(2) * ramp(j,16)
+        !     H2(i) = H2(i) + A(3) * ramp(j,16)
+        ! end do converge
+        call diskapx2(r(i), rho2(i), T2(i), H2(i))
     end do compute_precise_model
 
     open(33, file = 'profile.dat', action = 'write')

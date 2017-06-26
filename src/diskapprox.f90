@@ -162,6 +162,19 @@ contains
 
     end subroutine
 
+!--------------------------------- APX_MATRIX ---------------------------------!
+!     calculates matrix and RHS of the equation system for solving general     !
+!                           accretion disk structure                           !
+!----------------------------------- INPUTS -----------------------------------!
+!                                 r: radius                                    !
+!                               rho: density                                   !
+!                                 T: temperature                               !
+!                                 H: disk height                               !
+!---------------------------------- OUTPUTS -----------------------------------!
+!                           A: RHS of the equations                            !
+!                           M: coefficient matrix                              !
+!------------------------------------------------------------------------------!
+
     pure subroutine apx_matrix(r, rho, T, H, A, M)
         real(fp), intent(in) :: r, rho, T, H
         real(fp), intent(out) :: A(3,1), M(3,3)
@@ -195,6 +208,55 @@ contains
               rho**2*sol_mass**(3.0d0/2.0d0)*(kram_es + kram_abs*rho/T**(7.0d0/ &
               2.0d0))/(m_bh**3*sol_rschw**(9.0d0/2.0d0))
         M(3, 3) = -2*H*cgs_graw*r**(-3.0d0)*rho*sol_mass/(m_bh**2*sol_rschw**3)
+
+    end subroutine
+
+!---------------------------------- DISKAPX2 ----------------------------------!
+!  solves the equation system for disk structure, starting from given initial  !
+!                                   solution                                   !
+!----------------------------------- INPUTS -----------------------------------!
+!                             r: radius                                        !
+!                           rho: initial density                               !
+!                             T: initial temperature                           !
+!                             H: initial disk height                           !
+!---------------------------------- OUTPUTS -----------------------------------!
+!                        rho: final central density                            !
+!                          T: final central temperature                        !
+!                          H: final disk height                                !
+!------------------------------------------------------------------------------!
+
+    subroutine DISKAPX2(r, rho, T, H)
+        real(fp), intent(in) :: r
+        real(fp), intent(inout) :: rho,T,H
+        real(fp), dimension(3,3) :: M
+        real(fp), dimension(3) :: A
+        integer, dimension(3) :: ipiv
+        integer :: errno
+        integer :: i
+        integer, parameter :: niter = 24
+
+        convergence: do i = 1,niter
+            call apx_matrix(r, rho, T, H, A, M)
+            call dgesv(3, 1, M, 3, ipiv, A, 3, errno)
+            if ( errno .ne. 0 ) then
+                error stop "error while converging to the solution"
+            end if
+            rho = rho + A(1) * ramp(i,niter)
+            T = T + A(2) * ramp(i,niter)
+            H = H + A(3) * ramp(i,niter)
+        end do convergence
+
+    contains
+
+        !----------------------------------------------------!
+        !  This function generates a smooth, S-shaped curve  !
+        !----------------------------------------------------!
+        elemental function ramp(i,n) result(y)
+            integer, intent(in) :: i,n
+            real(fp) :: t,y
+            t = merge(real(i) / n, 1.0, i .le. n)
+            y = 3 * t**2 - 2 * t**3
+        end function
 
     end subroutine
 
