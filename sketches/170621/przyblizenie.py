@@ -13,7 +13,7 @@ calc_r123 = calc_r123_old if model == 'old' else calc_r123_new
 calc_rTH = calc_rTH_old if model == 'old' else calc_rTH_new
 
 r12,r23 = calc_r123(mbh,mdot,alpha)
-r = np.logspace(np.log10(3.1),np.log10(6*r23),2**8)
+r = np.logspace(np.log10(3.05),np.log10(10*r23),2**10)
 (rho1, rho2, rho3), (T1, T2, T3), (H1, H2, H3) \
     = calc_rTH(mbh,mdot,r,alpha)
 
@@ -21,9 +21,9 @@ r = np.logspace(np.log10(3.1),np.log10(6*r23),2**8)
 rhog = np.where(r < r12, rho1, np.where(r < r23, rho2, rho3))
 Tg = np.where(r < r12, T1, np.where(r < r23, T2, T3))
 Hg = np.where(r < r12, H1, np.where(r < r23, H2, H3))
-rhoi = np.array(rho2)
-Ti = np.array(T2)
-Hi = np.array(H2)
+rhoi = np.array(rhog)
+Ti = np.array(Tg)
+Hi = np.array(Hg)
 
 def ramp_smooth(it, niter, ramp0 = 0):
     t = np.clip(it / (niter - 1.0), 0, 1)
@@ -100,7 +100,7 @@ lgs = lambda x: np.sign(x) * np.log10(1 + np.abs(x))
 
 ax = axp(axes[1,0], 'linear')
 ax.set_title('$A_1$ (accretion rate)')
-A0 = 1e-4 * mdot * mbh * cgs_mcrit_sun
+A0 = 1e-4 * mdot * mbh * sol_mdot_edd
 plot5(ax, lgs(A11/A0), lgs(A21/A0), lgs(A31/A0), lgs(Ag1/A0), lgs(Ai1/A0))
 
 ax = axp(axes[1,1], 'linear')

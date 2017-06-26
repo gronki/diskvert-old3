@@ -29,8 +29,8 @@ def regenerate_coefficient_routine():
             "double precision, intent(in), value :: mbh,mdot,r,alpha,rho,T,H\n" \
             "double precision, intent(out) :: A(3,1), M(3,3)\n"
             "{A}\n{M}\nend subroutine\n".format(
-                A = ffcode(MatrixSymbol('A',3,1), A),
-                M = ffcode(MatrixSymbol('M',3,3), M),
+                A = ffcode(MatrixSymbol('A',3,1), A.evalf(7)),
+                M = ffcode(MatrixSymbol('M',3,3), M.evalf(7)),
         ))
 
     call("f95 -g -pipe -O3 -mieee-fp -shared -fPIC {s} -o {l}".format(

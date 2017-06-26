@@ -8,9 +8,6 @@ from diskvert.cgs import *
 opacities_as_symbols = True
 
 mbh, mdot, r, alpha = symbols('mbh mdot r alpha', real = True, positive = True)
-cgs_rschw_sun = 2 * cgs_graw * cgs_msun / cgs_c**2
-cgs_mcrit_sun = 4 * cgs_pi * (cgs_graw * cgs_msun / cgs_c) \
-* (cgs_mhydr / cgs_thomson)
 
 logY_all = list()
 eqstream = list()
@@ -26,8 +23,8 @@ ff = Function('f')
 for region in [1,2,3]:
     rho, T, H = symbols('rho{n} T{n} H{n}'.format(n = region), real = True, positive = True)
 
-    r_cgs = r * mbh * cgs_rschw_sun
-    mdot_cgs = mdot * mbh * cgs_mcrit_sun
+    r_cgs = r * mbh * sol_rschw
+    mdot_cgs = mdot * mbh * sol_mdot_edd
     omega = ( cgs_graw * cgs_msun * mbh / r_cgs**3 )**0.5
     f = Symbol('f', real = True, positive = True)
 
