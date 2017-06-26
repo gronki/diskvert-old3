@@ -113,9 +113,9 @@ contains
 
     subroutine eval_opacity_globals
 
-        kram_es = (1 + abun_X) / 5
-        kram_ff = 3.68d22 * (1 - abun_Z) * (1+abun_X)
-        kram_bf = 4.34d25 * abun_Z * (1+abun_X)
+        kram_es = cgs_kapes_hydrogen * (1 + abun_X) / 2
+        kram_ff = 3.68d22 * (1 - abun_Z) * (1 + abun_X)
+        kram_bf = 4.34d25 * abun_Z * (1 + abun_X)
         kram_abs = 0
 
         if (cfg_opacity_bf) kram_abs = kram_abs + kram_bf
@@ -132,7 +132,6 @@ contains
     end subroutine
 
     subroutine eval_disk_globals
-        real(fp), parameter :: eta = 1/12d0
         call cylinder(r_calc, rschw, omega, flux_acc)
         temp_eff = ( flux_acc / cgs_stef ) ** 0.25_fp
         csound = sqrt( cgs_boltz * temp_eff / (miu * cgs_mhydr) )

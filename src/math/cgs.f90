@@ -14,7 +14,7 @@ module slf_cgs
             cgs_h = 6.62607554040d-27, &
             cgs_graw = 6.67259858585d-8, &
             cgs_mel = 9.10938975454d-28,    &
-            cgs_hbar= 0.5 * cgs_h / pi, &
+            cgs_hbar= cgs_h / (2*pi), &
             cgs_stef = 2 * pi**5 * cgs_boltz**4 / ( 15 * cgs_h**3 * cgs_c**2 ), &
             cgs_a = 4 * cgs_stef / cgs_c, &
             cgs_alpha = 1 / 137.036d0, &
@@ -22,7 +22,7 @@ module slf_cgs
             cgs_thomson = 8 * pi / 3 * cgs_qel**4 / ( cgs_c**4 * cgs_mel**2 ), &
             cgs_elrad = cgs_qel**2 / ( cgs_c**2 * cgs_mel ), &
             cgs_mhydr = 1.6733d-24,    &
-            cgs_kapes1 = cgs_thomson / cgs_mhydr, &
+            cgs_kapes_hydrogen = cgs_thomson / cgs_mhydr, &
             cgs_k = cgs_boltz,   &
             cgs_k_over_mh = cgs_boltz / cgs_mhydr , &
             cgs_mh_over_k = cgs_mhydr / cgs_boltz, &
@@ -30,24 +30,23 @@ module slf_cgs
             cgs_mec_over_k = ( cgs_mel * cgs_c ) / cgs_boltz, &
             cgs_k_over_mec2 = cgs_boltz / ( cgs_mel * cgs_c**2 ), &
             cgs_mec2_over_k = ( cgs_mel * cgs_c**2 ) / cgs_boltz, &
-            cgs_msun = 1.99d33, &
-            cgs_lsun = 3.9d33,     &
-            cgs_kapes = 0.34d0
+            cgs_msun = 1.98855d33, &
+            cgs_lsun = 3.828d33,     &
+            cgs_kapes = cgs_kapes_hydrogen * 0.85
 
     real(fp), parameter :: &
-            un_keV_in_kelvin = 8.617328149741d-8,   &
-            un_kelvin_in_keV = 1 / 8.617328149741d-8,   &
-            un_angstrom_x_keV = 12.4
+            keV_in_erg = 1.6021772d-9, &
+            keV_in_kelvin = cgs_boltz / keV_in_erg,   &
+            angstr_keV = 1e8 * cgs_h * cgs_c / keV_in_erg
 
     real(fp), parameter ::  &
-        sol_mass = cgs_msun, sol_lum = cgs_lsun,                &
-        sol_rschw = 2 * cgs_graw * cgs_msun / cgs_c**2,         &
-        sol_mdot_crit = 4 * pi * (cgs_graw * cgs_msun / cgs_c)  &
-                * (cgs_mhydr / cgs_thomson),                    &
+        sol_mass = 1.98855d33, sol_lum = 3.828d33,              &
+        sol_rschw = 2 * cgs_graw * sol_mass / cgs_c**2,         &
+        sol_mdot_crit = 4 * pi * (cgs_graw * sol_mass) / (cgs_c * cgs_kapes), &
         sol_mdot_edd = 12 * sol_mdot_crit,                      &
-        sol_facc_edd = 3 * cgs_graw * cgs_msun * sol_mdot_edd   &
-            / ( 8 * pi * sol_rschw**3 ),                        &
-        sol_omega = sqrt( cgs_graw * cgs_msun / sol_rschw**3 )
+        sol_facc_edd = 3 * cgs_graw * sol_mass * sol_mdot_edd   &
+                        / ( 8 * pi * sol_rschw**3 ),            &
+        sol_omega = sqrt( cgs_graw * sol_mass / sol_rschw**3 )
 
 contains
         !
