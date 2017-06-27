@@ -25,12 +25,12 @@ dv_init_abun = CFACTORY(__libdv,'dv_init_abun', [
 
 dv_eval_globals = CFACTORY(__libdv,'dv_eval_globals')
 
-dv_grid = CFACTORY(__libdv,'grid', [
-    (c_int, 'in', 'type'),
-    (c_double, 'in', 'range'),
-    (ndpointer(c_double,1), 'inout', 'values'),
-    (c_int, 'in', 'N')
-])
+# dv_grid = CFACTORY(__libdv,'grid', [
+#     (c_int, 'in', 'type'),
+#     (c_double, 'in', 'range'),
+#     (ndpointer(c_double,1), 'inout', 'values'),
+#     (c_int, 'in', 'N')
+# ])
 
 dv_init_ss73 = CFACTORY(__libdv,'init_ss73', [
     (c_double, 'in', 'alpha')

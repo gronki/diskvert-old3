@@ -67,15 +67,16 @@ module globals
     real(fp) :: m_bh
     real(fp) :: m_dot
     real(fp) :: r_calc
-    real(fp) :: abun_X = 0.7, abun_Z = 0.02
+    real(fp) :: abun_X = 0.7381
+    real(fp) :: abun_Z = 0.0134
 
     ! parametry modeli
     real(fp) :: alpha, zeta
 
-    real(fp) :: kram_es
-    real(fp) :: kram_ff
-    real(fp) :: kram_bf
-    real(fp) :: kram_abs
+    real(fp) :: kram_es = 3.45504e-01
+    real(fp) :: kram_ff = 6.31050e+22
+    real(fp) :: kram_bf = 1.01081e+24
+    real(fp) :: kram_abs = 6.31050e+22
     real(fp) :: radius
     real(fp) :: rschw
     real(fp) :: omega
@@ -176,62 +177,6 @@ contains
         real(fp) :: kp
         kp = 0
     end function
-
-    subroutine grid(type,h,z,n) bind(C)
-        real(fp), intent(in), value :: h
-        integer, intent(in), value :: n
-        integer, intent(in), value :: type
-        real(fp), dimension(n), intent(out) :: z
-        integer :: i,aa,ab
-        real(fp) :: x
-        interface f_type
-            pure real(fp) function f_type(x,h)
-                import fp
-                real(fp), intent(in) :: x,h
-            end function
-        end interface
-        procedure(f_type), pointer :: f
-
-        aa = 1
-        ab = -1
-        if ( iand(type,GRID_REVERSE_MASK) /= 0 ) then
-            ! reverse grid
-            aa = -1
-            ab = n
-        end if
-
-        select case (iand(type,GRID_TYPE_MASK))
-        case (GRID_LINEAR)
-            f => f_linear
-        case (GRID_LOG)
-            f => f_log
-        case (GRID_ASINH)
-            f => f_asinh
-        case default
-            error stop "Incorrect grid type!"
-        end select
-
-        do i=1,n
-            x = (i * aa + ab) / real(n - 1, fp)
-            z(i) = f(x,h) * zscale
-        end do
-
-    contains
-
-        pure real(fp) function f_linear(x,h)
-            real(fp), intent(in) :: x,h
-            f_linear = x * h
-        end function
-        pure real(fp) function f_log(x,h)
-            real(fp), intent(in) :: x,h
-            f_log = (1 + h) ** x - 1
-        end function
-        pure real(fp) function f_asinh(x,h)
-            real(fp), intent(in) :: x,h
-            f_asinh = sinh( x * asinh(h) )
-        end function
-
-    end subroutine
 
 
 end module

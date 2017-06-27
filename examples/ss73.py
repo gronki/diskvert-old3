@@ -4,7 +4,7 @@
 from diskvert import *
 import numpy as np
 
-dv_init_disk(10,0.01,10)
+dv_init_disk(1e8,0.01,10)
 dv_init_ss73(0.1)
 dv_eval_globals()
 

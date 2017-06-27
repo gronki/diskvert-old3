@@ -12,13 +12,11 @@ program SS73
     implicit none
 
     integer :: errno
-    type(config) :: cfg
-
 
     character(len=12), dimension(ny) :: y_labels
     character(len=12), dimension(na) :: a_labels
-    integer :: nmax, it
-    real(fp), allocatable, dimension(:) :: x,z
+    integer :: nmax
+    real(fp), allocatable, dimension(:) :: z
     real(fp), allocatable, dimension(:,:) :: y,dy,a
 
 
@@ -42,8 +40,8 @@ program SS73
     call write_globals(11)
     call write_settings(11)
 
-    allocate(  z(ngrid) )
-    allocate( y(ny,ngrid), dy(ny,ngrid), a(na,ngrid) )
+    allocate(z(ngrid))
+    allocate(y(ny,ngrid), dy(ny,ngrid), a(na,ngrid))
 
     call run_ss73(z,ngrid,y,dy,a,nmax)
 
@@ -62,7 +60,6 @@ contains
         integer, intent(inout) :: errno
         type(config), intent(inout) :: cfg
         character(len=2048) :: buf
-        integer :: i
 
         call mincf_get(cfg, "alpha", buf)
         if ( cfg % not_found() )  then

@@ -1,15 +1,16 @@
-alphadisk.o     : cgs.o globals.o precision.o 
+alphadisk.o     : cgs.o globals.o grid.o precision.o 
 diskapprox.o    : cgs.o globals.o precision.o 
 balance.o       : threshold.o globals.o precision.o 
 globals.o       : kramers.o rk4integr.o cgs.o precision.o space.o 
+grid.o          : precision.o 
 model_m1.o      : balance.o findzer.o alphadisk.o settings.o precision.o       \
     eulerintegr.o kramers.o globals.o threshold.o cgs.o rk4integr.o 
-model_ss73.o    : globals.o threshold.o rk4integr.o cgs.o space.o precision.o  \
+model_ss73.o    : globals.o grid.o threshold.o rk4integr.o cgs.o precision.o   \
     eulerintegr.o 
 disk-properties.o: setup.o globals.o precision.o settings.o 
 diskvert-radial-1.o: model_ss73.o cgs.o globals.o diskapprox.o settings.o      \
     setup.o precision.o 
-diskvert-m1.o   : globals.o settings.o model_m1.o setup.o precision.o          \
+diskvert-m1.o   : globals.o grid.o settings.o model_m1.o setup.o precision.o   \
     results.o 
 diskvert-ss73.o : model_ss73.o globals.o settings.o setup.o precision.o        \
     results.o 

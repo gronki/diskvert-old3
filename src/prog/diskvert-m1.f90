@@ -8,7 +8,7 @@ program m1
     use settings
     use globals
     use results
-
+    use grid
 
     implicit none
 
@@ -32,8 +32,7 @@ program m1
     open(newunit = meta_lun, file = trim(outfn) // ".txt", action = "write")
 
     allocate( z(ngrid) )
-    call grid(cfg_grid,htop,z,ngrid)
-
+    forall (i = 1:ngrid)  z(i) = space_linlog(i,ngrid,htop) * zscale
 
     allocate(   &
         val(n_vals,ngrid), &

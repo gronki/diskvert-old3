@@ -9,7 +9,7 @@ from diskvert.col2python import col2python
 from argparse import ArgumentParser
 import re
 
-parser = ArgumentParser(description='Rysuje wykresy do nowego modelu dysków akrecyjnych.')
+parser = ArgumentParser(description=u'Rysuje wykresy do nowego modelu dysków akrecyjnych.')
 # 1. Wyświetlanie
 parser.add_argument('--tau', '-t', action='store_true',
     help=u"Po podaniu tej opcji, na osi X będzie głębokość optyczna zamiast wysokości.")
@@ -46,7 +46,7 @@ def xax_lin(ax):
     plt.xlabel('$z_{\\rm scale}$')
     return data['h']
 
-xax = xax_tau if args_tau else xax_lin
+xax = xax_tau if args.tau else xax_lin
 grid_dim = (2,4)
 
 # subplot: gęstość

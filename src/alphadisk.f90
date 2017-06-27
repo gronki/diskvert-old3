@@ -1,10 +1,11 @@
 module alphadisk
 
     use iso_fortran_env
-    
+
     use precision
     use globals
     use slf_cgs
+    use grid
 
     implicit none
 
@@ -26,7 +27,7 @@ contains
 
         real(fp), intent(in) :: alpha
         real(fp) :: h, h_hi, h_lo
-        integer :: it,nmax
+        integer :: it,nmax,i
 
         alphadisk_rho  => y(c_rho,nn:1:-1)
         alphadisk_temp => y(c_temp,nn:1:-1)
@@ -42,7 +43,7 @@ contains
         adjust_height : do it=1,256
             h = sqrt(h_hi*h_lo)
 
-            call grid(IOR(cfg_grid,GRID_REVERSE),h,z,ngrid)
+            forall (i = 1:ngrid) z(i) = space_linlog_r(i,ngrid,h) * zscale
 
             y(c_flux,1) = flux_acc
             y(c_rho,1) = 1d-16

@@ -6,7 +6,7 @@ module model_ss73
     use precision
     use globals
     use slf_cgs
-    use slf_space
+    use grid
     use slf_rk4integr
     use slf_eulerintegr
     use slf_threshold, only: thrtanh
@@ -49,7 +49,7 @@ contains
         do it=1,56
             h = sqrt(h_hi*h_lo)
 
-            call grid(ior(cfg_grid,GRID_REVERSE),h,z,nz)
+            forall (i = 1:nz)  z(i) = space_linlog_r(i,nz,h) * zscale
 
             y(c_Frad,1) = flux_acc
             y(c_Prad,1) = flux_acc * 2 / (3 * cgs_c)
