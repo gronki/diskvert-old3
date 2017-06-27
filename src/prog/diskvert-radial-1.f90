@@ -12,7 +12,6 @@ program diskvert_radial_1
 
     integer :: errno,i,j
     integer, parameter :: n = 2**9
-    real(fp), parameter :: r0 = 3.01
     real(fp) :: r12, r23
     real(fp), dimension(n) :: r
     real(fp), dimension(n) :: rho1, T1, H1
@@ -31,7 +30,7 @@ program diskvert_radial_1
     call apx_zonebounds(r12,r23)
 
     forall (i = 1:n)
-        r(i) = r0 * exp( (i-1)/real(n-1) * (log(r23*10)-log(r0)) )
+        r(i) = 3 * exp( i / real(n) * (log(r23*10)-log(3d0)) )
     end forall
 
     call apx_sel(r, r12, r23, rho1, T1, H1)
