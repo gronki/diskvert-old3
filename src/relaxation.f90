@@ -6,7 +6,6 @@ module relaxation
     use precision
     use slf_cgs
     use globals
-    use lapack
 
     ! wspolczynniki wygenerowane
     use relax_coefficients
