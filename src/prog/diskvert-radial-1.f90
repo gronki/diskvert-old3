@@ -6,16 +6,24 @@ program diskvert_radial_1
     use globals
     use settings
     use setup
+    use model_ss73
 
     implicit none
 
     integer :: errno,i,j
-    integer, parameter :: n = 2**10
-    real(fp), parameter :: r0 = 3.1
+    integer, parameter :: n = 2**9
+    real(fp), parameter :: r0 = 3.01
     real(fp) :: r12, r23
-    real(fp), dimension(n) :: r, rho, T, H, rho2, T2, H2
+    real(fp), dimension(n) :: r
+    real(fp), dimension(n) :: rho1, T1, H1
+    real(fp), dimension(n) :: rho2, T2, H2
+    real(fp), dimension(n) :: rho3, T3, H3
     real(fp) :: M(3,3), A(3)
     integer :: ipiv(3)
+
+    integer, parameter :: nz = 2**11
+    real(fp) :: z(nz), y(ny,nz), dy(ny,nz), ap(na,nz)
+    integer :: nmax
 
     errno = 0
     call init(errno, confread)
@@ -26,11 +34,11 @@ program diskvert_radial_1
         r(i) = r0 * exp( (i-1)/real(n-1) * (log(r23*10)-log(r0)) )
     end forall
 
-    call apx_sel(r, r12, r23, rho, T, H)
+    call apx_sel(r, r12, r23, rho1, T1, H1)
 
-    rho2 = rho
-    T2 = T
-    H2 = H
+    rho2 = rho1
+    T2 = T1
+    H2 = H1
 
     compute_precise_model: do i = 1,n
         ! converge: do j = 1,16
@@ -41,16 +49,24 @@ program diskvert_radial_1
         !     H2(i) = H2(i) + A(3) * ramp(j,16)
         ! end do converge
         call diskapx2(r(i), rho2(i), T2(i), H2(i))
+        r_calc = r(i)
+        call eval_globals
+        call run_ss73(z,nz,y,dy,ap,nmax)
+        rho3(i) = ap(c_rho,nz)
+        T3(i) = ap(c_Tgas,nz)
+        H3(i) = z(1) / 2
+        search_height: do j = 1,nz
+            if (ap(c_rho,j) .ge. rho3(i) / 2) then
+                H3(i) = z(j)
+                exit search_height
+            end if
+        end do search_height
     end do compute_precise_model
 
-    open(33, file = 'profile.dat', action = 'write')
-
     do i = 1,n
-        write (33, '(I7,7Es12.4)') i, r(i), rho(i), rho2(i), T(i), T2(i), &
-                H(i), H2(i)
+        write (6, '(I7,10(X,Es11.4))') i, r(i), rho1(i), T1(i), H1(i), &
+            rho2(i), T2(i), H2(i), rho3(i), T3(i), H3(i)
     end do
-
-    close(33)
 
 contains
 
