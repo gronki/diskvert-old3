@@ -1,19 +1,16 @@
 module slf_histo
 
-    use iso_fortran_env
-    
-    use precision
-
+    use iso_fortran_env, only: r64 => real64
     implicit none
 
 contains
 
     subroutine histo(x,min,max,h,loc)
-        real(fp), intent(in) :: x(:)
-        real(fp), intent(in) :: min,max
-        real(fp), intent(out) :: h(:)
-        real(fp), intent(out), optional :: loc(:)
-        real(fp) :: bin
+        real(r64), intent(in) :: x(:)
+        real(r64), intent(in) :: min,max
+        real(r64), intent(out) :: h(:)
+        real(r64), intent(out), optional :: loc(:)
+        real(r64) :: bin
         integer :: n,nb,i,k
         n = size(x)
         nb = size(h)
@@ -31,11 +28,11 @@ contains
     end subroutine
 
     subroutine histo2d(x,y,xlim,ylim,h,locx,locy)
-        real(fp), intent(in) :: x(:), y(:)
-        real(fp), intent(in) :: xlim(2), ylim(2)
-        real(fp), intent(out) :: h(:,:)
-        real(fp), intent(out), optional :: locx(:,:), locy(:,:)
-        real(fp) :: xbin, ybin
+        real(r64), intent(in) :: x(:), y(:)
+        real(r64), intent(in) :: xlim(2), ylim(2)
+        real(r64), intent(out) :: h(:,:)
+        real(r64), intent(out), optional :: locx(:,:), locy(:,:)
+        real(r64) :: xbin, ybin
         integer :: n,nx,ny,i,j,k
         n = size(x)
         nx = size(h,1)

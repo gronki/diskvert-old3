@@ -125,7 +125,7 @@ class FortranProcedure:
 
         # helper functions to convert set of symbols to a list of
         # uppercase/lowercase strings
-        s2s = lambda(S): [ str(s).lower() if s.is_Symbol else str(s).upper() for s in S ]
+        s2s = lambda S: [ str(s).lower() if s.is_Symbol else str(s).upper() for s in S ]
 
         output.append('{pure} SUBROUTINE {name}({arglist}) {bindc}'.format(
             name = self.name.upper(),
@@ -143,7 +143,7 @@ class FortranProcedure:
                 l.append("{vartype}, INTENT({intent}){byvalue} :: {var}".format(
                         var = str(v).lower(),
                         intent = intent,
-                        vartype = 'INTEGER' if v.is_integer else 'real({kind})'.format(
+                        vartype = 'INTEGER' if v.is_integer else 'REAL({kind})'.format(
                             kind = 'c_double' if self.iso_c_binding else self.real_kind,
                         ),
                         byvalue = ', VALUE' if self.iso_c_binding and intent == 'in' else '',
@@ -154,9 +154,10 @@ class FortranProcedure:
         def fort_matrices(matrices, intent = 'in'):
             l = []
             for m in matrices:
-                l.append("real(fp), INTENT({intent}), DIMENSION({dim}) :: {mx}".format(
+                l.append("REAL({kind}), INTENT({intent}), DIMENSION({dim}) :: {mx}".format(
                     mx = str(m).upper(),
                     intent = intent,
+                    kind = 'c_double' if self.iso_c_binding else self.real_kind,
                     dim = ", ".join([ "{}:{}".format(0,d-1) for d in m.shape ])
                 ))
             return l

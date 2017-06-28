@@ -83,7 +83,7 @@ tlim_hi = args.logT_max
 
 
 kram_abs_0 = info['kram_abs_0']
-kram_es = info['kram_es']
+kappa_es = info['kappa_es']
 
 print u'Stała w przybliżeniu Kramersa: %.3e' % kram_abs_0
 

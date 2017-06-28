@@ -1,12 +1,10 @@
 program disk_properties
 
     use confort
-
-    use precision
     use globals
     use setup
     use settings
-
+    use iso_fortran_env, only: r64 => real64
     implicit none
 
     integer :: errno

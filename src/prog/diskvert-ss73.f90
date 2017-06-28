@@ -1,8 +1,7 @@
 program SS73
 
+    use iso_fortran_env, only: r64 => real64
     use confort
-
-    use precision
     use globals
     use results
     use setup
@@ -16,8 +15,8 @@ program SS73
     character(len=12), dimension(ny) :: y_labels
     character(len=12), dimension(na) :: a_labels
     integer :: nmax
-    real(fp), allocatable, dimension(:) :: z
-    real(fp), allocatable, dimension(:,:) :: y,dy,a
+    real(r64), allocatable, dimension(:) :: z
+    real(r64), allocatable, dimension(:,:) :: y,dy,a
 
 
     y_labels(c_Pgas)    = 'Pgas'

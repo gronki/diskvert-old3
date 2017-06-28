@@ -1,36 +1,32 @@
 module slf_findzer
 
-    use iso_fortran_env
-    
-    use precision
-
+    use iso_fortran_env, only: r64 => real64
     implicit none
 
     interface findzer
         module procedure findzer_single, findzer_array
     end interface
 
-
-#   define FINDZER_ITER 128
+    integer, parameter :: findzer_iter = 2**6
 
 contains
 
     subroutine findzer_single(x, xlo, xhi, delx, f)
 
-        real(fp), intent(inout) :: x
-        real(fp), intent(in) :: xlo,xhi,delx
+        real(r64), intent(inout) :: x
+        real(r64), intent(in) :: xlo,xhi,delx
 
         interface
             pure subroutine f(x,y,dy)
-                import fp
-                real(fp), intent(in) :: x
-                real(fp), intent(out) :: y
-                real(fp), intent(out), optional :: dy
+                import r64
+                real(r64), intent(in) :: x
+                real(r64), intent(out) :: y
+                real(r64), intent(out), optional :: dy
             end subroutine
         end interface
 
         integer :: i
-        real(fp) :: dx,yx,y,x1
+        real(r64) :: dx,yx,y,x1
 
         main_loop : do i = 1,FINDZER_ITER
 
@@ -55,21 +51,21 @@ contains
     subroutine findzer_array(x, nx, xlo, xhi, delx, f)
 
         integer, intent(in) :: nx
-        real(fp), intent(inout), dimension(nx) :: x
-        real(fp), intent(in), dimension(nx)  :: xlo,xhi
-        real(fp), intent(in)  :: delx
+        real(r64), intent(inout), dimension(nx) :: x
+        real(r64), intent(in), dimension(nx)  :: xlo,xhi
+        real(r64), intent(in)  :: delx
 
         interface
             pure subroutine f(x,y,dy)
-                import fp
-                real(fp), intent(in), dimension(:)  :: x
-                real(fp), intent(out), dimension(size(x))  :: y
-                real(fp), intent(out), dimension(size(x)) , optional :: dy
+                import r64
+                real(r64), intent(in), dimension(:)  :: x
+                real(r64), intent(out), dimension(size(x))  :: y
+                real(r64), intent(out), dimension(size(x)) , optional :: dy
             end subroutine
         end interface
 
         integer :: i
-        real(fp), dimension(nx) :: dx,yx,y,x1
+        real(r64), dimension(nx) :: dx,yx,y,x1
         logical, dimension(nx) :: converged
 
         converged = .false.

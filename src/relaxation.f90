@@ -1,9 +1,8 @@
 module relaxation
 
-    use iso_fortran_env
+    use iso_fortran_env, only: r64 => real64
     use ieee_arithmetic
 
-    use precision
     use slf_cgs
     use globals
 
@@ -14,20 +13,20 @@ module relaxation
 
     abstract interface
         pure subroutine coeff_driver_t(z, Y, D, A, MY, MD, ny)
-            import fp
+            import r64
             integer, intent(in) :: ny
-            real(fp), intent(in) :: z
-            real(fp), intent(in), dimension(ny) :: Y,D
-            real(fp), intent(out), dimension(ny) :: A
-            real(fp), intent(out), dimension(ny,ny) :: MY,MD
+            real(r64), intent(in) :: z
+            real(r64), intent(in), dimension(ny) :: Y,D
+            real(r64), intent(out), dimension(ny) :: A
+            real(r64), intent(out), dimension(ny,ny) :: MY,MD
         end subroutine
         pure subroutine bound_driver_t(z, Y, B, M, ny, nb)
-            import fp
+            import r64
             integer, intent(in) :: ny,nb
-            real(fp), intent(in) :: z
-            real(fp), intent(in), dimension(ny) :: Y
-            real(fp), intent(out), dimension(nb) :: B
-            real(fp), intent(out), dimension(nb,ny) :: M
+            real(r64), intent(in) :: z
+            real(r64), intent(in), dimension(ny) :: Y
+            real(r64), intent(out), dimension(nb) :: B
+            real(r64), intent(out), dimension(nb,ny) :: M
         end subroutine
     end interface
 
@@ -37,9 +36,9 @@ module relaxation
         procedure(bound_driver_t), pointer, nopass, private :: coeff_L, coeff_R
         integer, private :: ny, nbl, nbr
         integer, dimension(6), private :: ix
-        real(fp), dimension(:), pointer :: x => NULL()
-        real(fp), dimension(:), pointer, contiguous  :: Y,dY
-        real(fp), dimension(:,:), pointer, contiguous :: M
+        real(r64), dimension(:), pointer :: x => NULL()
+        real(r64), dimension(:), pointer, contiguous  :: Y,dY
+        real(r64), dimension(:,:), pointer, contiguous :: M
     contains
         procedure :: init    => model_initialize
         procedure :: matrix  => model_matrix
@@ -64,7 +63,7 @@ contains
     subroutine model_allocate(model,x)
 
         class(model_t) :: model
-        real(fp), dimension(:), intent(in), target :: x
+        real(r64), dimension(:), intent(in), target :: x
 
         model % x => x
 
@@ -88,22 +87,22 @@ contains
     subroutine model_matrix(model,x,Y,M,A)
 
         class(model_t) :: model
-        real(fp), dimension(:), intent(in) :: x
+        real(r64), dimension(:), intent(in) :: x
         ! uklad: [ Y1(1) Y2(1) Y3(1) Y1(2) Y2(2) Y3(2) ... ]
-        real(fp), dimension(size(x) * (model % ny)), intent(in) :: Y
+        real(r64), dimension(size(x) * (model % ny)), intent(in) :: Y
         ! uklad: [ A1(1) A2(1) A3(1) A1(2) A2(2) A3(2) ... ]
-        real(fp), dimension(size(x) * (model % ny)), intent(out) :: A
-        real(fp), dimension(size(A), size(Y)), target, intent(out) :: M
+        real(r64), dimension(size(x) * (model % ny)), intent(out) :: A
+        real(r64), dimension(size(A), size(Y)), target, intent(out) :: M
 
-        real(fp), dimension(model % ny) :: Ym, Dm
-        real(fp), dimension(model % ny) :: Am
-        real(fp), dimension(model % ny, model % ny) :: MY, MD
-        real(fp), dimension(model % nbl) :: BL
-        real(fp), dimension(model % nbl, model % ny) :: MBL
-        real(fp), dimension(model % nbr) :: BR
-        real(fp), dimension(model % nbr, model % ny) :: MBR
+        real(r64), dimension(model % ny) :: Ym, Dm
+        real(r64), dimension(model % ny) :: Am
+        real(r64), dimension(model % ny, model % ny) :: MY, MD
+        real(r64), dimension(model % nbl) :: BL
+        real(r64), dimension(model % nbl, model % ny) :: MBL
+        real(r64), dimension(model % nbr) :: BR
+        real(r64), dimension(model % nbr, model % ny) :: MBR
 
-        real(fp) :: dx, xm
+        real(r64) :: dx, xm
         integer :: i,j,k,nx,ny,nbl,nbr
 
         nx  = size(x)
@@ -164,10 +163,10 @@ contains
     subroutine model_advance(model, x, Y, M, dY)
 
         class(model_t) :: model
-        real(fp), dimension(:), intent(in) :: x
-        real(fp), dimension( size(x) * (model % ny) ), intent(in) :: Y
-        real(fp), dimension( size(Y) ), intent(out) :: dY
-        real(fp), dimension( size(dY), size(Y) ), intent(out)  :: M
+        real(r64), dimension(:), intent(in) :: x
+        real(r64), dimension( size(x) * (model % ny) ), intent(in) :: Y
+        real(r64), dimension( size(Y) ), intent(out) :: dY
+        real(r64), dimension( size(dY), size(Y) ), intent(out)  :: M
         integer, dimension( size(dY) ) :: ipiv
         integer :: errno
 

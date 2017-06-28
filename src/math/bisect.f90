@@ -1,24 +1,21 @@
 module slf_bisect
 
-    use iso_fortran_env
-
-    use precision
-
+    use iso_fortran_env, only: r64 => real64
     implicit none
 
 contains
 
     subroutine bisect(f,x,xlo0,xhi0,delx)
-        real(fp), intent(in) :: xhi0,xlo0,delx
-        real(fp), intent(out) :: x
-        real(fp) :: xhi,xlo,yhi,ylo,y,s
+        real(r64), intent(in) :: xhi0,xlo0,delx
+        real(r64), intent(out) :: x
+        real(r64) :: xhi,xlo,yhi,ylo,y,s
         integer :: i,n
 
         interface
             pure subroutine f(x,y)
-                import fp
-                real(fp), intent(in) :: x
-                real(fp), intent(out) :: y
+                import r64
+                real(r64), intent(in) :: x
+                real(r64), intent(out) :: y
             end subroutine
         end interface
 
@@ -28,7 +25,7 @@ contains
         xhi = xhi0
         call f(xlo,ylo)
         call f(xhi,yhi)
-        s = sign(real(1,fp),yhi-ylo)
+        s = sign(real(1,r64),yhi-ylo)
 
         sect_loop: do i = 1, n
 

@@ -1,17 +1,14 @@
 module slf_deriv
 
-    use iso_fortran_env
-    
-    use precision
-
+    use iso_fortran_env, only: r64 => real64
     implicit none
 
 contains
 
     subroutine deriv(x,yin,yout)
-        real(fp), intent(in) :: x(:), yin(size(x))
-        real(fp), intent(out) :: yout(size(x))
-        real(fp) :: dx2
+        real(r64), intent(in) :: x(:), yin(size(x))
+        real(r64), intent(out) :: yout(size(x))
+        real(r64) :: dx2
         integer :: i,n
 
         n = size(yout)
@@ -31,8 +28,8 @@ contains
     end subroutine
 
     subroutine deriv2(x,yin,yout)
-        real(fp), intent(in) :: x(:), yin(size(x))
-        real(fp), intent(out) :: yout(size(x))
+        real(r64), intent(in) :: x(:), yin(size(x))
+        real(r64), intent(out) :: yout(size(x))
         integer :: i,n
         n = size(yout)
 

@@ -1,6 +1,6 @@
 program diskvert_radial_1
 
-    use precision
+    use iso_fortran_env, only: r64 => real64
     use slf_cgs
     use diskapprox
     use globals
@@ -12,16 +12,16 @@ program diskvert_radial_1
 
     integer :: errno,i,j
     integer, parameter :: n = 2**9
-    real(fp) :: r12, r23
-    real(fp), dimension(n) :: r
-    real(fp), dimension(n) :: rho1, T1, H1
-    real(fp), dimension(n) :: rho2, T2, H2
-    real(fp), dimension(n) :: rho3, T3, H3
-    real(fp) :: M(3,3), A(3)
+    real(r64) :: r12, r23
+    real(r64), dimension(n) :: r
+    real(r64), dimension(n) :: rho1, T1, H1
+    real(r64), dimension(n) :: rho2, T2, H2
+    real(r64), dimension(n) :: rho3, T3, H3
+    real(r64) :: M(3,3), A(3)
     integer :: ipiv(3)
 
     integer, parameter :: nz = 2**11
-    real(fp) :: z(nz), y(ny,nz), dy(ny,nz), ap(na,nz)
+    real(r64) :: z(nz), y(ny,nz), dy(ny,nz), ap(na,nz)
     integer :: nmax
 
     errno = 0
@@ -71,7 +71,7 @@ contains
 
     elemental function ramp(i,n) result(y)
         integer, intent(in) :: i,n
-        real(fp) :: t,y
+        real(r64) :: t,y
         t = merge(real(i) / n, 1.0, i .le. n)
         y = 3 * t**2 - 2 * t**3
     end function

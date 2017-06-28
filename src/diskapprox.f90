@@ -1,6 +1,6 @@
 module diskapprox
 
-    use precision
+    use iso_fortran_env, only: r64 => real64
     use slf_cgs
     use globals
 
@@ -20,8 +20,8 @@ contains
 !------------------------------------------------------------------------------!
 
     elemental function f(r)
-        real(fp), intent(in) :: r
-        real(fp) :: f
+        real(r64), intent(in) :: r
+        real(r64) :: f
         if ( r > 3 ) then
             f = 1 - sqrt(3/r)
         else
@@ -37,16 +37,16 @@ contains
 !------------------------------------------------------------------------------!
 
     elemental subroutine apx_zonebounds(r12,r23)
-        real(fp), intent(out) :: r12,r23
+        real(r64), intent(out) :: r12,r23
         integer :: i
-        r12 = 164.17d0 * alpha**0.095238d0 * kram_es**0.85714d0 &
+        r12 = 164.17d0 * alpha**0.095238d0 * kappa_es**0.85714d0 &
                 & * m_bh**0.095238d0 * m_dot**0.7619d0
-        r23 = 5.0556d+19 * kram_es**1.3333d0 * kram_abs**(-0.66667d0) &
+        r23 = 5.0556d+19 * kappa_es**1.3333d0 * kappa_abs_0**(-0.66667d0) &
                 & * m_dot**0.66667d0
         do i = 1,8
-            r12 = 164.17d0 * alpha**0.095238d0 * kram_es**0.85714d0 &
+            r12 = 164.17d0 * alpha**0.095238d0 * kappa_es**0.85714d0 &
                 & * m_bh**0.095238d0 * m_dot**0.7619d0 * f(r12)**0.7619d0
-            r23 = 5.0556d+19 * kram_es**1.3333d0 * kram_abs**(-0.66667d0) &
+            r23 = 5.0556d+19 * kappa_es**1.3333d0 * kappa_abs_0**(-0.66667d0) &
                 & * m_dot**0.66667d0 * f(r23)**0.66667d0
         end do
     end subroutine
@@ -63,12 +63,12 @@ contains
 !------------------------------------------------------------------------------!
 
     elemental subroutine apx_zone1(r,rho,T,H)
-        real(fp), intent(in) :: r
-        real(fp), intent(out) :: rho,T,H
-        rho = 2.3049d-6*1.0/m_bh*r**1.5d0/(alpha*kram_es**3*m_dot**2*f(r)**2)
-        T = 4.6189d+7*alpha**(-0.25d0)*kram_es**(-0.25d0)*m_bh**(-0.25d0)*r**( &
+        real(r64), intent(in) :: r
+        real(r64), intent(out) :: rho,T,H
+        rho = 2.3049d-6*1.0/m_bh*r**1.5d0/(alpha*kappa_es**3*m_dot**2*f(r)**2)
+        T = 4.6189d+7*alpha**(-0.25d0)*kappa_es**(-0.25d0)*m_bh**(-0.25d0)*r**( &
               -0.375d0)
-        H = 9.8298d+5*kram_es*m_bh**1.0d0*m_dot*f(r)
+        H = 9.8298d+5*kappa_es*m_bh**1.0d0*m_dot*f(r)
     end subroutine
 
 !-------------------------------- DVAPX_ZONE2 ---------------------------------!
@@ -83,13 +83,13 @@ contains
 !------------------------------------------------------------------------------!
 
     elemental subroutine apx_zone2(r,rho,T,H)
-        real(fp), intent(in) :: r
-        real(fp), intent(out) :: rho,T,H
-        rho = 21.921d0*alpha**(-0.7d0)*kram_es**(-0.3d0)*m_bh**(-0.7d0)*m_dot** &
+        real(r64), intent(in) :: r
+        real(r64), intent(out) :: rho,T,H
+        rho = 21.921d0*alpha**(-0.7d0)*kappa_es**(-0.3d0)*m_bh**(-0.7d0)*m_dot** &
               0.4d0*r**(-1.65d0)*f(r)**0.4d0
-        T = 6.7232d+8*alpha**(-0.2d0)*kram_es**0.2d0*m_bh**(-0.2d0)*m_dot** &
+        T = 6.7232d+8*alpha**(-0.2d0)*kappa_es**0.2d0*m_bh**(-0.2d0)*m_dot** &
               0.4d0*r**(-0.9d0)*f(r)**0.4d0
-        H = 4639.5d0*alpha**(-0.1d0)*kram_es**0.1d0*m_bh**0.9d0*m_dot**0.2d0*r &
+        H = 4639.5d0*alpha**(-0.1d0)*kappa_es**0.1d0*m_bh**0.9d0*m_dot**0.2d0*r &
               **1.05d0*f(r)**0.2d0
     end subroutine
 
@@ -105,13 +105,13 @@ contains
 !------------------------------------------------------------------------------!
 
     elemental subroutine apx_zone3(r,rho,T,H)
-        real(fp), intent(in) :: r
-        real(fp), intent(out) :: rho,T,H
-        rho = 5.9458d+5*alpha**(-0.7d0)*kram_abs**(-0.15d0)*m_bh**(-0.7d0)*m_dot &
+        real(r64), intent(in) :: r
+        real(r64), intent(out) :: rho,T,H
+        rho = 5.9458d+5*alpha**(-0.7d0)*kappa_abs_0**(-0.15d0)*m_bh**(-0.7d0)*m_dot &
               **0.55d0*r**(-1.875d0)*f(r)**0.55d0
-        T = 7.4475d+5*alpha**(-0.2d0)*kram_abs**0.1d0*m_bh**(-0.2d0)*m_dot**0.3d0 &
+        T = 7.4475d+5*alpha**(-0.2d0)*kappa_abs_0**0.1d0*m_bh**(-0.2d0)*m_dot**0.3d0 &
               *r**(-0.75d0)*f(r)**0.3d0
-        H = 154.42d0*alpha**(-0.1d0)*kram_abs**0.05d0*m_bh**0.9d0*m_dot**0.15d0*r &
+        H = 154.42d0*alpha**(-0.1d0)*kappa_abs_0**0.05d0*m_bh**0.9d0*m_dot**0.15d0*r &
               **1.125d0*f(r)**0.15d0
     end subroutine
 
@@ -129,8 +129,8 @@ contains
 !------------------------------------------------------------------------------!
 
     elemental subroutine apx_sel(r, r12, r23, rho, T, H)
-        real(fp), intent(in) :: r, r12, r23
-        real(fp), intent(out) :: rho, T, H
+        real(r64), intent(in) :: r, r12, r23
+        real(r64), intent(out) :: rho, T, H
 
         if (r < r12) then
             call apx_zone1(r, rho, T, H)
@@ -153,9 +153,9 @@ contains
 !------------------------------------------------------------------------------!
 
     pure subroutine dvapx1(r, rho, T, H)
-        real(fp), intent(in) :: r
-        real(fp), intent(out) :: rho, T, H
-        real(fp) :: r12, r23
+        real(r64), intent(in) :: r
+        real(r64), intent(out) :: rho, T, H
+        real(r64) :: r12, r23
 
         call apx_zonebounds(r12, r23)
         call apx_sel(r, r12, r23, rho, T, H)
@@ -176,36 +176,36 @@ contains
 !------------------------------------------------------------------------------!
 
     pure subroutine apx_matrix(r, rho, T, H, A, M)
-        real(fp), intent(in) :: r, rho, T, H
-        real(fp), intent(out) :: A(3,1), M(3,3)
+        real(r64), intent(in) :: r, rho, T, H
+        real(r64), intent(out) :: A(3,1), M(3,3)
 
         A(1, 1) = -4*H**3*alpha*sqrt(cgs_graw)*pi*r**(-1.5d0)*rho*sqrt(sol_mass) &
               /(m_bh*sol_rschw**(3.0d0/2.0d0)) + m_bh*m_dot*sol_mdot_edd*( &
               -1.73205080756888d0*r**(-0.5d0) + 1)
         A(2, 1) = -9.0d0/16.0d0*H**4*alpha*cgs_graw**(3.0d0/2.0d0)*r**(-4.5d0)* &
-              rho**2*sol_mass**(3.0d0/2.0d0)*(kram_es + kram_abs*rho/T**(7.0d0/ &
+              rho**2*sol_mass**(3.0d0/2.0d0)*(kappa_es + kappa_abs_0*rho/T**(7.0d0/ &
               2.0d0))/(m_bh**3*sol_rschw**(9.0d0/2.0d0)) + 4*T**4*cgs_stef
         A(3, 1) = H**2*cgs_graw*r**(-3.0d0)*rho*sol_mass/(m_bh**2*sol_rschw**3) &
               - 4.0d0/3.0d0*T**4*cgs_stef/cgs_c - 2*T*cgs_boltz*rho/cgs_mhydr
         M(1, 1) = 4*H**3*alpha*sqrt(cgs_graw)*pi*r**(-1.5d0)*sqrt(sol_mass)/( &
               m_bh*sol_rschw**(3.0d0/2.0d0))
         M(2, 1) = (9.0d0/8.0d0)*H**4*alpha*cgs_graw**(3.0d0/2.0d0)*r**(-4.5d0)* &
-              rho*sol_mass**(3.0d0/2.0d0)*(kram_es + kram_abs*rho/T**(7.0d0/ &
+              rho*sol_mass**(3.0d0/2.0d0)*(kappa_es + kappa_abs_0*rho/T**(7.0d0/ &
               2.0d0))/(m_bh**3*sol_rschw**(9.0d0/2.0d0)) + (9.0d0/16.0d0)*H**4* &
-              alpha*cgs_graw**(3.0d0/2.0d0)*kram_abs*r**(-4.5d0)*rho**2* &
+              alpha*cgs_graw**(3.0d0/2.0d0)*kappa_abs_0*r**(-4.5d0)*rho**2* &
               sol_mass**(3.0d0/2.0d0)/(T**(7.0d0/2.0d0)*m_bh**3*sol_rschw**( &
               9.0d0/2.0d0))
         M(3, 1) = -H**2*cgs_graw*r**(-3.0d0)*sol_mass/(m_bh**2*sol_rschw**3) + 2 &
               *T*cgs_boltz/cgs_mhydr
         M(1, 2) = 0
-        M(2, 2) = -63.0d0/32.0d0*H**4*alpha*cgs_graw**(3.0d0/2.0d0)*kram_abs*r** &
+        M(2, 2) = -63.0d0/32.0d0*H**4*alpha*cgs_graw**(3.0d0/2.0d0)*kappa_abs_0*r** &
               (-4.5d0)*rho**3*sol_mass**(3.0d0/2.0d0)/(T**(9.0d0/2.0d0)*m_bh**3 &
               *sol_rschw**(9.0d0/2.0d0)) - 16*T**3*cgs_stef
         M(3, 2) = (16.0d0/3.0d0)*T**3*cgs_stef/cgs_c + 2*cgs_boltz*rho/cgs_mhydr
         M(1, 3) = 12*H**2*alpha*sqrt(cgs_graw)*pi*r**(-1.5d0)*rho*sqrt(sol_mass) &
               /(m_bh*sol_rschw**(3.0d0/2.0d0))
         M(2, 3) = (9.0d0/4.0d0)*H**3*alpha*cgs_graw**(3.0d0/2.0d0)*r**(-4.5d0)* &
-              rho**2*sol_mass**(3.0d0/2.0d0)*(kram_es + kram_abs*rho/T**(7.0d0/ &
+              rho**2*sol_mass**(3.0d0/2.0d0)*(kappa_es + kappa_abs_0*rho/T**(7.0d0/ &
               2.0d0))/(m_bh**3*sol_rschw**(9.0d0/2.0d0))
         M(3, 3) = -2*H*cgs_graw*r**(-3.0d0)*rho*sol_mass/(m_bh**2*sol_rschw**3)
 
@@ -226,10 +226,10 @@ contains
 !------------------------------------------------------------------------------!
 
     subroutine DISKAPX2(r, rho, T, H)
-        real(fp), intent(in) :: r
-        real(fp), intent(inout) :: rho,T,H
-        real(fp), dimension(3,3) :: M
-        real(fp), dimension(3) :: A
+        real(r64), intent(in) :: r
+        real(r64), intent(inout) :: rho,T,H
+        real(r64), dimension(3,3) :: M
+        real(r64), dimension(3) :: A
         integer, dimension(3) :: ipiv
         integer :: errno
         integer :: i
@@ -253,7 +253,7 @@ contains
         !----------------------------------------------------!
         elemental function ramp(i,n) result(y)
             integer, intent(in) :: i,n
-            real(fp) :: t,y
+            real(r64) :: t,y
             t = merge(real(i) / n, 1.0, i .le. n)
             y = 3 * t**2 - 2 * t**3
         end function

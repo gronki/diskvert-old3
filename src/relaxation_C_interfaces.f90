@@ -1,8 +1,8 @@
 module relaxation_C_interfaces
 
     use iso_c_binding
-    use iso_fortran_env
-    use precision
+    use iso_fortran_env, only: r64 => real64
+    
     use relaxation
 
 contains
@@ -31,7 +31,7 @@ contains
         real(c_double), intent(in), dimension(nx) :: X
         real(c_double), intent(in), dimension(nx*ny) :: Y
         real(c_double), intent(out), dimension(nx*ny) :: dY
-        real(fp) :: M(nx*ny,nx*ny)
+        real(r64) :: M(nx*ny,nx*ny)
 
         type(model_t) :: model
 

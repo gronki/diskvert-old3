@@ -1,182 +1,144 @@
 module globals
 
-    use iso_fortran_env
-    use iso_c_binding
-
-    use precision
+    use iso_fortran_env, only: r64 => real64
+    use abundance
     use slf_cgs
-    use slf_rk4integr
-    use slf_kramers
-    use slf_space
 
-    implicit none
+    implicit none !--------------------------------------------------------------------!
 
-    !   liczba przedziałóœ
-    integer :: ngrid = 2**12
+    real, parameter, private :: X0 = 0.7381
+    real, parameter, private :: Z0 = 0.0134
 
-    !   nazwa pliku wyjściowego
-    character(len=256) :: outfn_cmdline = ""
-    character(len=256) :: outfn_config = ""
-    character(len=256) :: outfn = "out"
+    real(r64) :: kappa_es = cgs_kapes_hydrogen * (1 + X0) / 2
+    real(r64) :: kappa_ff_0 = 3.68d22 * (1 - Z0) * (1 + X0)
+    real(r64) :: kappa_bf_0 = 4.34d25 * Z0 * (1 + X0)
+    real(r64) :: kappa_abs_0 = 3.68d22 * (1 - Z0) * (1 + X0)
 
-    !   Rodzaj przyjmowanej siatki
-    integer, parameter ::   GRID_LINEAR = ishft(1,1), &
-                        &   GRID_LOG    = ishft(2,1), &
-                        &   GRID_ASINH  = ishft(3,1), &
-                        &   GRID_REVERSE = 1
-    INTEGER, PARAMETER :: GRID_REVERSE_MASK = 1
-    INTEGER, PARAMETER :: GRID_TYPE_MASK = not(GRID_REVERSE_MASK)
-    integer :: cfg_grid = GRID_LINEAR
+    logical :: kramers_opacity_ff = .true.
+    logical :: kramers_opacity_bf = .false.
 
-    !   którego równania użyc?
-    integer, parameter ::   EQUATION_EQUILIBR   = 0, &
-                        &   EQUATION_COMPTON    = 1, &
-                        &   EQUATION_BALANCE    = 2
-    integer :: cfg_temperature_method = EQUATION_EQUILIBR
+    real(r64) :: mbh, mdot
 
-    !   czy w rownaniach bilansu ma byc czlon comptonowski
-    logical :: cfg_compton_term = .true.
+    real(r64), parameter :: miu = 0.50
+    real(r64), parameter :: pi = 4*atan(real(1,r64))
 
-    !   czy uwzglednic przewodnictwo cieplne
-    logical :: cfg_conduction = .false.
-
-    !   czy przeliczyc raz z danymi wartosciami centralnymi czy iterowac
-    !   dla spelneia warunkow brzegowych?
-    logical :: cfg_single_run = .false.
-
-    !   czy umozliwic wylaczenie MRI?
-    logical :: cfg_allow_mri_shutdown = .false.
-
-    !   nieprzezroczystości free-free i bound-free
-    logical :: cfg_opacity_ff = .true.
-    logical :: cfg_opacity_bf = .false.
-
-    !   czy stosowac schemat eulera zamiast rk4
-    logical :: cfg_euler_integration = .false.
-
-    !   jaki jest dopuszczalny blad iteracji
-    real (fp) :: max_iteration_error = 1e-6
-
-    !   gora przedzialu obliczeniowego
-    real (fp) :: htop = 60
-
-   !   czy rozwiazywac wolniejsza metoda dajaca wszystkie rozwiazania
-   logical :: cfg_balance_multi = .false.
-
-   ! parametry globalne
-    real(fp) :: m_bh
-    real(fp) :: m_dot
-    real(fp) :: r_calc
-    real(fp) :: abun_X = 0.7381
-    real(fp) :: abun_Z = 0.0134
-
-    ! parametry modeli
-    real(fp) :: alpha, zeta
-
-    real(fp) :: kram_es = 3.45504e-01
-    real(fp) :: kram_ff = 6.31050e+22
-    real(fp) :: kram_bf = 1.01081e+24
-    real(fp) :: kram_abs = 6.31050e+22
-    real(fp) :: radius
-    real(fp) :: rschw
-    real(fp) :: omega
-    real(fp) :: flux_acc
-    real(fp) :: temp_eff
-    real(fp) :: zscale
-    real(fp) :: csound
-
-    real(fp), parameter :: miu = 1/2d0
-
-    real(fp), parameter :: pi = 4*atan(real(1,fp))
+contains !-----------------------------------------------------------------------------!
 
 
-contains
-
-    subroutine init_disk(m_bh_in,acc_rate_in,r_calc_in)   &
-          bind(C, name = 'dv_init_disk')
-        real(fp), intent(in), value :: m_bh_in,acc_rate_in,r_calc_in
-        m_bh = m_bh_in
-        m_dot = acc_rate_in
-        r_calc = r_calc_in
+    elemental subroutine cylinder(mbh, mdot, r, omega, flux, teff, zscale)
+        real(r64), intent(in) :: mbh, mdot, r
+        real(r64), intent(out) :: omega, flux, teff, zscale
+        omega = sol_omega / sqrt( mbh**2 * r**3 )
+        flux = sol_facc_edd * (mdot / mbh) * (1 - sqrt(3/r)) / r**3
+        teff = ( flux / cgs_stef ) ** (1d0 / 4d0)
+        zscale = sqrt( 2 * cgs_k_over_mh * teff ) / omega
     end subroutine
 
-    subroutine init_abun(abun_X_in,abun_Z_in)   &
-          bind(C, name = 'dv_init_abun')
-        real(fp), intent(in), value :: abun_X_in,abun_Z_in
-        abun_X = abun_X_in
-        abun_Z = abun_Z_in
+    elemental function fzscale(mbh, mdot, r) result(zscale)
+        real(r64), intent(in) :: mbh, mdot, r
+        real(r64) :: omega, flux, teff, zscale
+        omega = sol_omega / sqrt( mbh**2 * r**3 )
+        flux = sol_facc_edd * (mdot / mbh) * (1 - sqrt(3/r)) / r**3
+        teff = ( flux / cgs_stef ) ** (1d0 / 4d0)
+        zscale = sqrt( 2 * cgs_k_over_mh * teff ) / omega
+    end function
+
+!--------------------------------------------------------------------------------------!
+
+    elemental function fksct(rho,T) result(ksct)
+        real(r64), intent(in) :: rho,T
+        real(r64):: ksct
+        ksct = cgs_kapes_hydrogen * (1 + abun_X) / 2
+        ! red = ( 1 + 2.7e11 * rho2 / T2**2 ) * ( 1 + (T2 / 4.5e8)**0.86 )
+        ! ksct = ksct0 / red
+    end function
+
+    elemental subroutine KAPPSCT(rho,T,kap,krho,kT)
+        real(r64), intent(in) :: rho,T
+        real(r64), intent(out) :: kap,krho,kT
+        kap = cgs_kapes_hydrogen * (1 + abun_X) / 2
+        krho = 0
+        kT = 0
     end subroutine
 
-    subroutine eval_globals() bind(C, name = 'dv_eval_globals')
-        call eval_opacity_globals
-        call eval_disk_globals
+!--------------------------------------------------------------------------------------!
+
+    elemental function kramers(X, Z) result(kab0)
+        real(r64), intent(in) :: X, Z
+        real(r64) :: kab0, kff0, kbf0
+        kff0 = 3.68d22 * (1 - Z) * (1 + X)
+        kbf0 = 4.34d25 * Z * (1 + X)
+        kab0 = merge(kff0, 0.0_r64, kramers_opacity_ff)   &
+             + merge(kbf0, 0.0_r64, kramers_opacity_bf)
+    end function
+
+!--------------------------------------------------------------------------------------!
+
+    elemental function fkabs(rho,T) result(kabs)
+        real(r64), intent(in) :: rho,T
+        real(r64) :: kabs
+        kabs = kramers(abun_X,abun_Z) * rho * T ** (-7d0/2d0)
+    end function
+    elemental function fkabs_1(rho,T) result(kabs)
+        real(r64), intent(in) :: rho,T
+        real(r64) :: kabs
+        kabs = kramers(abun_X,abun_Z) * T ** (-7d0/2d0)
+    end function
+    elemental function fkabs_2(rho,T) result(kabs)
+        real(r64), intent(in) :: rho,T
+        real(r64) :: kabs
+        kabs = (-7d0/2d0) * kramers(abun_X,abun_Z) * rho * T ** (-9d0/2d0)
+    end function
+
+!--------------------------------------------------------------------------------------!
+
+    elemental subroutine KAPPABS(rho,T,kap,krho,kT)
+        real(r64), intent(in) :: rho,T
+        real(r64), intent(out) :: kap,krho,kT
+
+        kap = kramers(abun_X,abun_Z) * rho * T ** (-7d0/2d0)
+        krho = kap / rho
+        kT = (-7d0/2d0) * kap / T
     end subroutine
 
-    subroutine eval_opacity_globals
+!--------------------------------------------------------------------------------------!
 
-        kram_es = cgs_kapes_hydrogen * (1 + abun_X) / 2
-        kram_ff = 3.68d22 * (1 - abun_Z) * (1 + abun_X)
-        kram_bf = 4.34d25 * abun_Z * (1 + abun_X)
-        kram_abs = 0
-
-        if (cfg_opacity_bf) kram_abs = kram_abs + kram_bf
-        if (cfg_opacity_ff) kram_abs = kram_abs + kram_ff
-
-    end subroutine
-
-    elemental subroutine cylinder(r, rschw, omega, facc)
-        real(fp), intent(in) :: r
-        real(fp), intent(out) :: rschw, omega, facc
-        rschw = sol_rschw * m_bh
-        omega = sol_omega / sqrt( m_bh**2 * r**3 )
-        facc = sol_facc_edd * (m_dot / m_bh) * (1 - sqrt(3/r)) / r**3
-    end subroutine
-
-    subroutine eval_disk_globals
-        call cylinder(r_calc, rschw, omega, flux_acc)
-        temp_eff = ( flux_acc / cgs_stef ) ** 0.25_fp
-        csound = sqrt( cgs_boltz * temp_eff / (miu * cgs_mhydr) )
-        zscale = csound / omega
-    end subroutine
-
-    elemental real(fp)  function kappa_abs(rho,T)
-        real(fp), intent(in) :: rho,T
-        kappa_abs = kram_abs * rho / T**3.5_fp
+    elemental real(r64) function kappa_abs_drho(rho,T) result(kappa)
+        real(r64), intent(in) :: rho,T
+        kappa = kappa_abs_0 / T ** (7.0_r64 / 2.0_r64)
+    end function
+    elemental real(r64) function kappa_abs_1(rho,T) result(kappa)
+        real(r64), intent(in) :: rho,T
+        kappa = kappa_abs_0 / T ** (7.0_r64 / 2.0_r64)
     end function
 
-    elemental real(fp) function kappa_abs_drho(rho,T)
-        real(fp), intent(in) :: rho,T
-        kappa_abs_drho = kram_abs / T**3.5_fp
+    elemental real(r64) function kappa_abs_dT(rho,T) result(kappa)
+        real(r64), intent(in) :: rho,T
+        kappa = - (7.0_r64 / 2.0_r64) * kappa_abs_0 * rho / T ** (9.0_r64 / 2.0_r64)
     end function
-    elemental real(fp) function kappa_abs_1(rho,T)
-        real(fp), intent(in) :: rho,T
-        kappa_abs_1 = kram_abs / T**3.5_fp
-    end function
-
-    elemental real(fp) function kappa_abs_dT(rho,T)
-        real(fp), intent(in) :: rho,T
-        kappa_abs_dT = - 3.5_fp * kram_abs * rho / T**(4.5_fp)
-    end function
-    elemental real(fp) function kappa_abs_2(rho,T)
-        real(fp), intent(in) :: rho,T
-        kappa_abs_2 = - 3.5_fp * kram_abs * rho / T**(4.5_fp)
+    elemental real(r64) function kappa_abs_2(rho,T) result(kappa)
+        real(r64), intent(in) :: rho,T
+        kappa = - (7.0_r64 / 2.0_r64) * kappa_abs_0 * rho / T ** (9.0_r64 / 2.0_r64)
     end function
 
-    elemental function kappa_cond(rho,T) result(kp)
-        real(fp), intent(in) :: rho, T
-        real(fp) :: kp
-        kp = 0
+!--------------------------------------------------------------------------------------!
+
+    elemental function fkcnd(rho,T) result(kcnd)
+        real(r64), intent(in) :: rho,T
+        real(r64) :: kcnd
+        kcnd = 0
     end function
-    elemental function kappa_cond_1(rho,T) result(kp)
-        real(fp), intent(in) :: rho, T
-        real(fp) :: kp
-        kp = 0
+    elemental function fkcnd_1(rho,T) result(kcnd)
+        real(r64), intent(in) :: rho,T
+        real(r64) :: kcnd
+        kcnd = 0
     end function
-    elemental function kappa_cond_2(rho,T) result(kp)
-        real(fp), intent(in) :: rho, T
-        real(fp) :: kp
-        kp = 0
+    elemental function fkcnd_2(rho,T) result(kcnd)
+        real(r64), intent(in) :: rho,T
+        real(r64) :: kcnd
+        kcnd = 0
     end function
 
+!--------------------------------------------------------------------------------------!
 
 end module

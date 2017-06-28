@@ -1,15 +1,19 @@
 module model_ss73
 
-    use iso_fortran_env
+    use iso_fortran_env, only: r64 => real64
     use iso_c_binding
 
-    use precision
     use globals
     use slf_cgs
     use grid
     use slf_rk4integr
     use slf_eulerintegr
     use slf_threshold, only: thrtanh
+
+    implicit none
+
+    real(r64), private :: mbh, mdot, radius, alpha
+    real(r64), private :: omega, flux_acc, temp_eff, zscale
 
     integer, parameter :: ny = 4,   &
         &   c_Pgas = 1, c_Prad = 2, c_Frad = 3, c_tau = 4
@@ -25,19 +29,22 @@ module model_ss73
 
 contains
 
-    subroutine init_ss73(alpha_in) bind(C)
-        real(fp), intent(in), value :: alpha_in
-        alpha = alpha_in
+    subroutine init_ss73(mb,md,r,alph)
+        mbh = mb
+        mdot = md
+        radius = r
+        alpha = alph
+        call cylinder(mbh, mdot, radius, omega, flux_acc, temp_eff, zscale)
     end subroutine
 
-    subroutine run_ss73(z,nz,y,dy,a,nmax) bind(C)
+    subroutine run_ss73(z,nz,y,dy,a,nmax)
         ! ilosc przedzialow obliczeniowych
-        integer(c_int), intent(in), value :: nz
-        real(fp), intent(inout), dimension(nz) :: z
-        real(fp), intent(inout), dimension(ny,nz) :: y,dy
-        real(fp), intent(inout), dimension(na,nz) :: a
+        integer, intent(in) :: nz
+        real(r64), intent(inout), dimension(nz) :: z
+        real(r64), intent(inout), dimension(ny,nz) :: y,dy
+        real(r64), intent(inout), dimension(na,nz) :: a
         integer(c_int), intent(out) :: nmax
-        real(fp) :: h_hi, h_lo, h
+        real(r64) :: h_hi, h_lo, h
         integer :: i,it
 
 
@@ -78,13 +85,13 @@ contains
 
     subroutine f(z,y,dy,a,abort)
 
-        real(fp), intent(in) :: z, y(:)
-        real(fp), intent(inout) :: dy(size(y)), a(:)
+        real(r64), intent(in) :: z, y(:)
+        real(r64), intent(inout) :: dy(size(y)), a(:)
         logical, intent(inout) :: abort
 
-        real(fp) :: compsw
-        real(fp), parameter :: toler = 1
-        real(fp) :: kabs, epsi, taues
+        real(r64) :: compsw
+        real(r64), parameter :: toler = 1
+        real(r64) :: kabs, epsi, taues
 
         if ( y(c_Frad) < 0 ) then
             abort = .TRUE.
@@ -109,8 +116,8 @@ contains
             a(c_Tgas) = a(c_Trad) * (1 + a(c_compW))
             a(c_rho) = y(c_Pgas) * miu / ( cgs_k_over_mh * a(c_Tgas) )
 
-            kabs = kram_abs * a(c_rho) * a(c_Tgas)**(-3.5d0)
-            epsi = kabs / (kabs+kram_es)
+            kabs = kappa_abs_0 * a(c_rho) * a(c_Tgas)**(-3.5d0)
+            epsi = kabs / (kabs+kappa_es)
             taues = (1. - epsi)/sqrt(epsi)
             a(c_compY) = 4 * cgs_boltz * a(c_tgas) &
             & / ( cgs_mel * cgs_c**2 )  &
@@ -126,8 +133,8 @@ contains
 
         a(c_rho) = y(c_Pgas) * miu / ( cgs_k_over_mh * a(c_Tgas) )
 
-        kabs = kram_abs * a(c_rho) * a(c_Tgas)**(-3.5d0)
-        epsi = kabs / (kabs+kram_es)
+        kabs = kappa_abs_0 * a(c_rho) * a(c_Tgas)**(-3.5d0)
+        epsi = kabs / (kabs+kappa_es)
         taues = (1. - epsi)/sqrt(epsi)
         a(c_compY) = 4 * cgs_boltz * a(c_tgas) &
             & / ( cgs_mel * cgs_c**2 )  &

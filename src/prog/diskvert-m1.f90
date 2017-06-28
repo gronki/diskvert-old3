@@ -1,38 +1,37 @@
 program m1
 
+    use iso_fortran_env, only: r64 => real64
     use confort
-
-    use precision
     use model_m1
-    use setup
     use settings
     use globals
     use results
     use grid
-
+    use fileunits
     implicit none
 
-    integer :: nmax
 
-    character (len=1024) :: buf
+    character (2**10) :: buf
 
-    integer :: meta_lun
-    integer :: errno
+    integer :: errno, nmax
     integer :: i
-    real(fp), dimension(:), allocatable :: z, x
-    real(fp), dimension(:,:), allocatable :: val, der, par
+    real(r64), dimension(:), allocatable :: z, x
+    real(r64), dimension(:,:), allocatable :: val, der, par
 
     character(len=12) :: p_labels(n_pars), v_labels(n_vals)
+    real(r64) :: radius = 10, alpha = 0.1, zeta = 0.2, rho_0_user, temp_0_user
 
+    mbh = 10
+    mdot = 0.01
     errno = 0
-    call init(errno, conf_reader = disk_read_local)
 
     call init_labels
-
-    open(newunit = meta_lun, file = trim(outfn) // ".txt", action = "write")
+    open(newunit = ulog, file = trim(outfn) // ".log", action = "write")
+    open(newunit = upar, file = trim(outfn) // ".txt", action = "write")
+    call init_m1(mbh, mdot, radius, alpha, zeta)
 
     allocate( z(ngrid) )
-    forall (i = 1:ngrid)  z(i) = space_linlog(i,ngrid,htop) * zscale
+    forall (i = 1:ngrid)  z(i) = space_linlog(i,ngrid,htop) * fzscale(mbh, mdot, radius)
 
     allocate(   &
         val(n_vals,ngrid), &
@@ -41,54 +40,55 @@ program m1
 
     if ( .not.cfg_single_run ) then
 
-        call run_m1(z,ngrid,val,der,par,nmax)
+        call run_m1(z,val,der,par,nmax)
 
     else
 
-        call single_m1(z, ngrid, val, der, par, &
+        call single_m1(z, val, der, par, &
                 & rho_0_user, temp_0_user, nmax)
 
     end if
 
 
-    write (meta_lun, fmt_meta_ec) "alpha", alpha, "Parametr alfa"
+    write (upar, fmt_meta_ec) "alpha", alpha, "Parametr alfa"
 
-    write (meta_lun, fmt_meta_ec) "rho_0", par(p_rho,1), "Central density"
-    write (meta_lun, fmt_meta_ec) "temp_0", par(p_temp,1), "Central gas temperature"
-    write (meta_lun, fmt_meta_ec) "T_rad_0", par(p_Trad,1), &
+    write (upar, fmt_meta_ec) "rho_0", par(p_rho,1), "Central density"
+    write (upar, fmt_meta_ec) "temp_0", par(p_temp,1), "Central gas temperature"
+    write (upar, fmt_meta_ec) "T_rad_0", par(p_Trad,1), &
                                 & "Central radiation temperature"
 
-    write (meta_lun, fmt_meta_ec) "beta_0", beta_0, "Beta on the equator"
-    write (meta_lun, fmt_meta_ec) "beta_rad_0", val(v_pgas,1) / val(v_prad,1), &
+    write (upar, fmt_meta_ec) "beta_0", val(v_pgas,1) / val(v_pmag,1), "Beta on the equator"
+    write (upar, fmt_meta_ec) "beta_rad_0", val(v_pgas,1) / val(v_prad,1), &
                                 & "Radiative beta at the equator"
-    write (meta_lun, fmt_meta_ec) "dzeta_0", zeta, "Parametr zeta"
+    write (upar, fmt_meta_ec) "dzeta_0", zeta, "Parametr zeta"
 
-    write (meta_lun, fmt_meta_ec) "flux_gen_top", val(v_fgen,nmax), "erg/cm2/s"
-    write (meta_lun, fmt_meta_ec) "flux_rad_top", val(v_flux,nmax), "erg/cm2/s"
-    write (meta_lun, fmt_meta_ec) "flux_bound_top", par(p_flxbond,nmax), "erg/cm2/s"
+    write (upar, fmt_meta_ec) "flux_gen_top", val(v_fgen,nmax), "erg/cm2/s"
+    write (upar, fmt_meta_ec) "flux_rad_top", val(v_flux,nmax), "erg/cm2/s"
+    write (upar, fmt_meta_ec) "flux_bound_top", par(p_flxbond,nmax), "erg/cm2/s"
 
-    call write_globals(meta_lun)
-    call write_settings(meta_lun)
+    call write_globals(upar)
+    call write_settings(upar)
 
-    close(meta_lun)
+    close(upar)
 
     call write_results_3(z,ngrid,val,der,v_labels,n_vals,par,p_labels,n_pars,outfn)
+    close(ulog)
 
 contains
 
 
-    subroutine disk_read_local(cfg,errno)
+    subroutine rdcfg_m1(cfg,errno)
         integer, intent(inout) :: errno
         type(config), intent(inout) :: cfg
         character(len=2048) :: buf
         integer :: i
 
-        call mincf_get(cfg, "beta_0", buf)
+        call mincf_get(cfg, "zeta", buf)
         if ( cfg % not_found() )  then
-            error stop "Magnetic beta (Pgas/Pmag) on equatorial plane " &
-                & // "(key: beta_0) is REQUIRED!"
+            error stop "Zeta parameter between 0 and 1 " &
+                & // "(key: zeta) is REQUIRED!"
         end if
-        read (buf,*) beta_0
+        read (buf,*) zeta
 
         call mincf_get(cfg, "alpha", buf)
         if ( cfg % not_found() )  then

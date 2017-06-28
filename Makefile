@@ -13,7 +13,7 @@ LDFLAGS			= -L.
 LDLIBS			= -lopenblas
 
 FC				= f95
-CFLAGS			?= -g -Wall -O3 -march=native -mieee-fp
+CFLAGS			?= -g -Wall -O3 -mieee-fp
 FFLAGS			?= $(CFLAGS) -Warray-temporaries -Wpedantic
 override FFLAGS += -fexternal-blas
 override CPPFLAGS += -DVERSION=$(VERSION)

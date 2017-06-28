@@ -1,30 +1,25 @@
 module model_m1
-    
+
     use ieee_arithmetic
     use iso_c_binding
-    use iso_fortran_env
+    use iso_fortran_env, only: r64 => real64, error_unit
 
     use slf_cgs
-    use slf_kramers
-    use slf_rk4integr
+
     use slf_threshold
     use slf_findzer
-    use slf_eulerintegr
 
-    use precision
+
     use globals
     use energy_balance
     use settings
-    use alphadisk
+
+    use rk4settings
 
     implicit none
 
-    ! stale zwiazane z polem magnetycznym
-    real(fp) :: beta_0
-
-    ! gestosc i temperatura centralna dla trybu __DISKV_SINGLE__
-    real(fp) :: rho_0_user
-    real(fp) :: temp_0_user
+    real(r64), private :: radius, alpha, zeta
+    real(r64), private :: omega, flux_acc, temp_eff, zscale, rschw
 
     integer, parameter :: n_vals = 7, &
                 v_taues =     1, &
@@ -76,29 +71,37 @@ module model_m1
 
 contains
 
-    subroutine init_m1(alpha_in,beta_0_in) bind(C)
-        real(fp), intent(in), value :: alpha_in, beta_0_in
-        alpha = alpha_in
-        beta_0 = beta_0_in
+    subroutine init_m1(mb,md,r,alph,zet)
+        real(r64), intent(in) :: mb,md,r,alph,zet
+        mbh = mb
+        mdot = md
+        radius = r
+        alpha = alph
+        zeta = zet
+        rschw = sol_rschw * mb
+        call cylinder(mbh, mdot, radius, omega, flux_acc, temp_eff, zscale)
     end subroutine
 
-    subroutine run_m1(z,nz,val,der,par,nmax) bind(C)
+    subroutine run_m1(z,val,der,par,nmax)
+
+        use alphadisk, only: quick_alpha_disk, minidisk => y, &
+            md_rho => c_rho, md_temp => c_temp
+
         ! ilosc przedzialow obliczeniowych
-        integer(c_int), intent(in), value :: nz
-        real(fp), intent(inout), dimension(nz) :: z
-        real(fp), intent(inout), dimension(n_vals,nz) :: val,der
-        real(fp), intent(inout), dimension(n_pars,nz) :: par
-        integer(c_int), intent(out) :: nmax
-        real(fp) :: rho_0, temp_0
-        real(fp) :: rho_0_estim, temp_0_estim
-        real(fp) :: temp_0_hi, temp_0_lo
-        real(fp) :: rho_0_hi, rho_0_lo
+        real(r64), intent(inout), dimension(:) :: z
+        real(r64), intent(inout), dimension(n_vals,size(z)) :: val,der
+        real(r64), intent(inout), dimension(n_pars,size(z)) :: par
+        integer, intent(out) :: nmax
+        real(r64) :: rho_0, temp_0
+        real(r64) :: rho_0_estim, temp_0_estim
+        real(r64) :: temp_0_hi, temp_0_lo
+        real(r64) :: rho_0_hi, rho_0_lo
         integer :: iter, iter0, itmax
         character(len=1024) :: buf
 
-        call quick_alpha_disk(alpha)
-        rho_0_estim = alphadisk_rho(1)
-        temp_0_estim = alphadisk_temp(1)
+        call quick_alpha_disk(mbh, mdot, radius, alpha)
+        rho_0_estim = minidisk(md_rho,1)
+        temp_0_estim = minidisk(md_temp,1)
         write (error_unit, fmt_meta_ec) "rho_0_estim", rho_0_estim, "Central density (estimate)"
         write (error_unit, fmt_meta_ec) "temp_0_estim", temp_0_estim, "Central gas temperature (estimate)"
 
@@ -106,7 +109,9 @@ contains
         rho_0_lo = rho_0_estim / 316
         itmax = 64
 
-        do iter0=1,itmax
+        associate(nz => size(z))
+
+        iter_rho: do iter0=1,itmax
 
             rho_0 = sqrt(rho_0_lo*rho_0_hi)
 
@@ -115,11 +120,11 @@ contains
 
             write (error_unit,"(2A5,4A14,A7,A10)") "i0", "i", "T0", "Frad", "Fbound", "error", "clip", "actn"
 
-            do iter=1,itmax
+            iter_temp: do iter=1,itmax
 
                 temp_0 = sqrt(temp_0_hi * temp_0_lo)
 
-                call single_m1(z,nz,val,der,par,rho_0, temp_0, nmax)
+                call single_m1(z,val,der,par,rho_0, temp_0, nmax)
 
                 if (nmax .lt. 2)  &
                     & error stop "All interval bad. quitting"
@@ -140,7 +145,7 @@ contains
                         temp_0_hi = temp_0
                         buf = "\/  TEMP"
                     else
-                        exit
+                        exit iter_temp
                     end if
                 end if
 
@@ -153,10 +158,10 @@ contains
                         /(par(p_flxbond,nmax) + val(v_flux,nmax) ))     &
                         .lt. max_iteration_error ) then
                     write (error_unit,"(A,Es9.1,A)") "Maximum precision ",max_iteration_error," reached."
-                    exit
+                    exit iter_temp
                 end if
 
-            end do
+            end do iter_temp
 
             if ( val(v_fgen,nmax) .gt. flux_acc ) then ! .or. nmax .lt. nz-1
                 !too much flux
@@ -177,30 +182,31 @@ contains
 
             if ( abs(2*(val(v_fgen,nmax) - flux_acc)/(val(v_fgen,nmax) + flux_acc)) .lt. max_iteration_error ) then
                 write (error_unit,"(A,Es9.1,A)") "Maximum precision ",max_iteration_error," reached."
-                exit
+                exit iter_rho
             end if
 
-        end do
+        end do iter_rho
+        end associate
     end subroutine
 
-    subroutine single_m1(z,nz,val,der,par,rho_0,temp_0,nmax) bind(C)
+    subroutine single_m1(z,val,der,par,rho_0,temp_0,nmax)
+        use slf_rk4integr
+        use slf_eulerintegr
         ! ilosc przedzialow obliczeniowych
-        integer(c_int), intent(in), value :: nz
         ! wspolrzedna
-        real(fp), intent(inout), dimension(nz) :: z
+        real(r64), intent(inout), dimension(:) :: z
         ! wyniki
-        real(fp), intent(inout), dimension(n_vals,nz) :: val,der
-        real(fp), intent(inout), dimension(n_pars,nz) :: par
+        real(r64), intent(inout), dimension(n_vals,size(z)) :: val,der
+        real(r64), intent(inout), dimension(n_pars,size(z)) :: par
         ! wartosci na rowniku
-        real(fp), intent(in), value :: rho_0, temp_0
+        real(r64), intent(in) :: rho_0, temp_0
         ! na wyjsciu: przedzial, na ktorym algorytm sie wywalil
-        integer(c_int), intent(out) :: nmax
+        integer, intent(out) :: nmax
 
-        real(fp) :: Trad0
+        real(r64) :: Trad0, beta0
 
         ! make the initial conditions
         val(v_pgas,1) = cgs_k_over_mh * rho_0 * temp_0 / miu
-        val(v_pmag,1) = val(v_pgas,1) / beta_0
         Trad0 = temp_0
         ! if ( cfg_temperature_method == EQUATION_BALANCE )    then
         !     call findnearzer( Trad0, fun2, (/ rho_0, temp_0 /) )
@@ -212,11 +218,13 @@ contains
         !     end if
         ! end if
         val(v_prad,1)   = cgs_a / 3 * Trad0**4
+        beta0 = (2 * zeta / alpha - 1) / (1 + val(v_prad,1) / val(v_pgas,1))
+        val(v_pmag,1) = val(v_pgas,1) / beta0
         val(v_flux,1)   = 0
         val(v_taues,1)  = 0
         val(v_tauth,1)  = 0
         val(v_fgen,1)   = 0
-        zeta = 0.5 * alpha * (beta_0 / (val(v_pgas,1)/val(v_prad,1)) + beta_0 + 1.)
+        !// zeta = 0.5 * alpha * (beta_0 / (val(v_pgas,1)/val(v_prad,1)) + beta_0 + 1.)
 
         !solve the equations
         if ( cfg_euler_integration ) then
@@ -234,22 +242,22 @@ contains
 
     subroutine fder(x,y,pder,a,abort)
 
-        real(fp), intent(in) :: x, y(:)
-        real(fp), intent(inout) :: pder(size(y)), a(:)
+        real(r64), intent(in) :: x, y(:)
+        real(r64), intent(inout) :: pder(size(y)), a(:)
         logical, intent(inout) :: abort
 
         ! this constants decides about tolerance margin to MRI enable/shutoff
         ! it allows weighting parameter to vary in percent range indicated by
         ! this constant.
-        real(fp), parameter :: toler = 3
+        real(r64), parameter :: toler = 3
 
         logical :: isnormal(size(a))
 
-        real(fp) :: kabs
-        real(fp) :: epsi
-        real(fp) :: heat
-        real(fp) :: alpha_eff
-        real(fp) :: xxa,xxb
+        real(r64) :: epsi
+        real(r64) :: heat
+        real(r64) :: alpha_eff
+        real(r64) :: xxa,xxb
+        real(r64) :: kabs, kabs_rho, kabs_T
         integer :: i,n
 
 
@@ -290,7 +298,7 @@ contains
 
         call calc_compW(heat, y(v_pgas), y(v_prad), a(p_heat_max), a(p_compW))
         a(p_temp_compton) = heat * cgs_mel * cgs_c &
-            / ( 12 * kram_es * cgs_boltz * y(v_prad) * a(p_rho) )
+            / ( 12 * kappa_es * cgs_boltz * y(v_prad) * a(p_rho) )
 
         select case (cfg_temperature_method)
         case (EQUATION_EQUILIBR)
@@ -321,8 +329,8 @@ contains
 
         a(p_rho) =  y(v_pgas) * a(p_miu) * cgs_mhydr / ( cgs_boltz * a(p_temp) )
 
-        kabs = kappa_abs(a(p_rho), a(p_temp))
-        a(p_kappa) = kabs + kram_es
+        kabs = fkabs(a(p_rho), a(p_temp))
+        a(p_kappa) = kabs + kappa_es
         epsi = kabs / a(p_kappa)
         a(p_epsi) = epsi
         a(p_taues) = (1 - epsi) / sqrt(epsi)
@@ -330,17 +338,17 @@ contains
                 * max( a(p_taues), a(p_taues)**2 )
 
         a(p_csound) = sqrt( y(v_pgas) / a(p_rho) )
-        a(p_pmri) = 0.5 * a(p_csound) * a(p_rho) * omega * (r_calc*rschw)
+        a(p_pmri) = 0.5 * a(p_csound) * a(p_rho) * omega * (radius*rschw)
         a(p_mri) = thrtanh((log(a(p_pmri)) - log(y(v_pmag)))/log(1+toler))
 
         a(p_cool_net) = kabs * (4*cgs_stef*a(p_temp)**4 - 3*y(v_prad)*cgs_c)
         if ( cfg_compton_term ) then
             a(p_cool_net) = a(p_cool_net)  &
-                    & + 12 * kram_es * y(v_prad) * cgs_k_over_mec  &
+                    & + 12 * kappa_es * y(v_prad) * cgs_k_over_mec  &
                     & * (a(p_temp) - a(p_trad))
         end if
         a(p_cool_net) = a(p_cool_net) * a(p_rho)
-        a(p_cool_compt) = 12 * a(p_rho) * kram_es * y(v_prad) * cgs_k_over_mec &
+        a(p_cool_compt) = 12 * a(p_rho) * kappa_es * y(v_prad) * cgs_k_over_mec &
             * (a(p_temp) - a(p_trad))
         a(p_cool_dyfu) = kabs * a(p_rho) * 4*cgs_stef*a(p_temp)**4
         a(p_heat_dyfu) = kabs * a(p_rho) * 3*y(v_prad)*cgs_c
@@ -349,10 +357,12 @@ contains
             a(p_energy_bil) = 1 - a(p_cool_net) / heat
         end if
 
-        xxa = 16 * cgs_stef * a(p_temp)**4 * kappa_abs(a(p_rho),a(p_temp))  &
+        call KAPPABS(a(p_rho), a(p_temp), kabs, kabs_rho, kabs_T)
+
+        xxa = 16 * cgs_stef * a(p_temp)**4 * kabs  &
             + (4*cgs_stef*a(p_temp)**4 - 3*y(v_prad)*cgs_c) &
-            * ( a(p_temp) * kappa_abs_dT(a(p_rho),a(p_temp)) - a(p_rho) * kappa_abs_drho(a(p_rho),a(p_temp)) ) &
-            + 12 * kram_es * y(v_prad) * cgs_k_over_mec  * a(p_temp)
+            * ( a(p_temp) * kabs_T - a(p_rho) * kabs_rho ) &
+            + 12 * kappa_es * y(v_prad) * cgs_k_over_mec  * a(p_temp)
         a(p_cool_crit) = xxa * a(p_rho)
 
         a(p_beta) = y(v_pgas) / y(v_pmag)
@@ -379,7 +389,7 @@ contains
         if (cfg_allow_mri_shutdown) alpha_eff = a(p_mri) * alpha
 
         ! optical path
-        pder(v_taues) = - kram_es * a(p_rho)
+        pder(v_taues) = - kappa_es * a(p_rho)
         pder(v_tauth) = - a(p_kappa) * a(p_rho) * sqrt(a(p_epsi))
 
         ! magnetic energy dissipation
@@ -406,23 +416,23 @@ contains
 
     subroutine solve_balance_multi(x, nx, xlo, xhi, nb, f)
 
-        real(fp), intent(inout) :: x(:)
-        real(fp), intent(in) :: xlo,xhi
+        real(r64), intent(inout) :: x(:)
+        real(r64), intent(in) :: xlo,xhi
         integer, intent(in) :: nb
         integer, intent(out) :: nx
 
         interface
             pure subroutine f(x,y,dy)
-                import fp
-                real(fp), intent(in) :: x
-                real(fp), intent(out) :: y
-                real(fp), intent(out), optional :: dy
+                import r64
+                real(r64), intent(in) :: x
+                real(r64), intent(out) :: y
+                real(r64), intent(out), optional :: dy
             end subroutine
         end interface
 
-        real(fp) :: y(nb), dy(nb), x0(nb)
+        real(r64) :: y(nb), dy(nb), x0(nb)
         integer :: i
-        real(fp) :: delx,yx,ym,xm
+        real(r64) :: delx,yx,ym,xm
 
 
         do concurrent (i=1:nb)
@@ -450,9 +460,9 @@ contains
     contains
 
         subroutine linsect(x,xlo0,xhi0,delx)
-            real(fp), intent(in) :: xhi0,xlo0,delx
-            real(fp), intent(out) :: x
-            real(fp) :: xhi,xlo,yhi,ylo,y,s
+            real(r64), intent(in) :: xhi0,xlo0,delx
+            real(r64), intent(out) :: x
+            real(r64) :: xhi,xlo,yhi,ylo,y,s
             integer :: i,n
 
             n = int(log(abs((xhi0-xlo0)/delx))/log(2d0))
@@ -485,16 +495,16 @@ contains
 
 
     pure subroutine fun2(x,y,a)
-        real(fp), intent(in) :: x,a(:)
-        real(fp), intent(out) :: y
-        real(fp) :: T0, rho0, Trad, kabs
+        real(r64), intent(in) :: x,a(:)
+        real(r64), intent(out) :: y
+        real(r64) :: T0, rho0, Trad, kabs
         Trad = x
         rho0 = a(1)
         T0 = a(2)
-        kabs = kappa_abs(rho0,T0)
+        kabs = fkabs(rho0,T0)
         y = kabs * ( T0**4 - Trad**4 )
         if ( cfg_compton_term ) then
-            y = y + kram_es * Trad**4 * cgs_k_over_mec2 * 4 * ( T0 - Trad )
+            y = y + kappa_es * Trad**4 * cgs_k_over_mec2 * 4 * ( T0 - Trad )
         end if
     end subroutine
 

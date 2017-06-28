@@ -44,8 +44,8 @@ for enableCorona, enableMagnetic, enableConduction in [
     yval_hash = [ yvar.index(y) if y in yvar else -100 for y in yvar_all ]
 
     # nieprzezroczystosci i rpzewodnizctwa
-    kappa_abs    = Function('kappa_abs')(rho,T_gas)
-    kappa_cond   = Function('kappa_cond')(rho,T_gas)
+    kappa_abs    = Function('fkabs')(rho,T_gas)
+    kappa_cond   = Function('fkcnd')(rho,T_gas)
     global_functions = set([ kappa_abs, kappa_cond ])
     global_functions_extra = set([])
 
@@ -194,7 +194,7 @@ for enableCorona, enableMagnetic, enableConduction in [
 
     procedures.append(FortranProcedure(
         routine_name, expr,
-        kind = 'fp',
+        kind = 'r64',
         arguments = [z, Y, D, A, MY, MD, ny],
         extern_functions = extern_functions,
         extern_variables = global_variables,
@@ -211,7 +211,7 @@ for enableCorona, enableMagnetic, enableConduction in [
 
     procedures.append(FortranProcedure(
         routine_name + '_BL', expr_bl,
-        kind = 'fp',
+        kind = 'r64',
         arguments = [z, Y, BL, MBL, ny, nbl],
         extern_functions = extern_functions,
         extern_variables = global_variables,
@@ -219,7 +219,7 @@ for enableCorona, enableMagnetic, enableConduction in [
 
     procedures.append(FortranProcedure(
         routine_name + '_BR', expr_br,
-        kind = 'fp',
+        kind = 'r64',
         arguments = [z, Y, BR, MBR, ny, nbr],
         extern_functions = extern_functions,
         extern_variables = global_variables,
@@ -238,7 +238,7 @@ with open('src/coefficients.f90','w') as f:
     f.write("MODULE RELAX_COEFFICIENTS\n\n")
     f.write("USE IEEE_ARITHMETIC\n")
     f.write("USE SLF_CGS\n")
-    f.write("USE PRECISION\n")
+    f.write("use iso_fortran_env, only: r64 => real64\n")
     f.write("USE GLOBALS\n")
     f.write("\nIMPLICIT NONE\n")
     f.write("CONTAINS\n\n")

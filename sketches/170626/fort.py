@@ -2,7 +2,7 @@ from sympy import fcode, symbols, Rational, Eq, var, Symbol, Matrix, \
     MatrixSymbol, sqrt
 
 r, rho, T, H = symbols('r, rho, T, H', real = True, positive = True)
-kappa_es, kappa_ff = symbols('kram_es kram_abs', real = True, positive = True)
+kappa_es, kappa_ff = symbols('kappa_es kappa_abs_0', real = True, positive = True)
 r, mbh, alpha, mdot, omega = symbols('r m_bh alpha m_dot omega', real = True, positive = True)
 pi,cgs_graw,sol_mass,cgs_stef,cgs_boltz = symbols('pi cgs_graw sol_mass cgs_stef cgs_boltz', real = True, positive = True)
 sol_rschw,sol_mdot_edd,cgs_mhydr,cgs_c = symbols('sol_rschw sol_mdot_edd cgs_mhydr cgs_c', real = True, positive = True)
