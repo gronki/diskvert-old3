@@ -1,0 +1,20 @@
+select case (nr)
+case(1)
+    name = "alphdyfu"
+case(2)
+    name = "alphcmpt"
+case(3)
+    name = "magndyfu"
+case(4)
+    name = "magncmpt"
+case(5)
+    name = "alphdyfucond"
+case(6)
+    name = "alphcmptcond"
+case(7)
+    name = "magndyfucond"
+case(8)
+    name = "magncmptcond"
+case default
+    error stop
+end select

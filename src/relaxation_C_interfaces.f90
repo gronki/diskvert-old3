@@ -2,7 +2,7 @@ module relaxation_C_interfaces
 
     use iso_c_binding
     use iso_fortran_env, only: r64 => real64
-    
+
     use relaxation
 
 contains
@@ -17,10 +17,7 @@ contains
         real(c_double), intent(out), dimension(nx*na) :: A
         real(c_double), intent(out), dimension(nx*na,nx*ny) :: M
 
-        type(model_t) :: model
-
-        call model % init(compton = .false., magnetic = .false., conduction = .false.)
-        call model % matrix(x,Y,M,A)
+        call mrx_matrix(1,x,Y,M,A)
 
     end subroutine
 
@@ -33,10 +30,7 @@ contains
         real(c_double), intent(out), dimension(nx*ny) :: dY
         real(r64) :: M(nx*ny,nx*ny)
 
-        type(model_t) :: model
-
-        call model % init(compton = .false., magnetic = .false., conduction = .false.)
-        call model % advance(x,Y,M,dY)
+        call mrx_advance(1,x,Y,M,dY)
 
     end subroutine
 

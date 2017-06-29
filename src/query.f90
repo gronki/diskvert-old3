@@ -16,8 +16,8 @@ contains
         call c_f_string(key_C, key)
 
         select case (key)
-        case ("mass")
-          val = m_bh
+        !// case ("mass")
+        !//   val = m_bh
         case default
           error stop "no such key"
         end select

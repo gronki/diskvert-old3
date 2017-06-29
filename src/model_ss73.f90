@@ -9,10 +9,11 @@ module model_ss73
     use slf_rk4integr
     use slf_eulerintegr
     use slf_threshold, only: thrtanh
+    use rk4settings
 
     implicit none
 
-    real(r64), private :: mbh, mdot, radius, alpha
+    real(r64), private :: radius, alpha
     real(r64), private :: omega, flux_acc, temp_eff, zscale
 
     integer, parameter :: ny = 4,   &
@@ -30,6 +31,7 @@ module model_ss73
 contains
 
     subroutine init_ss73(mb,md,r,alph)
+        real(r64), intent(in) :: mb,md,r,alph
         mbh = mb
         mdot = md
         radius = r

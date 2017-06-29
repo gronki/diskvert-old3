@@ -1,0 +1,20 @@
+select case (nr)
+case(1)
+    ihash = [1,2,2,3,-99,-99]
+case(2)
+    ihash = [1,2,4,3,-99,-99]
+case(3)
+    ihash = [1,2,2,3,4,-99]
+case(4)
+    ihash = [1,2,4,3,5,-99]
+case(5)
+    ihash = [1,2,2,3,-99,4]
+case(6)
+    ihash = [1,2,4,3,-99,5]
+case(7)
+    ihash = [1,2,2,3,4,5]
+case(8)
+    ihash = [1,2,4,3,5,6]
+case default
+    error stop
+end select

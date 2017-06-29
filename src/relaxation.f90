@@ -2,12 +2,10 @@ module relaxation
 
     use iso_fortran_env, only: r64 => real64
     use ieee_arithmetic
+    use fileunits
 
     use slf_cgs
     use globals
-
-    ! wspolczynniki wygenerowane
-    use relax_coefficients
 
     implicit none
 
@@ -30,160 +28,130 @@ module relaxation
         end subroutine
     end interface
 
-    type :: model_t
-        integer :: nr = 0
-        procedure(coeff_driver_t), pointer, nopass, private :: coeff
-        procedure(bound_driver_t), pointer, nopass, private :: coeff_L, coeff_R
-        integer, private :: ny, nbl, nbr
-        integer, dimension(6), private :: ix
-        real(r64), dimension(:), pointer :: x => NULL()
-        real(r64), dimension(:), pointer, contiguous  :: Y,dY
-        real(r64), dimension(:,:), pointer, contiguous :: M
-    contains
-        procedure :: init    => model_initialize
-        procedure :: matrix  => model_matrix
-        procedure :: alloc  => model_allocate
-        procedure :: advance => model_advance
-    end type
+    real(r64) :: alpha, zeta
+    real(r64) :: omega, radius, flux_acc
+
+    integer, parameter :: c_rho = 1, c_Tgas = 2, c_Trad = 3, &
+            & c_Frad = 4, c_Pmag = 5, c_Fcond = 6
 
 contains
 
-    subroutine model_initialize (model, compton, magnetic, conduction)
-        class(model_t) :: model
+    pure function mrx_number(compton, magnetic, conduction) result(nr)
         logical, intent(in) :: compton,magnetic,conduction
+        integer :: nr
+        nr = 1  + merge(1, 0, compton)      &
+                + merge(2, 0, magnetic)     &
+                + merge(4, 0, conduction)
+    end function
 
-        model % nr = 1  + merge(1, 0, compton)      &
-                        + merge(2, 0, magnetic)     &
-                        + merge(4, 0, conduction)
-
-        include 'model_select.inc'
-
+    pure subroutine mrx_sel_name (nr, name)
+        integer, intent(in) :: nr
+        character(*), intent(out) :: name
+        include 'mrxname.fi'
     end subroutine
 
-    subroutine model_allocate(model,x)
-
-        class(model_t) :: model
-        real(r64), dimension(:), intent(in), target :: x
-
-        model % x => x
-
-        ! nl => ny + nbl - 1
-        ! nu => 2 * ny - nbl - 1
-
-        associate ( ny => model % ny,       &
-                    nbl => model % nbl,     &
-                    nbr => model % nbr,     &
-                    nx => size(x) )
-
-            allocate( model % Y(nx*ny), model % dY(nx*ny) )
-            allocate( model % M(nx*ny,nx*ny) )
-
-        end associate
-
-
+    pure subroutine mrx_sel_dims (nr, n, nbl, nbr)
+        integer, intent(in) :: nr
+        integer, intent(out) :: n, nbl, nbr
+        include 'mrxdims.fi'
     end subroutine
 
+    subroutine mrx_sel_ptrs (nr, f, fbl, fbr)
+        integer, intent(in) :: nr
+        procedure(), pointer, intent(out) :: f, fbl, fbr
+        include 'mrxptrs.fi'
+    end subroutine
 
-    subroutine model_matrix(model,x,Y,M,A)
+    pure subroutine mrx_sel_hash (nr, ihash)
+        integer, intent(in) :: nr
+        integer, dimension(6), intent(out) :: ihash
+        include 'mrxhash.fi'
+    end subroutine
 
-        class(model_t) :: model
+    subroutine mrx_matrix(nr,x,Y,M,A)
+
+        integer :: nr
         real(r64), dimension(:), intent(in) :: x
         ! uklad: [ Y1(1) Y2(1) Y3(1) Y1(2) Y2(2) Y3(2) ... ]
-        real(r64), dimension(size(x) * (model % ny)), intent(in) :: Y
+        real(r64), dimension(:), intent(in) :: Y
         ! uklad: [ A1(1) A2(1) A3(1) A1(2) A2(2) A3(2) ... ]
-        real(r64), dimension(size(x) * (model % ny)), intent(out) :: A
-        real(r64), dimension(size(A), size(Y)), target, intent(out) :: M
+        real(r64), dimension(:), intent(out) :: A
+        real(r64), dimension(:,:), target, intent(out) :: M
 
-        real(r64), dimension(model % ny) :: Ym, Dm
-        real(r64), dimension(model % ny) :: Am
-        real(r64), dimension(model % ny, model % ny) :: MY, MD
-        real(r64), dimension(model % nbl) :: BL
-        real(r64), dimension(model % nbl, model % ny) :: MBL
-        real(r64), dimension(model % nbr) :: BR
-        real(r64), dimension(model % nbr, model % ny) :: MBR
+        real(r64), dimension(:,:), allocatable :: Ym, MY, MD
+        integer :: i, nx,nbl,nbr,n
+        procedure(), pointer :: ff,fbl,fbr
 
-        real(r64) :: dx, xm
-        integer :: i,j,k,nx,ny,nbl,nbr
+        nx = size(x)
+        call mrx_sel_dims(nr,n,nbl,nbr)
+        allocate( YM(n,2), MY(n,n), MD(n,n) )
 
-        nx  = size(x)
-        ny  = model % ny
-        nbl = model % nbl
-        nbr = model % nbr
+        call mrx_sel_ptrs(nr,ff,fbl,fbr)
 
         M = 0
 
-        call model % coeff_L( x(1),  Y(iy(1,1):iy(1,ny)),   BL, MBL, ny, nbl )
-        forall (i = 1:nbl)              A(ibl(i)) = BL(i)
-        forall (i = 1:nbl, j = 1:ny)    M(ibl(i),iy(1,j)) = MBL(i,j)
+        associate (xbl => x(1), YBL => Y(1:n),      &
+                        & BL  => A(1:nbl),          &
+                        & MBL => M(1:nbl,1:n))
 
-        call model % coeff_R( x(nx), Y(iy(nx,1):iy(nx,ny)), BR, MBR, ny, nbr )
-        forall (i = 1:nbr)              A(ibr(i)) = BR(i)
-        forall (i = 1:nbr, j = 1:ny)    M(ibr(i),iy(nx,j)) = MBR(i,j)
+            call fbl(xbl, YBL, BL, MBL)
+
+        end associate
+
+        associate (xbr => x(nx), YBR => Y((nx-1)*n+1:), &
+                        & BR => A(nbl+(nx-1)*n+1:),     &
+                        & MBR => M(nbl+(nx-1)*n+1:, (nx-1)*n+1:))
+
+            call fbr(xbr, YBR, BR, MBR)
+
+        end associate
 
         through_space: do i = 1, nx-1
-            dx = x(i+1) - x(i)
-            xm = (x(i+1) + x(i)) / 2
 
-            forall (j = 1:ny)
-                Ym(j) = ( Y(iy(i+1,j)) + Y(iy(i,j)) ) / 2
-                Dm(j) = ( Y(iy(i+1,j)) - Y(iy(i,j)) ) / dx
-            end forall
+            associate ( dx => x(i+1) - x(i), xm => (x(i+1) + x(i)) / 2, &
+                    &   Ai => A(nbl+(i-1)*n+1:nbl+i*n),                 &
+                    &   M1 => M(nbl+(i-1)*n+1:nbl+i*n, (i-1)*n+1:i*n),  &
+                    &   M2 => M(nbl+(i-1)*n+1:nbl+i*n, i*n+1:(i+1)*n),  &
+                    &   Y1 => Y((i-1)*n+1:i*n), Y2 => Y(i*n+1:(i+1)*n))
+                Ym(:,1) = (Y2 + Y1) / 2
+                Ym(:,2) = (Y2 - Y1) / dx
 
-            call model % coeff(xm, Ym, Dm, Am, MY, MD, ny)
+                call ff(xm, Ym, Ai, MY, MD)
 
-            ! Macierz( nr_rownynia, nr_niewiadomej )
-            forall (j = 1:ny)   A(ia(i,j)) = Am(j)
-            forall (j = 1:ny, k = 1:ny)
-                M( ia(i,j), iy(i,  k) ) = MY(j,k) / 2 - MD(j,k) / dx
-                M( ia(i,j), iy(i+1,k) ) = MY(j,k) / 2 + MD(j,k) / dx
-            end forall
+                M1(:,:) = MY / 2 - MD / dx
+                M2(:,:) = MY / 2 + MD / dx
+            end associate
+
         end do through_space
 
-    contains
-
-        elemental integer function iy(ix,i)
-            integer, intent(in) :: ix,i
-            iy = ny*(ix-1) + i
-        end function
-        elemental integer function ia(ix,i)
-            integer, intent(in) :: ix,i
-            ia = nbl + i + ny*(ix-1)
-        end function
-        elemental integer function ibl(i)
-            integer, intent(in) :: i
-            ibl = i
-        end function
-        elemental integer function ibr(i)
-            integer, intent(in) :: i
-            ibr = nbl + ny*(nx-1) + i
-        end function
+        deallocate(Ym, MY, MD)
 
     end subroutine
 
-    subroutine model_advance(model, x, Y, M, dY)
+    subroutine mrx_advance(nr, x, Y, M, dY)
 
-        class(model_t) :: model
+        integer, intent(in) :: nr
         real(r64), dimension(:), intent(in) :: x
-        real(r64), dimension( size(x) * (model % ny) ), intent(in) :: Y
-        real(r64), dimension( size(Y) ), intent(out) :: dY
-        real(r64), dimension( size(dY), size(Y) ), intent(out)  :: M
-        integer, dimension( size(dY) ) :: ipiv
+        real(r64), dimension(:), intent(in) :: Y
+        real(r64), dimension(:), intent(out), contiguous :: dY
+        real(r64), dimension(:,:), intent(out), contiguous  :: M
+        integer, dimension(size(dY)) :: ipiv
         integer :: errno
 
-        call model % matrix(x,Y,M,dY)
-
-        dY = -dY
-        call DGESV(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
+        call mrx_matrix(nr, x, Y, M, dY)
+        call dgesv(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
 
         if ( errno > 0 ) then
-            write (error_unit, '("Parameter ", I0, " had illegal value")') abs(errno)
-            error stop "zero on matrix diagonyl: singular matrix"
+            write (uerr, '("Parameter ", I0, " had illegal value")') abs(errno)
+            error stop "zero on matrix diagonal: singular matrix"
         end if
         if ( errno < 0 ) then
-            write (error_unit, '("Parameter ", I0, " had illegal value")') abs(errno)
+            write (uerr, '("Parameter ", I0, " had illegal value")') abs(errno)
             error stop "illegal parameter value"
         end if
 
     end subroutine
+
+    include 'coefficients.fi'
 
 end module relaxation

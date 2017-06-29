@@ -1,0 +1,36 @@
+select case (nr)
+case(1)
+    n = 3
+    nbL = 1
+    nbR = 2
+case(2)
+    n = 4
+    nbL = 2
+    nbR = 2
+case(3)
+    n = 4
+    nbL = 2
+    nbR = 2
+case(4)
+    n = 5
+    nbL = 3
+    nbR = 2
+case(5)
+    n = 4
+    nbL = 2
+    nbR = 2
+case(6)
+    n = 5
+    nbL = 3
+    nbR = 2
+case(7)
+    n = 5
+    nbL = 3
+    nbR = 2
+case(8)
+    n = 6
+    nbL = 4
+    nbR = 2
+case default
+    error stop
+end select

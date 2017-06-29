@@ -1,0 +1,36 @@
+select case (nr)
+case(1)
+    f => mrx_coeffalphdyfu
+    fbL => mrx_coeffalphdyfu_bL
+    fbR => mrx_coeffalphdyfu_bR
+case(2)
+    f => mrx_coeffalphcmpt
+    fbL => mrx_coeffalphcmpt_bL
+    fbR => mrx_coeffalphcmpt_bR
+case(3)
+    f => mrx_coeffmagndyfu
+    fbL => mrx_coeffmagndyfu_bL
+    fbR => mrx_coeffmagndyfu_bR
+case(4)
+    f => mrx_coeffmagncmpt
+    fbL => mrx_coeffmagncmpt_bL
+    fbR => mrx_coeffmagncmpt_bR
+case(5)
+    f => mrx_coeffalphdyfucond
+    fbL => mrx_coeffalphdyfucond_bL
+    fbR => mrx_coeffalphdyfucond_bR
+case(6)
+    f => mrx_coeffalphcmptcond
+    fbL => mrx_coeffalphcmptcond_bL
+    fbR => mrx_coeffalphcmptcond_bR
+case(7)
+    f => mrx_coeffmagndyfucond
+    fbL => mrx_coeffmagndyfucond_bL
+    fbR => mrx_coeffmagndyfucond_bR
+case(8)
+    f => mrx_coeffmagncmptcond
+    fbL => mrx_coeffmagncmptcond_bL
+    fbR => mrx_coeffmagncmptcond_bR
+case default
+    error stop
+end select
