@@ -28,6 +28,8 @@ OBJECTS_LIB =  $(addsuffix .o,$(basename $(notdir \
 OBJECTS_UTIL = $(addsuffix .o,$(basename $(notdir \
 	$(wildcard src/util/*.[fF]90))))
 
+coeffincludes = coefficients.fi mrxdims.fi mrxhash.fi mrxname.fi mrxptrs.fi
+
 VPATH = src:src/util:src/prog:src/math:src/lapack
 
 PROGRAMS = $(basename $(notdir $(wildcard src/prog/*.[fF]90)))
@@ -91,8 +93,11 @@ include make_dependencies.inc
 
 relaxation.o    : lapack.a
 settings.o      : libconfort.a
-src/coefficients.f90: relaxation-coefficients.py
+
+$(coeffincludes): relaxation-coefficients.py
 	python relaxation-coefficients.py
+
+relaxation.o: $(coeffincludes)
 
 #################  PLIKI BINARNE  #################
 
