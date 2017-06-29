@@ -9,10 +9,11 @@ module model_m1
     use slf_threshold
     use slf_findzer
 
-
+    use slf_rk4integr
     use globals
     use energy_balance
     use settings
+    use fileunits
 
     use rk4settings
 
@@ -102,8 +103,8 @@ contains
         call quick_alpha_disk(mbh, mdot, radius, alpha)
         rho_0_estim = minidisk(md_rho,1)
         temp_0_estim = minidisk(md_temp,1)
-        write (error_unit, fmt_meta_ec) "rho_0_estim", rho_0_estim, "Central density (estimate)"
-        write (error_unit, fmt_meta_ec) "temp_0_estim", temp_0_estim, "Central gas temperature (estimate)"
+        write (upar, fmparec) "rho_0_estim", rho_0_estim, "Central density (estimate)"
+        write (upar, fmparec) "temp_0_estim", temp_0_estim, "Central gas temperature (estimate)"
 
         rho_0_hi = rho_0_estim * 316
         rho_0_lo = rho_0_estim / 316
@@ -118,7 +119,7 @@ contains
             temp_0_hi = temp_0_estim * 100
             temp_0_lo = temp_0_estim / 100
 
-            write (error_unit,"(2A5,4A14,A7,A10)") "i0", "i", "T0", "Frad", "Fbound", "error", "clip", "actn"
+            write (ulog,"(2A5,4A14,A7,A10)") "i0", "i", "T0", "Frad", "Fbound", "error", "clip", "actn"
 
             iter_temp: do iter=1,itmax
 
@@ -149,7 +150,7 @@ contains
                     end if
                 end if
 
-                write (error_unit,"(2I5,3Es14.6,F14.7,F7.1,A10)") iter0, iter, &
+                write (ulog,"(2I5,3Es14.6,F14.7,F7.1,A10)") iter0, iter, &
                     & temp_0, val(v_flux,nmax), par(p_flxbond,nmax), &
                     & par(p_flxbond,nmax) / val(v_flux,nmax) - 1, &
                     & 100.0 * nmax / nz, trim(buf)
@@ -157,7 +158,7 @@ contains
                 if ( abs(2*(par(p_flxbond,nmax) - val(v_flux,nmax) )        &
                         /(par(p_flxbond,nmax) + val(v_flux,nmax) ))     &
                         .lt. max_iteration_error ) then
-                    write (error_unit,"(A,Es9.1,A)") "Maximum precision ",max_iteration_error," reached."
+                    write (ulog,"(A,Es9.1,A)") "Maximum precision ",max_iteration_error," reached."
                     exit iter_temp
                 end if
 
@@ -175,13 +176,13 @@ contains
                 buf = "== RHO"
             end if
 
-            write (error_unit,*) "   ========================================="
-            write (error_unit,"(A5,A5,3A14,A10)") "i0", "*", "rho0", "Fgen", "Facc" , "ACTN"
-            write (error_unit,"(I5,A5,3Es14.6,A10)") iter0, "*", rho_0, val(v_fgen,nmax), flux_acc , trim(buf)
-            write (error_unit,*) "   ========================================="
+            write (ulog,*) "   ========================================="
+            write (ulog,"(A5,A5,3A14,A10)") "i0", "*", "rho0", "Fgen", "Facc" , "ACTN"
+            write (ulog,"(I5,A5,3Es14.6,A10)") iter0, "*", rho_0, val(v_fgen,nmax), flux_acc , trim(buf)
+            write (ulog,*) "   ========================================="
 
             if ( abs(2*(val(v_fgen,nmax) - flux_acc)/(val(v_fgen,nmax) + flux_acc)) .lt. max_iteration_error ) then
-                write (error_unit,"(A,Es9.1,A)") "Maximum precision ",max_iteration_error," reached."
+                write (ulog,"(A,Es9.1,A)") "Maximum precision ",max_iteration_error," reached."
                 exit iter_rho
             end if
 
@@ -378,7 +379,7 @@ contains
             abort = .true.
             iterate_search_error: do i = 1, size(a)
                 if (.not.isnormal(i)) then
-                    write (0, "(Es11.3,' found in field ',I0)") a(i),i
+                    write (ulog, "(Es11.3,' found in field ',I0)") a(i),i
                 end if
             end do iterate_search_error
         end if

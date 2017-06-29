@@ -17,15 +17,20 @@ program m1
     integer :: i
     real(r64), dimension(:), allocatable :: z, x
     real(r64), dimension(:,:), allocatable :: val, der, par
+    type(config) :: cfg
 
     character(len=12) :: p_labels(n_pars), v_labels(n_vals)
     real(r64) :: radius = 10, alpha = 0.1, zeta = 0.2, rho_0_user, temp_0_user
 
-    mbh = 10
-    mdot = 0.01
-    errno = 0
-
     call init_labels
+
+    call rdargv_global
+    call rdargv_rk4
+    call mincf_read(cfg)
+    call rdconf_global(cfg)
+    call rdconf(cfg)
+    call mincf_free(cfg)
+
     open(newunit = ulog, file = trim(outfn) // ".log", action = "write")
     open(newunit = upar, file = trim(outfn) // ".txt", action = "write")
     call init_m1(mbh, mdot, radius, alpha, zeta)
@@ -50,24 +55,21 @@ program m1
     end if
 
 
-    write (upar, fmt_meta_ec) "alpha", alpha, "Parametr alfa"
+    write (upar, fmparec) "alpha", alpha, "Parametr alfa"
 
-    write (upar, fmt_meta_ec) "rho_0", par(p_rho,1), "Central density"
-    write (upar, fmt_meta_ec) "temp_0", par(p_temp,1), "Central gas temperature"
-    write (upar, fmt_meta_ec) "T_rad_0", par(p_Trad,1), &
+    write (upar, fmparec) "rho_0", par(p_rho,1), "Central density"
+    write (upar, fmparec) "temp_0", par(p_temp,1), "Central gas temperature"
+    write (upar, fmparec) "T_rad_0", par(p_Trad,1), &
                                 & "Central radiation temperature"
 
-    write (upar, fmt_meta_ec) "beta_0", val(v_pgas,1) / val(v_pmag,1), "Beta on the equator"
-    write (upar, fmt_meta_ec) "beta_rad_0", val(v_pgas,1) / val(v_prad,1), &
+    write (upar, fmparec) "beta_0", val(v_pgas,1) / val(v_pmag,1), "Beta on the equator"
+    write (upar, fmparec) "beta_rad_0", val(v_pgas,1) / val(v_prad,1), &
                                 & "Radiative beta at the equator"
-    write (upar, fmt_meta_ec) "dzeta_0", zeta, "Parametr zeta"
+    write (upar, fmparec) "dzeta_0", zeta, "Parametr zeta"
 
-    write (upar, fmt_meta_ec) "flux_gen_top", val(v_fgen,nmax), "erg/cm2/s"
-    write (upar, fmt_meta_ec) "flux_rad_top", val(v_flux,nmax), "erg/cm2/s"
-    write (upar, fmt_meta_ec) "flux_bound_top", par(p_flxbond,nmax), "erg/cm2/s"
-
-    call write_globals(upar)
-    call write_settings(upar)
+    write (upar, fmparec) "flux_gen_top", val(v_fgen,nmax), "erg/cm2/s"
+    write (upar, fmparec) "flux_rad_top", val(v_flux,nmax), "erg/cm2/s"
+    write (upar, fmparec) "flux_bound_top", par(p_flxbond,nmax), "erg/cm2/s"
 
     close(upar)
 
@@ -77,9 +79,9 @@ program m1
 contains
 
 
-    subroutine rdcfg_m1(cfg,errno)
-        integer, intent(inout) :: errno
+    subroutine rdconf(cfg)
         type(config), intent(inout) :: cfg
+        integer :: errno
         character(len=2048) :: buf
         integer :: i
 
@@ -95,6 +97,12 @@ contains
             error stop "Magnetic alpha-parameter (key: alpha) is REQUIRED!"
         end if
         read (buf,*) alpha
+
+        call mincf_get(cfg, "radius", buf)
+        if ( cfg % not_found() )  then
+            error stop "Radius (key: radius) is REQUIRED!"
+        end if
+        read (buf,*) radius
 
         if ( cfg_single_run ) then
 

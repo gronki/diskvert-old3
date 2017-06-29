@@ -1,11 +1,7 @@
 module settings
 
     use iso_fortran_env, only: r64 => real64
-
-    use results
-    use confort
     use globals
-    use grid
 
     implicit none
 
@@ -22,14 +18,11 @@ contains
 
 !----------------------------- READ_COMMAND_LINE ------------------------------!
 !       reads command line arguments and stores them in global variables       !
-!---------------------------------- OUTPUTS -----------------------------------!
-!                              errno: error code                               !
 !------------------------------------------------------------------------------!
 
-    subroutine RDCMDLN(errno)
+    subroutine rdargv_global
 
-        integer, intent(inout) :: errno
-        integer :: i
+        integer :: errno,i
         character(128) :: arg, nextarg
 
         iterate_arguments : do i=1,command_argument_count()
@@ -81,5 +74,21 @@ contains
 
     end subroutine
 
+    subroutine rdconf_global(cfg)
+        use confort
+        type(config) :: cfg
+        character(128) :: buf
 
+        call mincf_get(cfg, 'mbh', buf)
+        if ( mincf_failed(cfg) ) then
+            error stop "Key mbh (black hole mass) is REQUIRED!"
+        end if
+        read (buf,*) mbh
+
+        call mincf_get(cfg, 'mdot', buf)
+        if ( mincf_failed(cfg) ) then
+            error stop "Key mdot (accretion rate) is REQUIRED!"
+        end if
+        read (buf,*) mdot
+    end subroutine
 end module

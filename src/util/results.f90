@@ -31,7 +31,7 @@ contains
         nx = size(y,2)
         ny = size(y,1)
 
-        open(unit=34, file=(outfn // '.dat'), action='write')
+        open(unit=34, file=(trim(outfn) // '.dat'), action='write')
 
         write (34,'(300A13)', advance="no") 'N', 'Z', labels
 
@@ -47,7 +47,7 @@ contains
 
         close(34)
 
-        open(unit=35, file=(outfn // '.col'), action='write')
+        open(unit=35, file=(trim(outfn) // '.col'), action='write')
 
         write(35,fmtdescr2) 'N', 'i4'
         write(35,fmtdescr2) 'Z', 'f4'

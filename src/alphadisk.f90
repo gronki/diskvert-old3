@@ -5,6 +5,7 @@ module alphadisk
     use globals
     use slf_cgs
     use grid
+    use slf_rk4integr
 
     implicit none
 

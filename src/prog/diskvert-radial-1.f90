@@ -4,52 +4,51 @@ program diskvert_radial_1
     use slf_cgs
     use diskapprox
     use globals
-    use settings
-    use setup
     use model_ss73
+    use fileunits
+    use confort
+    use settings
 
     implicit none
 
     integer :: errno,i,j
     integer, parameter :: n = 2**9
-    real(r64) :: r12, r23
+    real(r64) :: r12, r23, alpha
     real(r64), dimension(n) :: r
     real(r64), dimension(n) :: rho1, T1, H1
     real(r64), dimension(n) :: rho2, T2, H2
     real(r64), dimension(n) :: rho3, T3, H3
     real(r64) :: M(3,3), A(3)
     integer :: ipiv(3)
+    type(config) :: cfg
 
     integer, parameter :: nz = 2**11
     real(r64) :: z(nz), y(ny,nz), dy(ny,nz), ap(na,nz)
     integer :: nmax
 
-    errno = 0
-    call init(errno, confread)
 
-    call apx_zonebounds(r12,r23)
+    call rdargv_global()
+    call mincf_read(cfg)
+    call rdconf_global(cfg)
+    call rdconf(cfg)
+    call mincf_free(cfg)
+
+    call apx_zonebounds(mbh,mdot,alpha,r12,r23)
 
     forall (i = 1:n)
         r(i) = 3 * exp( i / real(n) * (log(r23*10)-log(3d0)) )
     end forall
 
-    call apx_sel(r, r12, r23, rho1, T1, H1)
+    call apx_sel(mbh, mdot, r, alpha, r12, r23, rho1, T1, H1)
 
     rho2 = rho1
     T2 = T1
     H2 = H1
 
     compute_precise_model: do i = 1,n
-        ! converge: do j = 1,16
-        !     call apx_matrix(r(i), rho2(i), T2(i), H2(i), A, M)
-        !     call dgesv(3, 1, M, 3, ipiv, A, 3, errno)
-        !     rho2(i) = rho2(i) + A(1) * ramp(j,16)
-        !     T2(i) = T2(i) + A(2) * ramp(j,16)
-        !     H2(i) = H2(i) + A(3) * ramp(j,16)
-        ! end do converge
-        call diskapx2(r(i), rho2(i), T2(i), H2(i))
-        r_calc = r(i)
-        call eval_globals
+        call diskapx2(mbh, mdot, r(i), alpha, rho2(i), T2(i), H2(i))
+
+        call init_ss73(mbh, mdot, r(i), alpha)
         call run_ss73(z,nz,y,dy,ap,nmax)
         rho3(i) = ap(c_rho,nz)
         T3(i) = ap(c_Tgas,nz)
@@ -63,29 +62,21 @@ program diskvert_radial_1
     end do compute_precise_model
 
     do i = 1,n
-        write (6, '(I7,10(X,Es11.4))') i, r(i), rho1(i), T1(i), H1(i), &
+        write (6, '(I7,10(1X,Es11.4))') i, r(i), rho1(i), T1(i), H1(i), &
             rho2(i), T2(i), H2(i), rho3(i), T3(i), H3(i)
     end do
 
 contains
 
-    elemental function ramp(i,n) result(y)
-        integer, intent(in) :: i,n
-        real(r64) :: t,y
-        t = merge(real(i) / n, 1.0, i .le. n)
-        y = 3 * t**2 - 2 * t**3
-    end function
-
-    subroutine confread(cfg,errno)
+    subroutine rdconf(cfg)
         type(config), intent(inout) :: cfg
-        integer, intent(inout) :: errno
         character(128) :: buf
 
-        if ( .not. cfg % contains('alpha') ) then
+        if ( .not. mincf_exists(cfg,'alpha') ) then
             error stop "alpha key is required!"
         end if
 
-        call cfg%get('alpha',buf)
+        call mincf_get(cfg,'alpha',buf)
         read (buf,*) alpha
     end subroutine
 

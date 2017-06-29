@@ -34,6 +34,8 @@ module relaxation
     integer, parameter :: c_rho = 1, c_Tgas = 2, c_Trad = 3, &
             & c_Frad = 4, c_Pmag = 5, c_Fcond = 6
 
+    private :: ramp
+
 contains
 
     pure function mrx_number(compton, magnetic, conduction) result(nr)
@@ -80,6 +82,7 @@ contains
         real(r64), dimension(:,:), target, intent(out) :: M
 
         real(r64), dimension(:,:), allocatable :: MY, MD
+        real(r64), dimension(:), allocatable :: YM,DY
         integer :: i, nx,nbl,nbr,n
         procedure(fcoeff_t), pointer :: ff
         procedure(fbound_t), pointer :: fbl, fbr
@@ -87,7 +90,7 @@ contains
 
         nx = size(x)
         call mrx_sel_dims(nr,n,nbl,nbr)
-        allocate( MY(n,n), MD(n,n) )
+        allocate( ym(n), dy(n), MY(n,n), MD(n,n) )
 
         call mrx_sel_ptrs(nr,ff,fbl,fbr)
 
@@ -117,8 +120,9 @@ contains
                     &   M2 => M(nbl+(i-1)*n+1:nbl+i*n, i*n+1:(i+1)*n),  &
                     &   Y1 => Y((i-1)*n+1:i*n), Y2 => Y(i*n+1:(i+1)*n))
 
-                call ff(xm, (Y2 + Y1) / 2, (Y2 - Y1) / dx, fval, &
-                    & Ai, MY, MD)
+                YM = (Y2 + Y1) / 2
+                DY = (Y2 - Y1) / dx
+                call ff(xm, YM, DY, fval, Ai, MY, MD)
 
                 M1(:,:) = MY / 2 - MD / dx
                 M2(:,:) = MY / 2 + MD / dx
@@ -126,7 +130,7 @@ contains
 
         end do through_space
 
-        deallocate(MY, MD)
+        deallocate(MY, MD, YM, DY)
 
     end subroutine
 
@@ -153,6 +157,13 @@ contains
         end if
 
     end subroutine
+
+    elemental function ramp(i,n) result(y)
+        integer, intent(in) :: i,n
+        real(r64) :: t,y
+        t = merge(real(i) / n, 1.0, i .le. n)
+        y = 3 * t**2 - 2 * t**3
+    end function
 
     include 'coefficients.fi'
 
