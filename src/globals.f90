@@ -1,13 +1,15 @@
 module globals
 
     use iso_fortran_env, only: r64 => real64
-    use abundance
     use slf_cgs
 
     implicit none !------------------------------------------------------------!
 
     real, parameter, private :: X0 = 0.7381
     real, parameter, private :: Z0 = 0.0134
+
+    real(r64) :: abuX = X0
+    real(r64) :: abuZ = Z0
 
     real(r64) :: kappa_es = cgs_kapes_hydrogen * (1 + X0) / 2
     real(r64) :: kappa_ff_0 = 3.68d22 * (1 - Z0) * (1 + X0)
@@ -47,18 +49,26 @@ contains !---------------------------------------------------------------------!
 
     elemental function fksct(rho,T) result(ksct)
         real(r64), intent(in) :: rho,T
-        real(r64):: ksct
-        ksct = cgs_kapes_hydrogen * (1 + abun_X) / 2
-        ! red = ( 1 + 2.7e11 * rho2 / T2**2 ) * ( 1 + (T2 / 4.5e8)**0.86 )
-        ! ksct = ksct0 / red
+        real(r64):: ksct0, ksct !, red
+        ksct0 = cgs_kapes_hydrogen * (1 + abuX) / 2
+        ! red = 1d0 / (( 1 + 2.7e11 * rho / T**2 ) * ( 1 + (T / 4.5e8)**0.86 ))
+        ksct = ksct0 ! * red
     end function
 
-    elemental subroutine KAPPSCT(rho,T,kap,krho,kT)
+    elemental subroutine KAPPSCT(rho,T,ksct,krho,kT)
         real(r64), intent(in) :: rho,T
-        real(r64), intent(out) :: kap,krho,kT
-        kap = cgs_kapes_hydrogen * (1 + abun_X) / 2
-        krho = 0
-        kT = 0
+        real(r64), intent(out) :: ksct,krho,kT
+        real(r64):: ksct0 !, red, redrho, redT
+        ksct0 = cgs_kapes_hydrogen * (1 + abuX) / 2
+        ! red = 1d0 / (( 1 + 2.7e11 * rho / T**2 ) * ( 1 + (T / 4.5e8)**0.86 ))
+        ksct = ksct0 ! * red
+        !redrho = -2.7d+11/(T**2*(1.0d0 + 2.7d+11*rho/T**2)**2 &
+        !    *(3.616073d-8*T**0.86d0 + 1.0d0))
+        krho = 0 ! ksct0 * redrho
+        !redT = -3.109823d-8*T**(-0.14d0)/((1.0d0 + 2.7d+11*rho/T**2)*( &
+        !    3.616073d-8*T**0.86d0 + 1.0d0)**2) + 5.4d+11*rho/(T**3*(1.0d0 + &
+        !    2.7d+11*rho/T**2)**2*(3.616073d-8*T**0.86d0 + 1.0d0))
+        kT = 0 ! ksct0 * redT
     end subroutine
 
 !------------------------------------------------------------------------------!
@@ -77,17 +87,17 @@ contains !---------------------------------------------------------------------!
     elemental function fkabs(rho,T) result(kabs)
         real(r64), intent(in) :: rho,T
         real(r64) :: kabs
-        kabs = kramers(abun_X,abun_Z) * rho * T ** (-7d0/2d0)
+        kabs = kramers(abuX,abuZ) * rho * T ** (-7d0/2d0)
     end function
     elemental function fkabs_1(rho,T) result(kabs)
         real(r64), intent(in) :: rho,T
         real(r64) :: kabs
-        kabs = kramers(abun_X,abun_Z) * T ** (-7d0/2d0)
+        kabs = kramers(abuX,abuZ) * T ** (-7d0/2d0)
     end function
     elemental function fkabs_2(rho,T) result(kabs)
         real(r64), intent(in) :: rho,T
         real(r64) :: kabs
-        kabs = (-7d0/2d0) * kramers(abun_X,abun_Z) * rho * T ** (-9d0/2d0)
+        kabs = (-7d0/2d0) * kramers(abuX,abuZ) * rho * T ** (-9d0/2d0)
     end function
 
 !------------------------------------------------------------------------------!
@@ -96,7 +106,7 @@ contains !---------------------------------------------------------------------!
         real(r64), intent(in) :: rho,T
         real(r64), intent(out) :: kap,krho,kT
 
-        kap = kramers(abun_X,abun_Z) * rho * T ** (-7d0/2d0)
+        kap = kramers(abuX,abuZ) * rho * T ** (-7d0/2d0)
         krho = kap / rho
         kT = (-7d0/2d0) * kap / T
     end subroutine

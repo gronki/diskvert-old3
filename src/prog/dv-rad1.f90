@@ -1,10 +1,10 @@
-program diskvert_radial_1
+program dv_rad1
 
     use iso_fortran_env, only: r64 => real64
     use slf_cgs
-    use diskapprox
+    use ss73solution
     use globals
-    use model_ss73
+    use alphadisk
     use fileunits
     use confort
     use settings
@@ -48,8 +48,8 @@ program diskvert_radial_1
     compute_precise_model: do i = 1,n
         call diskapx2(mbh, mdot, r(i), alpha, rho2(i), T2(i), H2(i))
 
-        call init_ss73(mbh, mdot, r(i), alpha)
-        call run_ss73(z,nz,y,dy,ap,nmax)
+        call init_alpha(mbh, mdot, r(i), alpha)
+        call run_alpha(z,nz,y,dy,ap,nmax)
         rho3(i) = ap(c_rho,nz)
         T3(i) = ap(c_Tgas,nz)
         H3(i) = z(1) / 2

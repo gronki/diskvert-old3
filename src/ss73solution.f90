@@ -1,4 +1,4 @@
-module diskapprox
+module ss73solution
 
     use iso_fortran_env, only: r64 => real64
     use slf_cgs

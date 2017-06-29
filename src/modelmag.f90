@@ -1,4 +1,4 @@
-module model_m1
+module modelmag
 
     use ieee_arithmetic
     use iso_c_binding
@@ -85,7 +85,7 @@ contains
 
     subroutine run_m1(z,val,der,par,nmax)
 
-        use alphadisk, only: quick_alpha_disk, minidisk => y, &
+        use alphasimp, only: run_alpha_simple, minidisk => y, &
             md_rho => c_rho, md_temp => c_temp
 
         ! ilosc przedzialow obliczeniowych
@@ -100,7 +100,7 @@ contains
         integer :: iter, iter0, itmax
         character(len=1024) :: buf
 
-        call quick_alpha_disk(mbh, mdot, radius, alpha)
+        call run_alpha_simple(mbh, mdot, radius, alpha)
         rho_0_estim = minidisk(md_rho,1)
         temp_0_estim = minidisk(md_temp,1)
         write (upar, fmparec) "rho_0_estim", rho_0_estim, "Central density (estimate)"

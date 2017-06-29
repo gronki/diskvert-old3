@@ -1,86 +1,153 @@
 module alphadisk
 
     use iso_fortran_env, only: r64 => real64
+    use iso_c_binding
 
     use globals
     use slf_cgs
     use grid
     use slf_rk4integr
+    use slf_eulerintegr
+    use slf_threshold, only: thrtanh
+    use rk4settings
+    use fileunits
 
     implicit none
 
-    integer, parameter :: nn = 1024
+    real(r64), private :: radius, alpha
+    real(r64), private :: omega, flux_acc, temp_eff, zscale
 
-    real(r64), dimension(nn) :: z
-    real(r64), dimension(4,nn) :: y, dy
-    integer, parameter :: c_rho = 1, c_temp = 2, &
-        c_flux = 3, c_tau = 4
+    integer, parameter :: ny = 4,   &
+        &   c_Pgas = 1, c_Prad = 2, c_Frad = 3, c_tau = 4
+    integer, parameter :: na = 8,   &
+        &   c_rho = 3, &
+        &   c_Tgas = 2, &
+        &   c_Trad = 4, &
+        &   c_zscal = 1, &
+        &   c_heat = 5, &
+        &   c_heat_max = 6, &
+        &   c_compW = 7, &
+        &   c_compY = 8
 
 contains
 
-    subroutine quick_alpha_disk(mbh,mdot,radius,alpha)
-
-        real(r64), intent(in) :: mbh, mdot, radius, alpha
-        real(r64) :: omega, flux_acc, temp_eff, zscale
-        real(r64) :: h, h_hi, h_lo
-        integer :: it,nmax,i
-
+    subroutine init_alpha(mb,md,r,alph)
+        real(r64), intent(in) :: mb,md,r,alph
+        mbh = mb
+        mdot = md
+        radius = r
+        alpha = alph
         call cylinder(mbh, mdot, radius, omega, flux_acc, temp_eff, zscale)
-
-        h_hi = 12.0 * 31
-        h_lo = 12.0 / 31
-
-        write (0,'(A10,A10,A12,A7,A5)') "ITER", "H", "FLX", "MAX", "ACTN"
-
-        adjust_height : do it=1,256
-            h = sqrt(h_hi*h_lo)
-
-            forall (i = 1:nn) z(i) = space_linlog_r(i,nn,h) * zscale
-
-            y(c_flux,1) = flux_acc
-            y(c_rho,1) = 1d-16
-            y(c_tau,1) = epsilon(1d0)
-            y(c_temp,1) = temp_eff * 0.5d0 ** (1d0 / 4d0)
-
-            call rk4integr(z, y(:,1), f, y, dy, nmax)
-
-            if ( nmax < nn ) then
-                h_hi = h
-                write (0,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_flux,nmax) / flux_acc, 1d2 * nmax / nn, '\/'
-            else if (y(c_flux,nn) > 1d-12 * flux_acc) then
-                h_lo = h
-                write (0,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_flux,nmax) / flux_acc, 1d2 * nmax / nn, '/\'
-            else
-                exit adjust_height
-            end if
-        end do adjust_height
-    contains
-        subroutine f(z,y,dy,abort)
-
-            real(r64), intent(in) :: z, y(:)
-            real(r64), intent(inout) :: dy(size(y))
-            real(r64) :: dpgas, pgas, prad
-            logical, intent(inout) :: abort
-
-            if ( any(y < 0) ) then
-                abort = .TRUE.
-            end if
-
-            pgas = 2 * cgs_k_over_mh * y(c_rho) * y(c_temp)
-            prad = cgs_a / 3 * y(c_temp)**4
-
-            dy(c_flux) = alpha * omega * ( pgas + prad )
-            dpgas = - y(c_rho) * (omega**2 * z - cgs_kapes / cgs_c * y(c_flux))
-            dy(c_temp) = - 3 * cgs_kapes * y(c_rho) &
-            & / ( 16 * cgs_stef * y(c_temp)**3 ) &
-            & * y(c_flux)
-            dy(c_rho) = dpgas / (2 * cgs_k_over_mh * y(c_temp)) &
-            & - y(c_rho) / y(c_temp) * dy(c_temp)
-            dy(c_tau) = - cgs_kapes * y(c_rho)
-
-        end subroutine
-
     end subroutine
 
+    subroutine run_alpha(z,nz,y,dy,a,nmax)
+        ! ilosc przedzialow obliczeniowych
+        integer, intent(in) :: nz
+        real(r64), intent(inout), dimension(nz) :: z
+        real(r64), intent(inout), dimension(ny,nz) :: y,dy
+        real(r64), intent(inout), dimension(na,nz) :: a
+        integer(c_int), intent(out) :: nmax
+        real(r64) :: h_hi, h_lo, h
+        integer :: i,it
+
+
+        h_hi = 12d0 * 16
+        h_lo = 12d0 / 16
+
+        write (ulog,'(A10,A10,A12,A7,A5)') "ITER", "H", "FLX", "MAX", "ACTN"
+
+        do it=1,56
+            h = sqrt(h_hi*h_lo)
+
+            forall (i = 1:nz)  z(i) = space_linlog_r(i,nz,h) * zscale
+
+            y(c_Frad,1) = flux_acc
+            y(c_Prad,1) = flux_acc * 2 / (3 * cgs_c)
+            y(c_Pgas,1) = temp_eff * 1e-16 * cgs_k_over_mh
+            y(c_tau,1)  = epsilon(1d0)
+
+            if ( cfg_euler_integration ) then
+                call eulerintegr(z, y(:,1), f, na, y, dy, a, nmax)
+            else
+                call rk4integr(z, y(:,1), f, na, y, dy, a, nmax)
+            end if
+
+            if ( nmax < nz ) then
+                h_hi = h
+                write (ulog,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_Frad,nmax) / flux_acc, 100.0 * nmax / nz, '\/'
+            else if (y(c_Frad,nz) > 1e-10 * flux_acc) then
+                h_lo = h
+                write (ulog,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_Frad,nmax) / flux_acc, 100.0 * nmax / nz, '/\'
+            else
+                write (ulog,'("iteration finished")')
+                exit
+            end if
+        end do
+    end subroutine
+
+
+    subroutine f(z,y,dy,a,abort)
+
+        real(r64), intent(in) :: z, y(:)
+        real(r64), intent(inout) :: dy(size(y)), a(:)
+        logical, intent(inout) :: abort
+
+        real(r64) :: compsw
+        real(r64), parameter :: toler = 1
+        real(r64) :: kabs, epsi, taues
+
+        if ( y(c_Frad) < 0 ) then
+            abort = .TRUE.
+        end if
+
+        a(c_zscal)  = z / zscale
+        a(c_Trad)   = ( (3 * cgs_c) / (4 * cgs_stef) * y(c_Prad)) ** 0.25d0
+        a(c_heat)   = alpha * omega * ( y(c_Pgas) + y(c_Prad) )
+
+
+        a(c_heat_max) = 12 * cgs_kapes * y(c_Prad)  &
+                & * ( y(c_Pgas) * miu * cgs_mhydr ) &
+                & / ( cgs_mel * cgs_c )
+
+        a(c_compW) = a(c_heat) / ( a(c_heat_max) - a(c_heat) )
+        if ( a(c_compW) < 0 )   a(c_compW) = 0
+
+        select case (cfg_temperature_method)
+        case (EQUATION_EQUILIBR)
+            a(c_Tgas)   = a(c_Trad)
+        case (EQUATION_COMPTON)
+            a(c_Tgas) = a(c_Trad) * (1 + a(c_compW))
+            a(c_rho) = y(c_Pgas) * miu / ( cgs_k_over_mh * a(c_Tgas) )
+
+            kabs = kappa_abs_0 * a(c_rho) * a(c_Tgas)**(-3.5d0)
+            epsi = kabs / (kabs+kappa_es)
+            taues = (1. - epsi)/sqrt(epsi)
+            a(c_compY) = 4 * cgs_boltz * a(c_tgas) &
+            & / ( cgs_mel * cgs_c**2 )  &
+            & * max( taues, taues**2 )
+            compsw = thrtanh( (log(a(c_compY)) - log(1.0))/log(1+toler) )
+
+            a(c_Tgas) = a(c_trad) * ( 1 + compsw * a(c_compW) )
+        case (EQUATION_BALANCE)
+            stop "This is not yet implemented!"
+        case default
+            error stop "incorrect value of cfg_temperature_method"
+        end select
+
+        a(c_rho) = y(c_Pgas) * miu / ( cgs_k_over_mh * a(c_Tgas) )
+
+        kabs = kappa_abs_0 * a(c_rho) * a(c_Tgas)**(-3.5d0)
+        epsi = kabs / (kabs+kappa_es)
+        taues = (1. - epsi)/sqrt(epsi)
+        a(c_compY) = 4 * cgs_boltz * a(c_tgas) &
+            & / ( cgs_mel * cgs_c**2 )  &
+            & * max( taues, taues**2 )
+
+        dy(c_Frad)  = a(c_heat)
+        dy(c_Prad)  = - cgs_kapes * a(c_rho) / cgs_c * y(c_Frad)
+        dy(c_Pgas)  = - omega**2 * a(c_rho) * z - dy(c_Prad)
+        dy(c_tau)   = - cgs_kapes * a(c_rho)
+
+    end subroutine
 
 end module

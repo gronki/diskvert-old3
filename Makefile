@@ -41,9 +41,10 @@ install: all
 	install -d $(libdir)
 	install libdiskvert.so $(libdir)
 	install -d $(fmoddir)/diskvert
-	install -m 644 slf_{kramers,cgs,bisect,space,threshold,rk4integr}.mod \
-	 	{alphadisk,model_m1,model_ss73,relaxation,relax_coefficients}.mod \
-		{globals,precision,settings,setup}.mod $(fmoddir)/diskvert
+	install -m 644 slf_{cgs,rk4integr,threshold}.mod \
+	 	{globals,settings,fileunits,grid,rk4settings}.mod \
+		{alphadisk,alphasimp,modelmag,relaxation,ss73solution}.mod \
+		$(fmoddir)/diskvert
 	install -d $(bindir)
 	install $(BINARIES) $(bindir)
 	install scripts/diskvert-pack $(bindir)

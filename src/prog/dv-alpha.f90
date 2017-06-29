@@ -1,11 +1,11 @@
-program SS73
+program dv_alpha
 
     use iso_fortran_env, only: r64 => real64
     use confort
     use globals
     use results
     use settings
-    use model_ss73
+    use alphadisk
     use fileunits
 
     implicit none
@@ -44,8 +44,8 @@ program SS73
     allocate(z(ngrid))
     allocate(y(ny,ngrid), dy(ny,ngrid), a(na,ngrid))
 
-    call init_ss73(mbh, mdot, radius, alpha)
-    call run_ss73(z,ngrid,y,dy,a,nmax)
+    call init_alpha(mbh, mdot, radius, alpha)
+    call run_alpha(z,ngrid,y,dy,a,nmax)
 
     write (11, fmparec) "rho_0", a(c_rho,ngrid), "Central density"
     write (11, fmparec) "temp_0", a(c_tgas,ngrid), "Central gas temperature"

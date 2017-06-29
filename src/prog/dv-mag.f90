@@ -1,8 +1,8 @@
-program m1
+program dv_mag
 
     use iso_fortran_env, only: r64 => real64
     use confort
-    use model_m1
+    use modelmag
     use settings
     use globals
     use results
