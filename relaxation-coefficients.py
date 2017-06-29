@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq, symbols, \
-    Integer, Rational, Matrix, MatrixSymbol, Wild, fcode
+from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq, symbols, Integer, Rational, Matrix, MatrixSymbol, Wild
 from numpy import ndarray, zeros, linspace, logspace, meshgrid
 from sys import stdin, stdout, stderr
 
@@ -34,30 +33,58 @@ global_variables = {
 
 #------------------------------------------------------------------------------#
 
+from sympy.printing.fcode import FCodePrinter
+from sympy.printing.precedence import precedence, PRECEDENCE
+
+class F90CodePrinter(FCodePrinter):
+    def __init__(self, settings = {}):
+        settings['source_format'] = 'free'
+        settings['standard'] = 2008
+        super(F90CodePrinter, self).__init__(settings)
+        self._relationals['!='] = '.ne.'
+        self._relationals['=='] = '.eq.'
+        self._relationals['>='] = '.ge.'
+        self._relationals['>'] = '.gt.'
+        self._relationals['<='] = '.le.'
+        self._relationals['<'] = '.lt.'
+        self._relationals['&&'] = '.and.'
+        self._relationals['||'] = '.or.'
+        self._relationals['!'] = '.not.'
+        self._lead_cont = ' '*3 + '&' + ' '*3
+
+    def _print_MatrixElement(self, expr):
+        if expr.parent.shape[1] <= 1:
+            return "{0}({1})".format(expr.parent, expr.i + 1)
+        return "{0}({1},{2})".format(expr.parent, expr.i + 1, expr.j + 1)
+
+fprinter = F90CodePrinter({'source_format':'free', 'standard':2008})
+
+#------------------------------------------------------------------------------#
+
 fcoeffsrc = open('src/coefficients.fi','w')
 
-fsub_coeff = """pure subroutine {name} (z,Y,F,A,MY,MD)
+fsub_coeff = """pure subroutine {name} (z,Y,D,F,A,MY,MD)
 use iso_fortran_env, only: real64
 implicit none
 real(real64), intent(in) :: z
 ! first column: values, second column: 1ord derivatives
-real(real64), dimension({ny},2), intent(in) :: Y
+real(real64), dimension(:), intent(in) :: Y,D
 ! each row is one function: its value and derivatives to rho and T
-real(real64), dimension(3,{nf}), intent(in) :: F
+real(real64), dimension(:,:), intent(in) :: F
 ! right-hand-side of the equation
-real(real64), dimension({na},1), intent(out) :: A
+real(real64), dimension(:), intent(out) :: A
 ! jacobians with respect to Y and dY/dz
-real(real64), dimension({na},{ny}), intent(out) :: MY, MD
+real(real64), dimension(:,:), intent(out) :: MY, MD
 {A}\n{MY}\n{MD}\nend subroutine\n\n"""
 
 fsub_bound = """pure subroutine {name}_{lr} (z,Y,F,B,MB)
 use iso_fortran_env, only: real64
 implicit none
 real(real64), intent(in) :: z
-real(real64), dimension({ny},1), intent(in) :: Y
-real(real64), dimension(3,{nf}), intent(in) :: F
-real(real64), dimension({nb},1), intent(out) :: B
-real(real64), dimension({nb},{ny}), intent(out) :: MB
+real(real64), dimension(:), intent(in) :: Y
+real(real64), dimension(:,:), intent(in) :: F
+real(real64), dimension(:), intent(out) :: B
+real(real64), dimension(:,:), intent(out) :: MB
 {B}\n{MB}\nend subroutine\n\n"""
 
 #------------------------------------------------------------------------------#
@@ -220,14 +247,15 @@ for enableCorona, enableMagnetic, enableConduction in [
     nbl = len(boundL)
     nbr = len(boundR)
 
-    Y = MatrixSymbol('Y', ny, 2)
+    Y = MatrixSymbol('Y', ny, 1)
+    D = MatrixSymbol('D', ny, 1)
 
     #--------------------------------------------------------------------------#
 
     def discretize(eq):
         if eq == 0: return eq
         for iy,y in zip(range(len(yvar)),yvar):
-            eq = eq.subs(Derivative(y,z),Y[iy,1]).subs(y,Y[iy,0])
+            eq = eq.subs(Derivative(y,z),D[iy]).subs(y,Y[iy])
         for k,v in global_variables.items():
             eq = eq.subs(k,Symbol(v, real = True, positive = k.is_positive))
         return function_derivatives(eq)
@@ -289,22 +317,22 @@ for enableCorona, enableMagnetic, enableConduction in [
 
     fcoeffsrc.write(fsub_coeff.format(
         name = routine_name,
-        ny = ny, na = neq, nf = len(global_functions),
-        A = fcode(A, 'A', source_format = 'free', standard = 2008),
-        MY = fcode(MY, 'MY', source_format = 'free', standard = 2008),
-        MD = fcode(MD, 'MD', source_format = 'free', standard = 2008),
+        ny = ':', na = ':', nf = len(global_functions),
+        A = fprinter.doprint(A, 'A'),
+        MY = fprinter.doprint(MY, 'MY'),
+        MD = fprinter.doprint(MD, 'MD'),
     ))
     fcoeffsrc.write(fsub_bound.format(
         name = routine_name, lr = 'bl',
-        ny = ny, nb = nbl, nf = len(global_functions),
-        B = fcode(BL, 'B', source_format = 'free', standard = 2008),
-        MB = fcode(MBL, 'MB', source_format = 'free', standard = 2008),
+        ny = ':', nb = ':', nf = len(global_functions),
+        B = fprinter.doprint(BL, 'B'),
+        MB = fprinter.doprint(MBL, 'MB'),
     ))
     fcoeffsrc.write(fsub_bound.format(
         name = routine_name, lr = 'br',
-        ny = ny, nb = nbr, nf = len(global_functions),
-        B = fcode(BR, 'B', source_format = 'free', standard = 2008),
-        MB = fcode(MBR, 'MB', source_format = 'free', standard = 2008),
+        ny = ":", nb = ":", nf = len(global_functions),
+        B = fprinter.doprint(BR, 'B'),
+        MB = fprinter.doprint(MBR, 'MB'),
     ))
 
     fcoeffsrc.write("\n")

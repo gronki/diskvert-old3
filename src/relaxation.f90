@@ -10,21 +10,21 @@ module relaxation
     implicit none
 
     abstract interface
-        pure subroutine coeff_driver_t(z, Y, D, A, MY, MD, ny)
+        pure subroutine fcoeff_t(z, Y, D, F, A, MY, MD)
             import r64
-            integer, intent(in) :: ny
             real(r64), intent(in) :: z
-            real(r64), intent(in), dimension(ny) :: Y,D
-            real(r64), intent(out), dimension(ny) :: A
-            real(r64), intent(out), dimension(ny,ny) :: MY,MD
+            real(r64), intent(in), dimension(:) :: Y,D
+            real(r64), intent(in), dimension(:,:) :: F
+            real(r64), intent(out), dimension(:) :: A
+            real(r64), intent(out), dimension(:,:) :: MY,MD
         end subroutine
-        pure subroutine bound_driver_t(z, Y, B, M, ny, nb)
+        pure subroutine fbound_t(z, Y, F, B, M)
             import r64
-            integer, intent(in) :: ny,nb
             real(r64), intent(in) :: z
-            real(r64), intent(in), dimension(ny) :: Y
-            real(r64), intent(out), dimension(nb) :: B
-            real(r64), intent(out), dimension(nb,ny) :: M
+            real(r64), intent(in), dimension(:) :: Y
+            real(r64), intent(in), dimension(:,:) :: F
+            real(r64), intent(out), dimension(:) :: B
+            real(r64), intent(out), dimension(:,:) :: M
         end subroutine
     end interface
 
@@ -58,7 +58,8 @@ contains
 
     subroutine mrx_sel_ptrs (nr, f, fbl, fbr)
         integer, intent(in) :: nr
-        procedure(), pointer, intent(out) :: f, fbl, fbr
+        procedure(fcoeff_t), pointer, intent(out) :: f
+        procedure(fbound_t), pointer, intent(out) :: fbl, fbr
         include 'mrxptrs.fi'
     end subroutine
 
@@ -78,13 +79,15 @@ contains
         real(r64), dimension(:), intent(out) :: A
         real(r64), dimension(:,:), target, intent(out) :: M
 
-        real(r64), dimension(:,:), allocatable :: Ym, MY, MD
+        real(r64), dimension(:,:), allocatable :: MY, MD
         integer :: i, nx,nbl,nbr,n
-        procedure(), pointer :: ff,fbl,fbr
+        procedure(fcoeff_t), pointer :: ff
+        procedure(fbound_t), pointer :: fbl, fbr
+        real(r64), dimension(3,3) :: fval
 
         nx = size(x)
         call mrx_sel_dims(nr,n,nbl,nbr)
-        allocate( YM(n,2), MY(n,n), MD(n,n) )
+        allocate( MY(n,n), MD(n,n) )
 
         call mrx_sel_ptrs(nr,ff,fbl,fbr)
 
@@ -94,7 +97,7 @@ contains
                         & BL  => A(1:nbl),          &
                         & MBL => M(1:nbl,1:n))
 
-            call fbl(xbl, YBL, BL, MBL)
+            call fbl(xbl, YBL, fval, BL, MBL)
 
         end associate
 
@@ -102,7 +105,7 @@ contains
                         & BR => A(nbl+(nx-1)*n+1:),     &
                         & MBR => M(nbl+(nx-1)*n+1:, (nx-1)*n+1:))
 
-            call fbr(xbr, YBR, BR, MBR)
+            call fbr(xbr, YBR, fval, BR, MBR)
 
         end associate
 
@@ -113,10 +116,9 @@ contains
                     &   M1 => M(nbl+(i-1)*n+1:nbl+i*n, (i-1)*n+1:i*n),  &
                     &   M2 => M(nbl+(i-1)*n+1:nbl+i*n, i*n+1:(i+1)*n),  &
                     &   Y1 => Y((i-1)*n+1:i*n), Y2 => Y(i*n+1:(i+1)*n))
-                Ym(:,1) = (Y2 + Y1) / 2
-                Ym(:,2) = (Y2 - Y1) / dx
 
-                call ff(xm, Ym, Ai, MY, MD)
+                call ff(xm, (Y2 + Y1) / 2, (Y2 - Y1) / dx, fval, &
+                    & Ai, MY, MD)
 
                 M1(:,:) = MY / 2 - MD / dx
                 M2(:,:) = MY / 2 + MD / dx
@@ -124,7 +126,7 @@ contains
 
         end do through_space
 
-        deallocate(Ym, MY, MD)
+        deallocate(MY, MD)
 
     end subroutine
 
