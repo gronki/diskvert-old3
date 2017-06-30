@@ -2,7 +2,7 @@ module ss73solution
 
     use iso_fortran_env, only: r64 => real64
     use slf_cgs
-    use globals
+    use globals, only: kappa_es, kappa_abs_0, pi
 
     implicit none
 
@@ -10,6 +10,52 @@ module ss73solution
     private :: f
 
 contains
+
+  subroutine apxdisk2d(mbh, mdot, r, alpha, z, rho, T)
+    use globals, only: fteff
+    real(r64), intent(in) :: mbh, mdot,  alpha
+    real(r64), intent(in), dimension(:) :: r, z
+    real(r64), intent(out), dimension(:,:) :: rho,T
+    real(r64) :: r12, r23, rschw
+    real(r64), dimension(size(r)) :: rhoc, Tc, Teff, H
+    integer :: i,j
+
+    teff = fteff(mbh,mdot,r)
+    rschw = sol_rschw * mbh
+
+    call apx_zonebounds(mbh, mdot, alpha, r12, r23)
+    call apx_sel(mbh, mdot, r, alpha, r12, r23, rhoc, Tc, H)
+
+    do i = 1,size(R)
+      call DISKAPX2(mbh, mdot, r(i), alpha, rhoc(i), Tc(i), H(i))
+    end do
+
+    do concurrent (i = 1:size(z), j = 1:size(r))
+      call apxdisk(rhoc(j), Tc(j), Teff(j), H(j), rschw*z(i),  &
+            & rho(i,j), T(i,j))
+    end do
+  end subroutine
+
+  subroutine apxdisk2d_c(mbh, mdot, r, alpha, z, rho, T, nr, nz)  &
+        &  bind(C, name = 'apxdisk2d')
+    use iso_c_binding, only: c_double, c_int
+    real(c_double), intent(in), value :: mbh, mdot,  alpha
+    real(c_double), intent(in) :: r(nr), z(nz)
+    real(c_double), intent(out) :: rho(nz,nr), T(nz,nr)
+    integer(c_int), value :: nr,nz
+
+    call apxdisk2d(mbh, mdot, r, alpha, z, rho, T)
+  end subroutine
+
+  elemental subroutine apxdisk(rhoc, Tc, Teff, H, z, rho, T)
+    real(r64), intent(in) :: rhoc, Tc, Teff, H, z
+    real(r64), intent(out) :: rho, T
+    real(r64) :: expo
+    expo = exp(- (z/H)**2 / 2)
+    rho = rhoc * expo
+    T = (Tc - Teff) * expo + Teff
+  end subroutine
+
 
 !------------------------------------- F --------------------------------------!
 !                       computes the 1-sqrt(3/r) factor                        !

@@ -45,6 +45,13 @@ contains !---------------------------------------------------------------------!
         zscale = sqrt( 2 * cgs_k_over_mh * teff ) / omega
     end function
 
+    elemental function fTeff(mbh, mdot, r) result(teff)
+      real(r64), intent(in) :: mbh, mdot, r
+      real(r64) :: flux, teff
+      flux = sol_facc_edd * (mdot / mbh) * (1 - sqrt(3/r)) / r**3
+      teff = ( flux / cgs_stef ) ** (1d0 / 4d0)
+    end function
+
 !------------------------------------------------------------------------------!
 
     elemental function fksct(rho,T) result(ksct)

@@ -26,6 +26,18 @@ alf_getn = CFACTORY(__libdv, 'alf_getn', [
     (POINTER(c_int), 'out', 'na'),
 ])
 
+apxdisk2d = CFACTORY(__libdv, 'apxdisk2d', [
+    (c_double, 'in', 'mass_black_hole'),
+    (c_double, 'in', 'accretion_rate_mdot'),
+    (ndpointer(c_double), 'in', 'radii'),
+    (c_double, 'in', 'alpha'),
+    (ndpointer(c_double), 'in', 'heights'),
+    (ndpointer(c_double,2), 'inout', 'rho'),
+    (ndpointer(c_double,2), 'inout', 'T'),
+    (c_int, 'in', 'n_radii'),
+    (c_int, 'in', 'n_heights'),
+])
+
 mrx_model = CFACTORY(__libdv, 'mrx_model', [
     (c_int, 'in', 'compton'),
     (c_int, 'in', 'magnetic'),
