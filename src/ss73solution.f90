@@ -11,6 +11,20 @@ module ss73solution
 
 contains
 
+!--------------------------------- APXDISK2D ----------------------------------!
+!      calculates a radial slice through an accretion disk, based on SS73      !
+!                             analytical solution                              !
+!----------------------------------- INPUTS -----------------------------------!
+!             mbh: black hole mass                                             !
+!            mdot: accretion rate                                              !
+!               r: array of radii                                              !
+!           alpha: alpha parameter                                             !
+!               z: array of heights to calculate, expressed in rschw           !
+!---------------------------------- OUTPUTS -----------------------------------!
+!                               rho: density                                   !
+!                                 T: temperature                               !
+!------------------------------------------------------------------------------!
+
   subroutine apxdisk2d(mbh, mdot, r, alpha, z, rho, T)
     use globals, only: fteff
     real(r64), intent(in) :: mbh, mdot,  alpha
@@ -47,6 +61,21 @@ contains
     call apxdisk2d(mbh, mdot, r, alpha, z, rho, T)
   end subroutine
 
+!---------------------------------- APXDISK -----------------------------------!
+!  for given parameters (obtained by another routines) helps to calculate the  !
+!    approximate vertical structure of an accretion disk, assuming gaussian    !
+!                 vertical profile of density and temperature                  !
+!----------------------------------- INPUTS -----------------------------------!
+!                 rhoc: central density                                        !
+!                   Tc: central temperature                                    !
+!                 Teff: effective temperature                                  !
+!                    H: disk characteristic height                             !
+!                    z: height to calculate parameters (in cm)                 !
+!---------------------------------- OUTPUTS -----------------------------------!
+!                               rho: density                                   !
+!                                 T: temperature                               !
+!------------------------------------------------------------------------------!
+
   elemental subroutine apxdisk(rhoc, Tc, Teff, H, z, rho, T)
     real(r64), intent(in) :: rhoc, Tc, Teff, H, z
     real(r64), intent(out) :: rho, T
@@ -55,7 +84,6 @@ contains
     rho = rhoc * expo
     T = (Tc - Teff) * expo + Teff
   end subroutine
-
 
 !------------------------------------- F --------------------------------------!
 !                       computes the 1-sqrt(3/r) factor                        !
