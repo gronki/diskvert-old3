@@ -21,11 +21,11 @@ contains
     subroutine run_alpha_simple(mbh,mdot,radius,alpha)
 
         real(r64), intent(in) :: mbh, mdot, radius, alpha
-        real(r64) :: omega, flux_acc, temp_eff, zscale
+        real(r64) :: omega, Facc, Teff, zscale
         real(r64) :: h, h_hi, h_lo
         integer :: it,nmax,i
 
-        call cylinder(mbh, mdot, radius, omega, flux_acc, temp_eff, zscale)
+        call cylinder(mbh, mdot, radius, omega, Facc, Teff, zscale)
 
         h_hi = 12.0 * 31
         h_lo = 12.0 / 31
@@ -37,19 +37,19 @@ contains
 
             forall (i = 1:nn) z(i) = space_linlog_r(i,nn,h) * zscale
 
-            y(c_flux,1) = flux_acc
+            y(c_flux,1) = Facc
             y(c_rho,1) = 1d-16
             y(c_tau,1) = epsilon(1d0)
-            y(c_temp,1) = temp_eff * 0.5d0 ** (1d0 / 4d0)
+            y(c_temp,1) = Teff * 0.5d0 ** (1d0 / 4d0)
 
             call rk4integr(z, y(:,1), f, y, dy, nmax)
 
             if ( nmax < nn ) then
                 h_hi = h
-                write (0,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_flux,nmax) / flux_acc, 1d2 * nmax / nn, '\/'
-            else if (y(c_flux,nn) > 1d-12 * flux_acc) then
+                write (0,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_flux,nmax) / Facc, 1d2 * nmax / nn, '\/'
+            else if (y(c_flux,nn) > 1d-12 * Facc) then
                 h_lo = h
-                write (0,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_flux,nmax) / flux_acc, 1d2 * nmax / nn, '/\'
+                write (0,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_flux,nmax) / Facc, 1d2 * nmax / nn, '/\'
             else
                 exit adjust_height
             end if

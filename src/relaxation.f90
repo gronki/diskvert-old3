@@ -28,8 +28,8 @@ module relaxation
         end subroutine
     end interface
 
-    real(r64) :: alpha, zeta
-    real(r64) :: omega, radius, flux_acc
+    real(r64) :: alpha = 0, zeta = 0
+    real(r64) :: omega, radius, facc, teff, zscale
 
     integer, parameter :: c_rho = 1, c_Tgas = 2, c_Trad = 3, &
             & c_Frad = 4, c_Pmag = 5, c_Fcond = 6
@@ -37,6 +37,17 @@ module relaxation
     private :: ramp
 
 contains
+
+  subroutine mrx_init(mb, md, rad, alph, zet)
+    real(r64), intent(in) :: mb, md, rad, alph
+    real(r64), intent(in), optional :: zet
+    mbh = mb
+    mdot = md
+    radius = rad
+    alpha = alph
+    if (present(zet)) zeta = zet
+    call cylinder(mbh, mdot, radius, omega, facc, teff, zscale)
+  end subroutine
 
     pure function mrx_number(compton, magnetic, conduction) result(nr)
         logical, intent(in) :: compton,magnetic,conduction
@@ -57,6 +68,12 @@ contains
         integer, intent(out) :: n, nbl, nbr
         include 'mrxdims.fi'
     end subroutine
+
+    elemental function mrx_ny(nr) result(ny)
+        integer, intent(in) :: nr
+        integer :: ny
+        include 'mrxynum.fi'
+    end function
 
     subroutine mrx_sel_ptrs (nr, f, fbl, fbr)
         integer, intent(in) :: nr

@@ -7,6 +7,8 @@ heatbil.o       : cgs.o globals.o
 modelmag.o      : balance.o findzer.o settings.o eulerintegr.o alphasimp.o     \
     globals.o rk4settings.o threshold.o rk4integr.o fileunits.o cgs.o 
 dv-alpha.o      : fileunits.o alphadisk.o globals.o results.o settings.o 
+dv-alpha-rx.o   : ss73solution.o globals.o grid.o settings.o fileunits.o       \
+    relaxation.o 
 dv-mag.o        : globals.o grid.o settings.o fileunits.o modelmag.o results.o 
 dv-rad1.o       : ss73solution.o globals.o settings.o alphadisk.o cgs.o        \
     fileunits.o 

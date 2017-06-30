@@ -27,9 +27,9 @@ program dv_rad1
     integer :: nmax
 
 
-    call rdargv_global()
+    call rdargvgl()
     call mincf_read(cfg)
-    call rdconf_global(cfg)
+    call rdconfgl(cfg)
     call rdconf(cfg)
     call mincf_free(cfg)
 

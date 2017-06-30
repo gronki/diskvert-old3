@@ -20,7 +20,7 @@ module modelmag
     implicit none
 
     real(r64), private :: radius, alpha, zeta
-    real(r64), private :: omega, flux_acc, temp_eff, zscale, rschw
+    real(r64), private :: omega, Facc, Teff, zscale, rschw
 
     integer, parameter :: n_vals = 7, &
                 v_taues =     1, &
@@ -80,7 +80,7 @@ contains
         alpha = alph
         zeta = zet
         rschw = sol_rschw * mb
-        call cylinder(mbh, mdot, radius, omega, flux_acc, temp_eff, zscale)
+        call cylinder(mbh, mdot, radius, omega, Facc, Teff, zscale)
     end subroutine
 
     subroutine run_m1(z,val,der,par,nmax)
@@ -164,11 +164,11 @@ contains
 
             end do iter_temp
 
-            if ( val(v_fgen,nmax) .gt. flux_acc ) then ! .or. nmax .lt. nz-1
+            if ( val(v_fgen,nmax) .gt. Facc ) then ! .or. nmax .lt. nz-1
                 !too much flux
                 rho_0_hi = rho_0
                 buf = "\/ RHO"
-            else if ( val(v_fgen,nmax) .lt. flux_acc ) then
+            else if ( val(v_fgen,nmax) .lt. Facc ) then
                 ! too lil flux
                 rho_0_lo = rho_0
                 buf = "/\ RHO"
@@ -178,10 +178,10 @@ contains
 
             write (ulog,*) "   ========================================="
             write (ulog,"(A5,A5,3A14,A10)") "i0", "*", "rho0", "Fgen", "Facc" , "ACTN"
-            write (ulog,"(I5,A5,3Es14.6,A10)") iter0, "*", rho_0, val(v_fgen,nmax), flux_acc , trim(buf)
+            write (ulog,"(I5,A5,3Es14.6,A10)") iter0, "*", rho_0, val(v_fgen,nmax), Facc , trim(buf)
             write (ulog,*) "   ========================================="
 
-            if ( abs(2*(val(v_fgen,nmax) - flux_acc)/(val(v_fgen,nmax) + flux_acc)) .lt. max_iteration_error ) then
+            if ( abs(2*(val(v_fgen,nmax) - Facc)/(val(v_fgen,nmax) + Facc)) .lt. max_iteration_error ) then
                 write (ulog,"(A,Es9.1,A)") "Maximum precision ",max_iteration_error," reached."
                 exit iter_rho
             end if

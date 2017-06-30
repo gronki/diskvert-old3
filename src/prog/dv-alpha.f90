@@ -34,10 +34,10 @@ program dv_alpha
     a_labels(c_compW)   = 'compW'
     a_labels(c_compY)   = 'compY'
 
-    call rdargv_global
-    call rdargv_rk4
+    call rdargvgl
+    call rdargvrk4
     call mincf_read(cfg)
-    call rdconf_global(cfg)
+    call rdconfgl(cfg)
     call rdconf(cfg)
     call mincf_free(cfg)
 

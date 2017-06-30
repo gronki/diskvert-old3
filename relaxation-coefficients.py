@@ -20,7 +20,7 @@ k        = Symbol('k_B', real = True, positive = True)
 
 global_variables = {
     omega:  'omega',
-    F_acc:  'flux_acc',
+    F_acc:  'facc',
     m_el:   'cgs_mel',
     m_H:    'cgs_mhydr',
     c:      'cgs_c',
@@ -93,7 +93,8 @@ fswptrs = open('src/mrxptrs.fi','w')
 fswname = open('src/mrxname.fi','w')
 fswdims = open('src/mrxdims.fi','w')
 fswhash = open('src/mrxhash.fi','w')
-fswall = [fswptrs, fswdims, fswhash, fswname]
+fswynum = open('src/mrxynum.fi','w')
+fswall = [fswptrs, fswdims, fswhash, fswname, fswynum]
 
 for f in fswall: f.write("select case (nr)\n")
 
@@ -345,6 +346,7 @@ for enableCorona, enableMagnetic, enableConduction in [
     fswptrs.write ('    f => {}\n'.format(routine_name))
     fswptrs.write ('    fbL => {}\n'.format(routine_name+'_bL'))
     fswptrs.write ('    fbR => {}\n'.format(routine_name+'_bR'))
+    fswynum.write ('    ny = {}\n'.format(len(yvar)))
     fswdims.write ('    n = {}\n'.format(len(yvar)))
     fswdims.write ('    nbL = {}\n'.format(len(boundL)))
     fswdims.write ('    nbR = {}\n'.format(len(boundR)))

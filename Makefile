@@ -29,7 +29,7 @@ OBJECTS_LIB =  $(addsuffix .o,$(basename $(notdir \
 OBJECTS_UTIL = $(addsuffix .o,$(basename $(notdir \
 	$(wildcard src/util/*.[fF]90))))
 
-coeffincludes = coefficients.fi mrxdims.fi mrxhash.fi mrxname.fi mrxptrs.fi
+coeffincludes = coefficients.fi mrxdims.fi mrxhash.fi mrxname.fi mrxptrs.fi mrxynum.fi
 
 VPATH = src:src/util:src/prog:src/math:src/lapack
 

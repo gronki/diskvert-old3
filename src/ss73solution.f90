@@ -25,11 +25,11 @@ contains
 !                                 T: temperature                               !
 !------------------------------------------------------------------------------!
 
-  subroutine apxdisk2d(mbh, mdot, r, alpha, z, rho, T)
+  subroutine apxdisk2d(mbh, mdot, r, alpha, z, rho, T, Frad)
     use globals, only: fteff
     real(r64), intent(in) :: mbh, mdot,  alpha
     real(r64), intent(in), dimension(:) :: r, z
-    real(r64), intent(out), dimension(:,:) :: rho,T
+    real(r64), intent(out), dimension(:,:) :: rho,T,Frad
     real(r64) :: r12, r23, rschw
     real(r64), dimension(size(r)) :: rhoc, Tc, Teff, H
     integer :: i,j
@@ -46,19 +46,19 @@ contains
 
     do concurrent (i = 1:size(z), j = 1:size(r))
       call apxdisk(rhoc(j), Tc(j), Teff(j), H(j), rschw*z(i),  &
-            & rho(i,j), T(i,j))
+            & rho(i,j), T(i,j), Frad(i,j))
     end do
   end subroutine
 
-  subroutine apxdisk2d_c(mbh, mdot, r, alpha, z, rho, T, nr, nz)  &
+  subroutine apxdisk2d_c(mbh, mdot, r, alpha, z, rho, T, Frad, nr, nz)  &
         &  bind(C, name = 'apxdisk2d')
     use iso_c_binding, only: c_double, c_int
     real(c_double), intent(in), value :: mbh, mdot,  alpha
     real(c_double), intent(in) :: r(nr), z(nz)
-    real(c_double), intent(out) :: rho(nz,nr), T(nz,nr)
+    real(c_double), intent(out) :: rho(nz,nr), T(nz,nr), Frad(nz,nr)
     integer(c_int), value :: nr,nz
 
-    call apxdisk2d(mbh, mdot, r, alpha, z, rho, T)
+    call apxdisk2d(mbh, mdot, r, alpha, z, rho, T, Frad)
   end subroutine
 
 !---------------------------------- APXDISK -----------------------------------!
@@ -76,13 +76,16 @@ contains
 !                                 T: temperature                               !
 !------------------------------------------------------------------------------!
 
-  elemental subroutine apxdisk(rhoc, Tc, Teff, H, z, rho, T)
+  elemental subroutine apxdisk(rhoc, Tc, Teff, H, z, rho, T, Frad)
+    use slf_cgs, only: cgs_stef
     real(r64), intent(in) :: rhoc, Tc, Teff, H, z
-    real(r64), intent(out) :: rho, T
-    real(r64) :: expo
+    real(r64), intent(out) :: rho, T, Frad
+    real(r64) :: expo, x
     expo = exp(- (z/H)**2 / 2)
     rho = rhoc * expo
     T = (Tc - Teff) * expo + Teff
+    x = merge(z/H, 1.0_r64, z < H)
+    Frad = (2 - x) * x * cgs_stef * Teff**4
   end subroutine
 
 !------------------------------------- F --------------------------------------!

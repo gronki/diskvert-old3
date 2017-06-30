@@ -31,7 +31,7 @@ module rk4settings
 
 contains
 
-    subroutine rdargv_rk4
+    subroutine rdargvrk4
         integer :: i,errno
         character(2**8) :: arg, nextarg
 

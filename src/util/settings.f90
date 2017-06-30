@@ -20,7 +20,7 @@ contains
 !       reads command line arguments and stores them in global variables       !
 !------------------------------------------------------------------------------!
 
-    subroutine rdargv_global
+    subroutine rdargvgl
 
         integer :: errno,i
         character(128) :: arg, nextarg
@@ -74,7 +74,7 @@ contains
 
     end subroutine
 
-    subroutine rdconf_global(cfg)
+    subroutine rdconfgl(cfg)
         use confort
         type(config) :: cfg
         character(128) :: buf

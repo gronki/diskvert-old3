@@ -16,7 +16,7 @@ module alphadisk
     implicit none
 
     real(r64), private :: radius, alpha
-    real(r64), private :: omega, flux_acc, temp_eff, zscale
+    real(r64), private :: omega, Facc, Teff, zscale
 
     integer, parameter :: ny = 4,   &
         &   c_Pgas = 1, c_Prad = 2, c_Frad = 3, c_tau = 4
@@ -39,7 +39,7 @@ contains
         mdot = md
         radius = r
         alpha = alph
-        call cylinder(mbh, mdot, radius, omega, flux_acc, temp_eff, zscale)
+        call cylinder(mbh, mdot, radius, omega, Facc, Teff, zscale)
     end subroutine
 
     SUBROUTINE ALF_GETN(NY1,NA1) BIND(C)
@@ -69,9 +69,9 @@ contains
 
             forall (i = 1:nz)  z(i) = space_linlog_r(i,nz,h) * zscale
 
-            y(c_Frad,1) = flux_acc
-            y(c_Prad,1) = flux_acc * 2 / (3 * cgs_c)
-            y(c_Pgas,1) = temp_eff * 1e-16 * cgs_k_over_mh
+            y(c_Frad,1) = Facc
+            y(c_Prad,1) = Facc * 2 / (3 * cgs_c)
+            y(c_Pgas,1) = Teff * 1e-16 * cgs_k_over_mh
             y(c_tau,1)  = epsilon(1d0)
 
             if ( cfg_euler_integration ) then
@@ -82,10 +82,10 @@ contains
 
             if ( nmax < nz ) then
                 h_hi = h
-                write (ulog,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_Frad,nmax) / flux_acc, 100.0 * nmax / nz, '\/'
-            else if (y(c_Frad,nz) > 1e-10 * flux_acc) then
+                write (ulog,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_Frad,nmax) / Facc, 100.0 * nmax / nz, '\/'
+            else if (y(c_Frad,nz) > 1e-10 * Facc) then
                 h_lo = h
-                write (ulog,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_Frad,nmax) / flux_acc, 100.0 * nmax / nz, '/\'
+                write (ulog,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_Frad,nmax) / Facc, 100.0 * nmax / nz, '/\'
             else
                 write (ulog,'("iteration finished")')
                 exit

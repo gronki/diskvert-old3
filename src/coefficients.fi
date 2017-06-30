@@ -73,7 +73,7 @@ real(real64), dimension(:), intent(in) :: Y
 real(real64), dimension(:,:), intent(in) :: F
 real(real64), dimension(:), intent(out) :: B
 real(real64), dimension(:,:), intent(out) :: MB
-B(1) = flux_acc - Y(3)
+B(1) = facc - Y(3)
 B(2) = 2*cgs_stef*Y(2)**4 - Y(3)
 MB(1,1) = 0
 MB(2,1) = 0
@@ -189,7 +189,7 @@ real(real64), dimension(:), intent(in) :: Y
 real(real64), dimension(:,:), intent(in) :: F
 real(real64), dimension(:), intent(out) :: B
 real(real64), dimension(:,:), intent(out) :: MB
-B(1) = flux_acc - Y(3)
+B(1) = facc - Y(3)
 B(2) = 2*cgs_stef*Y(4)**4 - Y(3)
 MB(1,1) = 0
 MB(2,1) = 0
@@ -301,7 +301,7 @@ real(real64), dimension(:), intent(in) :: Y
 real(real64), dimension(:,:), intent(in) :: F
 real(real64), dimension(:), intent(out) :: B
 real(real64), dimension(:,:), intent(out) :: MB
-B(1) = flux_acc - 2*omega*z*zeta*Y(4) - Y(3)
+B(1) = facc - 2*omega*z*zeta*Y(4) - Y(3)
 B(2) = 2*cgs_stef*Y(2)**4 - Y(3)
 MB(1,1) = 0
 MB(2,1) = 0
@@ -448,7 +448,7 @@ real(real64), dimension(:), intent(in) :: Y
 real(real64), dimension(:,:), intent(in) :: F
 real(real64), dimension(:), intent(out) :: B
 real(real64), dimension(:,:), intent(out) :: MB
-B(1) = flux_acc - 2*omega*z*zeta*Y(5) - Y(3)
+B(1) = facc - 2*omega*z*zeta*Y(5) - Y(3)
 B(2) = 2*cgs_stef*Y(4)**4 - Y(3)
 MB(1,1) = 0
 MB(2,1) = 0
@@ -559,7 +559,7 @@ real(real64), dimension(:), intent(in) :: Y
 real(real64), dimension(:,:), intent(in) :: F
 real(real64), dimension(:), intent(out) :: B
 real(real64), dimension(:,:), intent(out) :: MB
-B(1) = flux_acc - Y(3) - Y(4)
+B(1) = facc - Y(3) - Y(4)
 B(2) = 2*cgs_stef*Y(2)**4 - Y(3)
 MB(1,1) = 0
 MB(2,1) = 0
@@ -704,7 +704,7 @@ real(real64), dimension(:), intent(in) :: Y
 real(real64), dimension(:,:), intent(in) :: F
 real(real64), dimension(:), intent(out) :: B
 real(real64), dimension(:,:), intent(out) :: MB
-B(1) = flux_acc - Y(3) - Y(5)
+B(1) = facc - Y(3) - Y(5)
 B(2) = 2*cgs_stef*Y(4)**4 - Y(3)
 MB(1,1) = 0
 MB(2,1) = 0
@@ -845,7 +845,7 @@ real(real64), dimension(:), intent(in) :: Y
 real(real64), dimension(:,:), intent(in) :: F
 real(real64), dimension(:), intent(out) :: B
 real(real64), dimension(:,:), intent(out) :: MB
-B(1) = flux_acc - 2*omega*z*zeta*Y(4) - Y(3) - Y(5)
+B(1) = facc - 2*omega*z*zeta*Y(4) - Y(3) - Y(5)
 B(2) = 2*cgs_stef*Y(2)**4 - Y(3)
 MB(1,1) = 0
 MB(2,1) = 0
@@ -1027,7 +1027,7 @@ real(real64), dimension(:), intent(in) :: Y
 real(real64), dimension(:,:), intent(in) :: F
 real(real64), dimension(:), intent(out) :: B
 real(real64), dimension(:,:), intent(out) :: MB
-B(1) = flux_acc - 2*omega*z*zeta*Y(5) - Y(3) - Y(6)
+B(1) = facc - 2*omega*z*zeta*Y(5) - Y(3) - Y(6)
 B(2) = 2*cgs_stef*Y(4)**4 - Y(3)
 MB(1,1) = 0
 MB(2,1) = 0
