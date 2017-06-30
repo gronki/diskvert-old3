@@ -3,18 +3,19 @@ VERSION  	 	= 170623
 prefix 	 	 	= /usr/local
 bindir		 	= $(prefix)/bin
 datadir	 	 	= $(prefix)/share
-includedir 	 	= $(prefix)/include
+includedir 	= $(prefix)/include
 libdir 	 	 	= $(prefix)/lib
 fmoddir			= $(libdir)/gfortran/modules
-pkgconfigdir    = $(libdir)/pkgconfig
+pkgconfigdir= $(libdir)/pkgconfig
 
 INCLUDE	 	 	= -Ilibconfort
 LDFLAGS			= -L.
 LDLIBS			= -lopenblas
 
-FC				= f95
+FC					= f95
 CFLAGS			?= -g -Wall -O3 -mieee-fp
-FFLAGS			?= $(CFLAGS) -Warray-temporaries -Wpedantic
+FFLAGS			?= $(CFLAGS) -Warray-temporaries -Wpedantic \
+			-Wno-unused-dummy-argument
 override FFLAGS += -fexternal-blas
 override CPPFLAGS += -DVERSION=$(VERSION)
 
