@@ -71,4 +71,19 @@ contains
         end do iterate_cmdline_arguments
     end subroutine
 
+    subroutine tempmethod_c(m) bind(C, name = 'tempmethod')
+      use iso_c_binding, only: c_char
+      character(c_char), value :: m
+      select case (m)
+      case ('E')
+        cfg_temperature_method = EQUATION_EQUILIBR
+      case ('B')
+        cfg_temperature_method = EQUATION_BALANCE
+      case ('C')
+        cfg_temperature_method = EQUATION_COMPTON
+      case default
+        error stop "method must be: E(quilibrium), B(alance) or C(ompton)"
+      end select
+    end subroutine
+
 end module

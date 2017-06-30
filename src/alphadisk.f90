@@ -11,6 +11,7 @@ module alphadisk
     use slf_threshold, only: thrtanh
     use rk4settings
     use fileunits
+    use heatbalance
 
     implicit none
 
@@ -19,19 +20,20 @@ module alphadisk
 
     integer, parameter :: ny = 4,   &
         &   c_Pgas = 1, c_Prad = 2, c_Frad = 3, c_tau = 4
-    integer, parameter :: na = 8,   &
-        &   c_rho = 3, &
-        &   c_Tgas = 2, &
-        &   c_Trad = 4, &
-        &   c_zscal = 1, &
-        &   c_heat = 5, &
+    integer, parameter :: na = 10,   &
+        &   c_zscal   = 1, &
+        &   c_Tgas    = 2, &
+        &   c_rho     = 3, &
+        &   c_Trad    = 4, &
+        &   c_heat    = 5, &
         &   c_heat_max = 6, &
-        &   c_compW = 7, &
-        &   c_compY = 8
+        &   c_compW   = 7, &
+        &   c_compY   = 8, &
+        &   c_kabs = 9, c_ksct = 10
 
 contains
 
-    subroutine init_alpha(mb,md,r,alph)
+    subroutine init_alpha(mb,md,r,alph) bind(C)
         real(r64), intent(in) :: mb,md,r,alph
         mbh = mb
         mdot = md
@@ -40,7 +42,13 @@ contains
         call cylinder(mbh, mdot, radius, omega, flux_acc, temp_eff, zscale)
     end subroutine
 
-    subroutine run_alpha(z,nz,y,dy,a,nmax)
+    SUBROUTINE ALF_GETN(NY1,NA1) BIND(C)
+      INTEGER(C_INT), INTENT(OUT) :: NY1,NA1
+      NY1 = NY
+      NA1 = NA
+    END SUBROUTINE
+
+    subroutine run_alpha(z,nz,y,dy,a,nmax) bind(C)
         ! ilosc przedzialow obliczeniowych
         integer, intent(in) :: nz
         real(r64), intent(inout), dimension(nz) :: z
@@ -92,9 +100,9 @@ contains
         real(r64), intent(inout) :: dy(size(y)), a(:)
         logical, intent(inout) :: abort
 
-        real(r64) :: compsw
+        real(r64) :: compsw, t1
         real(r64), parameter :: toler = 1
-        real(r64) :: kabs, epsi, taues
+        real(r64) :: kabs, ksct, epsi, taues
 
         if ( y(c_Frad) < 0 ) then
             abort = .TRUE.
@@ -102,8 +110,11 @@ contains
 
         a(c_zscal)  = z / zscale
         a(c_Trad)   = ( (3 * cgs_c) / (4 * cgs_stef) * y(c_Prad)) ** 0.25d0
-        a(c_heat)   = alpha * omega * ( y(c_Pgas) + y(c_Prad) )
+        a(c_heat)   = alpha * omega * y(c_Pgas)
 
+        if ( cfg_temperature_method == EQUATION_EQUILIBR ) then
+          a(c_heat) = a(c_heat) + alpha * omega * y(c_prad)
+        end if
 
         a(c_heat_max) = 12 * cgs_kapes * y(c_Prad)  &
                 & * ( y(c_Pgas) * miu * cgs_mhydr ) &
@@ -119,34 +130,39 @@ contains
             a(c_Tgas) = a(c_Trad) * (1 + a(c_compW))
             a(c_rho) = y(c_Pgas) * miu / ( cgs_k_over_mh * a(c_Tgas) )
 
-            kabs = kappa_abs_0 * a(c_rho) * a(c_Tgas)**(-3.5d0)
-            epsi = kabs / (kabs+kappa_es)
+            kabs = fkabs(a(c_rho),a(c_Tgas))
+            ksct = fksct(a(c_rho),a(c_Tgas))
+            epsi = kabs / (kabs + ksct)
             taues = (1. - epsi)/sqrt(epsi)
-            a(c_compY) = 4 * cgs_boltz * a(c_tgas) &
-            & / ( cgs_mel * cgs_c**2 )  &
-            & * max( taues, taues**2 )
+            a(c_compY) = 4 * cgs_boltz * a(c_tgas) / ( cgs_mel * cgs_c**2 )  &
+                & * max( taues, taues**2 )
             compsw = thrtanh( (log(a(c_compY)) - log(1.0))/log(1+toler) )
 
             a(c_Tgas) = a(c_trad) * ( 1 + compsw * a(c_compW) )
         case (EQUATION_BALANCE)
-            stop "This is not yet implemented!"
+            a(c_Tgas) = a(c_trad)
+            call heatbil(a(c_tgas), a(c_trad), y(c_pgas), a(c_heat))
         case default
             error stop "incorrect value of cfg_temperature_method"
         end select
 
         a(c_rho) = y(c_Pgas) * miu / ( cgs_k_over_mh * a(c_Tgas) )
 
-        kabs = kappa_abs_0 * a(c_rho) * a(c_Tgas)**(-3.5d0)
-        epsi = kabs / (kabs+kappa_es)
+        kabs = fkabs(a(c_rho),a(c_Tgas))
+        ksct = fksct(a(c_rho),a(c_Tgas))
+        epsi = kabs / (kabs+ksct)
         taues = (1. - epsi)/sqrt(epsi)
         a(c_compY) = 4 * cgs_boltz * a(c_tgas) &
             & / ( cgs_mel * cgs_c**2 )  &
             & * max( taues, taues**2 )
 
+        a(c_kabs) = kabs
+        a(c_ksct) = ksct
+
         dy(c_Frad)  = a(c_heat)
         dy(c_Prad)  = - cgs_kapes * a(c_rho) / cgs_c * y(c_Frad)
         dy(c_Pgas)  = - omega**2 * a(c_rho) * z - dy(c_Prad)
-        dy(c_tau)   = - cgs_kapes * a(c_rho)
+        dy(c_tau)   = - (kabs + ksct) * a(c_rho)
 
     end subroutine
 

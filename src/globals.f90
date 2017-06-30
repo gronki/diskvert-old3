@@ -17,7 +17,7 @@ module globals
     real(r64) :: kappa_abs_0 = 3.68d22 * (1 - Z0) * (1 + X0)
 
     logical :: kramers_opacity_ff = .true.
-    logical :: kramers_opacity_bf = .false.
+    logical :: kramers_opacity_bf = .true.
 
     real(r64) :: mbh, mdot
 
