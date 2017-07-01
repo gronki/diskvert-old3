@@ -83,7 +83,7 @@ contains
     real(r64) :: expo, x
     expo = exp(- (z/H)**2 / 2)
     rho = rhoc * expo
-    T = (Tc - Teff) * expo + Teff
+    T = (Tc - Teff * 0.841) * expo + Teff * 0.841
     x = merge(z/H, 1.0_r64, z < H)
     Frad = (2 - x) * x * cgs_stef * Teff**4
   end subroutine

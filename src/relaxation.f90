@@ -34,8 +34,6 @@ module relaxation
     integer, parameter :: c_rho = 1, c_Tgas = 2, c_Trad = 3, &
             & c_Frad = 4, c_Pmag = 5, c_Fcond = 6
 
-    private :: ramp
-
 contains
 
   subroutine mrx_init(mb, md, rad, alph, zet)
@@ -103,13 +101,17 @@ contains
         integer :: i, nx,nbl,nbr,n
         procedure(fcoeff_t), pointer :: ff
         procedure(fbound_t), pointer :: fbl, fbr
-        real(r64), dimension(3,3) :: fval
+        ! nieprzezroczystosci: (pochodna,rodzaj)
+        ! kolejnosc: abs, sct, cond
+        real(r64), dimension(3,3) :: FV
+        integer, dimension(6) :: CC
 
         nx = size(x)
         call mrx_sel_dims(nr,n,nbl,nbr)
         allocate( ym(n), dy(n), MY(n,n), MD(n,n) )
 
         call mrx_sel_ptrs(nr,ff,fbl,fbr)
+        call mrx_sel_hash(nr,CC)
 
         M = 0
 
@@ -117,7 +119,10 @@ contains
                         & BL  => A(1:nbl),          &
                         & MBL => M(1:nbl,1:n))
 
-            call fbl(xbl, YBL, fval, BL, MBL)
+            call kappabs(YBL(CC(1)), YBL(CC(2)), FV(1,1), FV(2,1), FV(3,1))
+            call kappsct(YBL(CC(1)), YBL(CC(2)), FV(1,2), FV(2,2), FV(3,2))
+            FV(:,3) = 0
+            call fbl(xbl, YBL, FV, BL, MBL)
 
         end associate
 
@@ -125,7 +130,10 @@ contains
                         & BR => A(nbl+(nx-1)*n+1:),     &
                         & MBR => M(nbl+(nx-1)*n+1:, (nx-1)*n+1:))
 
-            call fbr(xbr, YBR, fval, BR, MBR)
+            call kappabs(YBR(CC(1)), YBR(CC(2)), FV(1,1), FV(2,1), FV(3,1))
+            call kappsct(YBR(CC(1)), YBR(CC(2)), FV(1,2), FV(2,2), FV(3,2))
+            FV(:,3) = 0
+            call fbr(xbr, YBR, FV, BR, MBR)
 
         end associate
 
@@ -139,7 +147,12 @@ contains
 
                 YM = (Y2 + Y1) / 2
                 DY = (Y2 - Y1) / dx
-                call ff(xm, YM, DY, fval, Ai, MY, MD)
+
+                call kappabs(YM(CC(1)), YM(CC(2)), FV(1,1), FV(2,1), FV(3,1))
+                call kappsct(YM(CC(1)), YM(CC(2)), FV(1,2), FV(2,2), FV(3,2))
+                FV(:,3) = 0
+
+                call ff(xm, YM, DY, FV, Ai, MY, MD)
 
                 M1(:,:) = MY / 2 - MD / dx
                 M2(:,:) = MY / 2 + MD / dx
@@ -175,13 +188,29 @@ contains
 
     end subroutine
 
-    elemental function ramp(i,n) result(y)
-        integer, intent(in) :: i,n
-        real(r64) :: t,y
-        t = merge(real(i) / n, 1.0, i .le. n)
-        y = 3 * t**2 - 2 * t**3
-    end function
+  !----------------------------------------------------------------------------!
+  ! this is a very smooth, s-shaped ramp
+  ! slow convergence but good if we are away from the solution
+  elemental function ramp1(i,n,y0) result(y)
+    integer, intent(in) :: i,n
+    real(r64), intent(in), optional :: y0
+    real(r64) :: t,y
+    t = merge(real(i) / n, 1.0, i .le. n)
+    y = (3 - 2*t) * t**2
+    if (present(y0)) y = y0 + (1 - y0) * y
+  end function
 
-    include 'coefficients.fi'
+  !----------------------------------------------------------------------------!
+  ! this is a very steep ramp, for later iterations
+  elemental function ramp2(i,n,y0) result(y)
+    integer, intent(in) :: i,n
+    real(r64), intent(in), optional :: y0
+    real(r64) :: t,y
+    t = merge(real(i) / n, 1.0, i .le. n)
+    y = t * (2 - t)
+    if (present(y0)) y = y0 + (1 - y0) * y
+  end function
+
+  include 'coefficients.fi'
 
 end module relaxation

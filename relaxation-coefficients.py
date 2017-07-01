@@ -132,7 +132,7 @@ for enableCorona, enableMagnetic, enableConduction in [
     if enableConduction: yvar.append(F_cond)
 
     yvar_all = [rho, T_gas, T_rad, F_rad, P_mag, F_cond]
-    yval_hash = [ yvar.index(y) if y in yvar else -100 for y in yvar_all ]
+    yval_hash = [ yvar.index(y) if y in yvar else -1 for y in yvar_all ]
 
     #--------------------------------------------------------------------------#
 
