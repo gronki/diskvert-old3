@@ -86,7 +86,7 @@ contains
     subroutine run_m1(z,val,der,par,nmax)
 
         use alphasimp, only: run_alpha_simple, minidisk => y, &
-            md_rho => c_rho, md_temp => c_temp
+            md_rho => c_rho, md_temp => c_temp, mininn => nn
 
         ! ilosc przedzialow obliczeniowych
         real(r64), intent(inout), dimension(:) :: z
@@ -101,8 +101,8 @@ contains
         character(len=1024) :: buf
 
         call run_alpha_simple(mbh, mdot, radius, alpha)
-        rho_0_estim = minidisk(md_rho,1)
-        temp_0_estim = minidisk(md_temp,1)
+        rho_0_estim = minidisk(md_rho,mininn)
+        temp_0_estim = minidisk(md_temp,mininn)
         write (upar, fmparec) "rho_0_estim", rho_0_estim, "Central density (estimate)"
         write (upar, fmparec) "temp_0_estim", temp_0_estim, "Central gas temperature (estimate)"
 
@@ -303,6 +303,8 @@ contains
 
         select case (cfg_temperature_method)
         case (EQUATION_EQUILIBR)
+            a(p_temp) = a(p_Trad)* (1 + a(p_compW))
+            ! a(p_temp) = sqrt(a(p_trad)**2 + a(p_temp_compton)**2)
         case (EQUATION_COMPTON)
             a(p_temp) = a(p_Trad) * (1 + a(p_compW))
             call calc_compswitch(y(v_pgas),a(p_temp),a(p_compsw))
@@ -314,7 +316,8 @@ contains
             fcool_trad = a(p_trad)
             if ( .not.cfg_balance_multi ) then
                 a(p_tbil) = log(a(p_trad)**2 + a(p_temp_compton)**2) / 2
-                call findzer(a(p_tbil), log(1d5), log(1d10), 1d-9, fcool)
+                call findzer(a(p_tbil), log(a(p_trad) * 0.8), &
+                      & log(1d10), 1d-9, fcool)
                 a(p_temp) = exp(a(p_tbil))
             else
                 a(p_tbil+0:p_tbil+4) = 0

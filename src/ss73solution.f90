@@ -41,7 +41,7 @@ contains
     call apx_sel(mbh, mdot, r, alpha, r12, r23, rhoc, Tc, H)
 
     do i = 1,size(R)
-      call DISKAPX2(mbh, mdot, r(i), alpha, rhoc(i), Tc(i), H(i))
+      call apx_refine(mbh, mdot, r(i), alpha, rhoc(i), Tc(i), H(i))
     end do
 
     do concurrent (i = 1:size(z), j = 1:size(r))
@@ -84,8 +84,8 @@ contains
     expo = exp(- (z/H)**2 / 2)
     rho = rhoc * expo
     T = (Tc - Teff * 0.841) * expo + Teff * 0.841
-    x = merge(z/H, 1.0_r64, z < H)
-    Frad = (2 - x) * x * cgs_stef * Teff**4
+    x = merge(0.5*z/H, 1.0_r64, z < 2*H)
+    Frad = (2 - X) * X * cgs_stef * Teff**4
   end subroutine
 
 !------------------------------------- F --------------------------------------!
@@ -193,7 +193,7 @@ contains
               **1.125d0*f(r)**0.15d0
     end subroutine
 
-!--------------------------------- DVAPX_SEL ----------------------------------!
+!---------------------------------- APX_SEL -----------------------------------!
 !     selects the zone based on given radius and computes appropriate disk     !
 !                                  parameters                                  !
 !----------------------------------- INPUTS -----------------------------------!
@@ -219,7 +219,7 @@ contains
         end if
     end subroutine
 
-!----------------------------------- DVAPX1 -----------------------------------!
+!--------------------------------- APX_ESTIM ----------------------------------!
 ! Computes disk density, temperature and height based on 3-zone approximation. !
 !        Calls DVAPX_ZONEBOUNDS to calculate boundaries between zones.         !
 !----------------------------------- INPUTS -----------------------------------!
@@ -230,7 +230,7 @@ contains
 !                             H: disk height                                   !
 !------------------------------------------------------------------------------!
 
-    pure subroutine dvapx1(mbh, mdot, r, alpha, rho, T, H)
+    pure subroutine apx_estim(mbh, mdot, r, alpha, rho, T, H)
         real(r64), intent(in) :: mbh, mdot, r, alpha
         real(r64), intent(out) :: rho, T, H
         real(r64) :: r12, r23
@@ -253,43 +253,43 @@ contains
 !                           M: coefficient matrix                              !
 !------------------------------------------------------------------------------!
 
-    pure subroutine apx_matrix(mbh, mdot, r, alpha, rho, T, H, A, M)
-        real(r64), intent(in) :: mbh, mdot, r, alpha, rho, T, H
-        real(r64), intent(out) :: A(3,1), M(3,3)
+  pure subroutine apx_matrix(mbh, mdot, r, alpha, rho, T, H, A, M)
+    real(r64), intent(in) :: mbh, mdot, r, alpha, rho, T, H
+    real(r64), intent(out) :: A(3,1), M(3,3)
 
-        A(1, 1) = -4*H**3*alpha*sqrt(cgs_graw)*pi*r**(-1.5d0)*rho*sqrt(sol_mass) &
-              /(mbh*sol_rschw**(3.0d0/2.0d0)) + mbh*mdot*sol_mdot_edd*( &
-              -1.73205080756888d0*r**(-0.5d0) + 1)
-        A(2, 1) = -9.0d0/16.0d0*H**4*alpha*cgs_graw**(3.0d0/2.0d0)*r**(-4.5d0)* &
-              rho**2*sol_mass**(3.0d0/2.0d0)*(kappa_es + kappa_abs_0*rho/T**(7.0d0/ &
-              2.0d0))/(mbh**3*sol_rschw**(9.0d0/2.0d0)) + 4*T**4*cgs_stef
-        A(3, 1) = H**2*cgs_graw*r**(-3.0d0)*rho*sol_mass/(mbh**2*sol_rschw**3) &
-              - 4.0d0/3.0d0*T**4*cgs_stef/cgs_c - 2*T*cgs_boltz*rho/cgs_mhydr
-        M(1, 1) = 4*H**3*alpha*sqrt(cgs_graw)*pi*r**(-1.5d0)*sqrt(sol_mass)/( &
-              mbh*sol_rschw**(3.0d0/2.0d0))
-        M(2, 1) = (9.0d0/8.0d0)*H**4*alpha*cgs_graw**(3.0d0/2.0d0)*r**(-4.5d0)* &
-              rho*sol_mass**(3.0d0/2.0d0)*(kappa_es + kappa_abs_0*rho/T**(7.0d0/ &
-              2.0d0))/(mbh**3*sol_rschw**(9.0d0/2.0d0)) + (9.0d0/16.0d0)*H**4* &
-              alpha*cgs_graw**(3.0d0/2.0d0)*kappa_abs_0*r**(-4.5d0)*rho**2* &
-              sol_mass**(3.0d0/2.0d0)/(T**(7.0d0/2.0d0)*mbh**3*sol_rschw**( &
-              9.0d0/2.0d0))
-        M(3, 1) = -H**2*cgs_graw*r**(-3.0d0)*sol_mass/(mbh**2*sol_rschw**3) + 2 &
-              *T*cgs_boltz/cgs_mhydr
-        M(1, 2) = 0
-        M(2, 2) = -63.0d0/32.0d0*H**4*alpha*cgs_graw**(3.0d0/2.0d0)*kappa_abs_0*r** &
-              (-4.5d0)*rho**3*sol_mass**(3.0d0/2.0d0)/(T**(9.0d0/2.0d0)*mbh**3 &
-              *sol_rschw**(9.0d0/2.0d0)) - 16*T**3*cgs_stef
-        M(3, 2) = (16.0d0/3.0d0)*T**3*cgs_stef/cgs_c + 2*cgs_boltz*rho/cgs_mhydr
-        M(1, 3) = 12*H**2*alpha*sqrt(cgs_graw)*pi*r**(-1.5d0)*rho*sqrt(sol_mass) &
-              /(mbh*sol_rschw**(3.0d0/2.0d0))
-        M(2, 3) = (9.0d0/4.0d0)*H**3*alpha*cgs_graw**(3.0d0/2.0d0)*r**(-4.5d0)* &
-              rho**2*sol_mass**(3.0d0/2.0d0)*(kappa_es + kappa_abs_0*rho/T**(7.0d0/ &
-              2.0d0))/(mbh**3*sol_rschw**(9.0d0/2.0d0))
-        M(3, 3) = -2*H*cgs_graw*r**(-3.0d0)*rho*sol_mass/(mbh**2*sol_rschw**3)
+    A(1, 1) = -4*H**3*alpha*sqrt(cgs_graw)*pi*r**(-1.5d0)*rho*sqrt(sol_mass) &
+          /(mbh*sol_rschw**(3.0d0/2.0d0)) + mbh*mdot*sol_mdot_edd*( &
+          -1.73205080756888d0*r**(-0.5d0) + 1)
+    A(2, 1) = -9.0d0/16.0d0*H**4*alpha*cgs_graw**(3.0d0/2.0d0)*r**(-4.5d0)* &
+          rho**2*sol_mass**(3.0d0/2.0d0)*(kappa_es + kappa_abs_0*rho/T**(7.0d0/ &
+          2.0d0))/(mbh**3*sol_rschw**(9.0d0/2.0d0)) + 4*T**4*cgs_stef
+    A(3, 1) = H**2*cgs_graw*r**(-3.0d0)*rho*sol_mass/(mbh**2*sol_rschw**3) &
+          - 4.0d0/3.0d0*T**4*cgs_stef/cgs_c - 2*T*cgs_boltz*rho/cgs_mhydr
+    M(1, 1) = 4*H**3*alpha*sqrt(cgs_graw)*pi*r**(-1.5d0)*sqrt(sol_mass)/( &
+          mbh*sol_rschw**(3.0d0/2.0d0))
+    M(2, 1) = (9.0d0/8.0d0)*H**4*alpha*cgs_graw**(3.0d0/2.0d0)*r**(-4.5d0)* &
+          rho*sol_mass**(3.0d0/2.0d0)*(kappa_es + kappa_abs_0*rho/T**(7.0d0/ &
+          2.0d0))/(mbh**3*sol_rschw**(9.0d0/2.0d0)) + (9.0d0/16.0d0)*H**4* &
+          alpha*cgs_graw**(3.0d0/2.0d0)*kappa_abs_0*r**(-4.5d0)*rho**2* &
+          sol_mass**(3.0d0/2.0d0)/(T**(7.0d0/2.0d0)*mbh**3*sol_rschw**( &
+          9.0d0/2.0d0))
+    M(3, 1) = -H**2*cgs_graw*r**(-3.0d0)*sol_mass/(mbh**2*sol_rschw**3) + 2 &
+          *T*cgs_boltz/cgs_mhydr
+    M(1, 2) = 0
+    M(2, 2) = -63.0d0/32.0d0*H**4*alpha*cgs_graw**(3.0d0/2.0d0)*kappa_abs_0*r** &
+          (-4.5d0)*rho**3*sol_mass**(3.0d0/2.0d0)/(T**(9.0d0/2.0d0)*mbh**3 &
+          *sol_rschw**(9.0d0/2.0d0)) - 16*T**3*cgs_stef
+    M(3, 2) = (16.0d0/3.0d0)*T**3*cgs_stef/cgs_c + 2*cgs_boltz*rho/cgs_mhydr
+    M(1, 3) = 12*H**2*alpha*sqrt(cgs_graw)*pi*r**(-1.5d0)*rho*sqrt(sol_mass) &
+          /(mbh*sol_rschw**(3.0d0/2.0d0))
+    M(2, 3) = (9.0d0/4.0d0)*H**3*alpha*cgs_graw**(3.0d0/2.0d0)*r**(-4.5d0)* &
+          rho**2*sol_mass**(3.0d0/2.0d0)*(kappa_es + kappa_abs_0*rho/T**(7.0d0/ &
+          2.0d0))/(mbh**3*sol_rschw**(9.0d0/2.0d0))
+    M(3, 3) = -2*H*cgs_graw*r**(-3.0d0)*rho*sol_mass/(mbh**2*sol_rschw**3)
 
-    end subroutine
+  end subroutine
 
-!---------------------------------- DISKAPX2 ----------------------------------!
+!--------------------------------- APX_REFINE ---------------------------------!
 !  solves the equation system for disk structure, starting from given initial  !
 !                                   solution                                   !
 !----------------------------------- INPUTS -----------------------------------!
@@ -303,7 +303,7 @@ contains
 !                          H: final disk height                                !
 !------------------------------------------------------------------------------!
 
-    subroutine DISKAPX2(mbh, mdot, r, alpha, rho, T, H)
+    subroutine apx_refine(mbh, mdot, r, alpha, rho, T, H)
         real(r64), intent(in) :: mbh, mdot, r, alpha
         real(r64), intent(inout) :: rho,T,H
         real(r64), dimension(3,3) :: M

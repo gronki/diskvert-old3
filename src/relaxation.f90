@@ -61,7 +61,7 @@ contains
         include 'mrxname.fi'
     end subroutine
 
-    pure subroutine mrx_sel_dims (nr, n, nbl, nbr)
+    elemental subroutine mrx_sel_dims (nr, n, nbl, nbr)
         integer, intent(in) :: nr
         integer, intent(out) :: n, nbl, nbr
         include 'mrxdims.fi'
@@ -72,6 +72,12 @@ contains
         integer :: ny
         include 'mrxynum.fi'
     end function
+
+    elemental subroutine mrx_sel_ny(nr,ny)
+        integer, intent(in) :: nr
+        integer, intent(out) :: ny
+        include 'mrxynum.fi'
+    end subroutine
 
     subroutine mrx_sel_ptrs (nr, f, fbl, fbr)
         integer, intent(in) :: nr
@@ -121,7 +127,7 @@ contains
 
             call kappabs(YBL(CC(1)), YBL(CC(2)), FV(1,1), FV(2,1), FV(3,1))
             call kappsct(YBL(CC(1)), YBL(CC(2)), FV(1,2), FV(2,2), FV(3,2))
-            FV(:,3) = 0
+            call kappcnd(YBL(CC(1)), YBL(CC(2)), FV(1,3), FV(2,3), FV(3,3))
             call fbl(xbl, YBL, FV, BL, MBL)
 
         end associate
@@ -132,7 +138,7 @@ contains
 
             call kappabs(YBR(CC(1)), YBR(CC(2)), FV(1,1), FV(2,1), FV(3,1))
             call kappsct(YBR(CC(1)), YBR(CC(2)), FV(1,2), FV(2,2), FV(3,2))
-            FV(:,3) = 0
+            call kappcnd(YBR(CC(1)), YBR(CC(2)), FV(1,3), FV(2,3), FV(3,3))
             call fbr(xbr, YBR, FV, BR, MBR)
 
         end associate
@@ -150,7 +156,7 @@ contains
 
                 call kappabs(YM(CC(1)), YM(CC(2)), FV(1,1), FV(2,1), FV(3,1))
                 call kappsct(YM(CC(1)), YM(CC(2)), FV(1,2), FV(2,2), FV(3,2))
-                FV(:,3) = 0
+                call kappcnd(YM(CC(1)), YM(CC(2)), FV(1,3), FV(2,3), FV(3,3))
 
                 call ff(xm, YM, DY, FV, Ai, MY, MD)
 

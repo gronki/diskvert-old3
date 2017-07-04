@@ -30,14 +30,14 @@ contains
             call get_command_argument(i,arg)
 
             select case (arg)
-            case("-opacity-ff", "-free-free")
+            case("-opacity-ff", "-free-free", "-ff")
                 kramers_opacity_ff = .TRUE.
-            case("-no-opacity-ff", "-no-free-free")
+            case("-no-opacity-ff", "-no-free-free", "-no-ff")
                 kramers_opacity_ff = .FALSE.
 
-            case("-opacity-bf", "-bound-free")
+            case("-opacity-bf", "-bound-free", "-bf")
                 kramers_opacity_bf = .TRUE.
-            case("-no-opacity-bf", "-no-bound-free")
+            case("-no-opacity-bf", "-no-bound-free", "-no-bf")
                 kramers_opacity_bf = .FALSE.
 
             case ("-linear","-grid-linear")

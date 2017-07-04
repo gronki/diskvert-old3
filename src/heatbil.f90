@@ -47,7 +47,7 @@ contains
       integer, intent(in) :: i,n
       real(r64) :: t,y
       t = merge(real(i) / n, 1.0, i .le. n)
-      y = 3 * t**2 - 2 * t**3
+      y = (3 - 2*t) * t**2
     end function
 
   end subroutine

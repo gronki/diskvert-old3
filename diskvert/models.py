@@ -38,14 +38,14 @@ apxdisk2d = CFACTORY(__libdv, 'apxdisk2d', [
     (c_int, 'in', 'n_heights'),
 ])
 
-mrx_model = CFACTORY(__libdv, 'mrx_model', [
+mrx_model = CFACTORY(__libdv, 'mrx_number_c', [
     (c_int, 'in', 'compton'),
     (c_int, 'in', 'magnetic'),
     (c_int, 'in', 'conduction'),
     (POINTER(c_int), 'out', 'nr'),
 ])
 
-mrx_init = CFACTORY(__libdv, 'mrx_init', [
+mrx_init = CFACTORY(__libdv, 'mrx_init_c', [
     (c_double, 'in', 'mbh'),
     (c_double, 'in', 'mdot'),
     (c_double, 'in', 'r'),
@@ -53,12 +53,12 @@ mrx_init = CFACTORY(__libdv, 'mrx_init', [
     (c_double, 'in', 'zeta'),
 ])
 
-mrx_get_ny = CFACTORY(__libdv, 'mrx_get_ny', [
+mrx_get_ny = CFACTORY(__libdv, 'mrx_get_ny_c', [
     (c_int, 'in', 'nr'),
     (POINTER(c_int), 'out', 'ny'),
 ])
 
-mrx_matrix = CFACTORY(__libdv, 'mrx_matrix', [
+mrx_matrix = CFACTORY(__libdv, 'mrx_matrix_c', [
     (c_int, 'in', 'nr'),
     (ndpointer(c_double,1), 'in', 'z'),
     (c_int, 'in', 'nz'),
@@ -69,7 +69,7 @@ mrx_matrix = CFACTORY(__libdv, 'mrx_matrix', [
     (ndpointer(c_double,2), 'inout', 'M'),
 ])
 
-mrx_advance = CFACTORY(__libdv, 'mrx_advance', [
+mrx_advance = CFACTORY(__libdv, 'mrx_advance_c', [
     (c_int, 'in', 'nr'),
     (ndpointer(c_double,1), 'in', 'z'),
     (c_int, 'in', 'nz'),

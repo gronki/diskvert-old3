@@ -6,6 +6,7 @@ module alphasimp
     use slf_cgs
     use grid
     use slf_rk4integr
+    use fileunits
 
     implicit none
 
@@ -30,7 +31,7 @@ contains
         h_hi = 12.0 * 31
         h_lo = 12.0 / 31
 
-        write (0,'(A10,A10,A12,A7,A5)') "ITER", "H", "FLX", "MAX", "ACTN"
+        write (ulog,'(A10,A10,A12,A7,A5)') "ITER", "H", "FLX", "MAX", "ACTN"
 
         adjust_height : do it=1,256
             h = sqrt(h_hi*h_lo)
@@ -46,10 +47,10 @@ contains
 
             if ( nmax < nn ) then
                 h_hi = h
-                write (0,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_flux,nmax) / Facc, 1d2 * nmax / nn, '\/'
+                write (ulog,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_flux,nmax) / Facc, 1d2 * nmax / nn, '\/'
             else if (y(c_flux,nn) > 1d-12 * Facc) then
                 h_lo = h
-                write (0,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_flux,nmax) / Facc, 1d2 * nmax / nn, '/\'
+                write (ulog,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_flux,nmax) / Facc, 1d2 * nmax / nn, '/\'
             else
                 exit adjust_height
             end if

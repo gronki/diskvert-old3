@@ -24,6 +24,8 @@ program dv_mag
 
     call init_labels
 
+    ngrid = 18432
+
     call rdargvgl
     call rdargvrk4
     call mincf_read(cfg)
@@ -31,12 +33,12 @@ program dv_mag
     call rdconf(cfg)
     call mincf_free(cfg)
 
-    open(newunit = ulog, file = trim(outfn) // ".log", action = "write")
+    ! open(newunit = ulog, file = trim(outfn) // ".log", action = "write")
     open(newunit = upar, file = trim(outfn) // ".txt", action = "write")
     call init_m1(mbh, mdot, radius, alpha, zeta)
 
     allocate( z(ngrid) )
-    forall (i = 1:ngrid)  z(i) = space_linlog(i,ngrid,htop) * fzscale(mbh, mdot, radius)
+    forall (i = 1:ngrid)  z(i) = space_linear(i,ngrid,htop) * fzscale(mbh, mdot, radius)
 
     allocate(   &
         val(n_vals,ngrid), &
@@ -67,14 +69,17 @@ program dv_mag
                                 & "Radiative beta at the equator"
     write (upar, fmparec) "dzeta_0", zeta, "Parametr zeta"
 
+    write (upar, fmparec) "flux_acc", sol_facc_edd * (mdot / mbh) * (1 - sqrt(3/radius)) / radius**3, "erg/cm2/s"
+    write (upar, fmpare) "zscale", fzscale(mbh, mdot, radius)
     write (upar, fmparec) "flux_gen_top", val(v_fgen,nmax), "erg/cm2/s"
     write (upar, fmparec) "flux_rad_top", val(v_flux,nmax), "erg/cm2/s"
     write (upar, fmparec) "flux_bound_top", par(p_flxbond,nmax), "erg/cm2/s"
+    call wpar_gl(upar)
 
     close(upar)
 
     call write_results_3(z,ngrid,val,der,v_labels,n_vals,par,p_labels,n_pars,outfn)
-    close(ulog)
+    ! close(ulog)
 
 contains
 

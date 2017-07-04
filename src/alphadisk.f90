@@ -12,11 +12,13 @@ module alphadisk
     use rk4settings
     use fileunits
     use heatbalance
+    use ss73solution, only: apx_estim, apx_refine
 
     implicit none
 
     real(r64), private :: radius, alpha
     real(r64), private :: omega, Facc, Teff, zscale
+    real(r64), private :: rhoc, tempc, hdisk
 
     integer, parameter :: ny = 4,   &
         &   c_Pgas = 1, c_Prad = 2, c_Frad = 3, c_tau = 4
@@ -40,6 +42,8 @@ contains
         radius = r
         alpha = alph
         call cylinder(mbh, mdot, radius, omega, Facc, Teff, zscale)
+        call apx_estim(mbh, mdot, radius, alpha, rhoc, tempc, hdisk)
+        call apx_refine(mbh, mdot, radius, alpha, rhoc, tempc, hdisk)
     end subroutine
 
     SUBROUTINE ALF_GETN(NY1,NA1) BIND(C)
@@ -58,9 +62,9 @@ contains
         real(r64) :: h_hi, h_lo, h
         integer :: i,it
 
-
-        h_hi = 12d0 * 16
-        h_lo = 12d0 / 16
+        h = 4 * hdisk / zscale
+        h_hi = h * 8
+        h_lo = h / 8
 
         write (ulog,'(A10,A10,A12,A7,A5)') "ITER", "H", "FLX", "MAX", "ACTN"
 

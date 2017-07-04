@@ -7,7 +7,8 @@ module slf_findzer
         module procedure findzer_single, findzer_array
     end interface
 
-    integer, parameter :: findzer_iter = 2**6
+    integer, parameter :: findzer_iter = 64
+    private :: ramp
 
 contains
 
@@ -37,7 +38,7 @@ contains
                 exit main_loop
             end if
 
-            x1 = x + dx
+            x1 = x + dx * ramp(i,findzer_iter)
             if ( x1 > xhi ) x1 = (x + xhi) / 2
             if ( x1 < xlo ) x1 = (x + xlo) / 2
             x = x1
@@ -83,7 +84,7 @@ contains
                     converged = .true.
                 end where
 
-                x1 = x + dx
+                x1 = x + dx * ramp(i,findzer_iter)
                 where ( x1 > xhi ) x1 = (x + xhi) / 2
                 where ( x1 < xlo ) x1 = (x + xlo) / 2
                 x = x1
@@ -96,5 +97,12 @@ contains
         end do main_loop
 
     end subroutine
+
+    elemental function ramp(i,n) result(y)
+      integer, intent(in) :: i,n
+      real(r64) :: t,y
+      t = merge(real(i) / n, 1.0, i .lt. n)
+      y = (3 - 2*t) * t**2
+    end function
 
 end module

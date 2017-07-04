@@ -1,23 +1,21 @@
-VERSION  	 	= 170623
+VERSION = 170704
 
-prefix 	 	 	= /usr/local
-bindir		 	= $(prefix)/bin
-datadir	 	 	= $(prefix)/share
-includedir 	= $(prefix)/include
-libdir 	 	 	= $(prefix)/lib
-fmoddir			= $(libdir)/gfortran/modules
-pkgconfigdir= $(libdir)/pkgconfig
+prefix = /usr/local
+bindir = $(prefix)/bin
+datadir = $(prefix)/share
+includedir = $(prefix)/include
+libdir = $(prefix)/lib
+fmoddir = $(libdir)/gfortran/modules
+pkgconfigdir = $(libdir)/pkgconfig
 
-INCLUDE	 	 	= -Ilibconfort
-LDFLAGS			= -L.
-LDLIBS			= -lopenblas
+INCLUDE = -Ilibconfort
+LDFLAGS = -L.
+LDLIBS = -lopenblas
 
-FC					= f95
-CFLAGS			?= -g -Wall -O3 -mieee-fp
-FFLAGS			?= $(CFLAGS) -Warray-temporaries -Wpedantic \
-			-Wno-unused-dummy-argument
-override FFLAGS += -fexternal-blas
-override CPPFLAGS += -DVERSION=$(VERSION)
+FC = f95
+CFLAGS = -g -Wall -O2 -march=native -mieee-fp
+FFLAGS = $(CFLAGS) -Warray-temporaries -Wpedantic -Wno-unused-dummy-argument
+CPPFLAGS = -DVERSION=$(VERSION)
 
 OBJECTS_LAPACK = $(addsuffix .o,$(basename $(notdir \
 	$(wildcard src/lapack/*.[fF]))))
@@ -28,8 +26,6 @@ OBJECTS_LIB =  $(addsuffix .o,$(basename $(notdir \
 	$(wildcard src/*.[fF]90))))
 OBJECTS_UTIL = $(addsuffix .o,$(basename $(notdir \
 	$(wildcard src/util/*.[fF]90))))
-
-coeffincludes = coefficients.fi mrxdims.fi mrxhash.fi mrxname.fi mrxptrs.fi mrxynum.fi
 
 VPATH = src:src/util:src/prog:src/math:src/lapack
 
@@ -81,9 +77,9 @@ install-user: install
 
 #################  PLIKI OBIEKTOW  #################
 
-%.o: %.F90
+%.o %.mod: %.F90
 	$(FC) $(INCLUDE) $(FFLAGS) $(CPPFLAGS) -c -fPIC $< -o $@
-%.o: %.f90
+%.o %.mod: %.f90
 	$(FC) $(INCLUDE) $(FFLAGS) -c -fPIC $< -o $@
 %.o: %.F
 	$(FC) $(INCLUDE) $(FFLAGS) $(CPPFLAGS) -c -fPIC $< -o $@
@@ -94,11 +90,6 @@ include make_dependencies.inc
 
 relaxation.o    : lapack.a
 settings.o      : libconfort.a
-
-$(coeffincludes): relaxation-coefficients.py
-	python relaxation-coefficients.py
-
-relaxation.o: $(coeffincludes)
 
 #################  PLIKI BINARNE  #################
 

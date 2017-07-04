@@ -82,7 +82,7 @@ tlim_hi = args.logT_max
 ########################################################################################
 
 
-kram_abs_0 = info['kram_abs_0']
+kram_abs_0 = info['kappa_abs_0']
 kappa_es = info['kappa_es']
 
 print u'Stała w przybliżeniu Kramersa: %.3e' % kram_abs_0
@@ -134,7 +134,7 @@ for iy in range(ny):
     kap = kappa(rho,temp)
 
     cool_net0 = ( 4 * cgs_stef * temp**4 - 3 * cgs_c * prad ) * rho * kap \
-            + 12 * cgs_kapes * rho * prad * cgs_boltz * ( temp - trad ) \
+            + 12 * kappa_es * rho * prad * cgs_boltz * ( temp - trad ) \
             / ( cgs_mel * cgs_c )
 
     cool_net[:,iy] = 1 - cool_net0/heat
@@ -144,7 +144,7 @@ for iy in range(ny):
     cool_net_dT[:,iy] = rho / cool1 * (  \
             16 * cgs_stef * temp**4  * kap \
             + ( 4 * cgs_stef * temp**4 - 3 * cgs_c * prad ) * ( temp*kappa_dt(rho,temp) - rho*kappa_drho(rho,temp) ) \
-            + 12 * cgs_kapes * prad * cgs_boltz * temp / (  cgs_mel * cgs_c )       \
+            + 12 * kappa_es * prad * cgs_boltz * temp / (  cgs_mel * cgs_c )       \
         ) - 1
 
 ########################################################################################

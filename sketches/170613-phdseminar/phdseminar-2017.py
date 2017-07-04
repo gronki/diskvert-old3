@@ -3,26 +3,27 @@
 
 from diskvert import *
 import numpy as np
+from ctypes import c_double, c_int
+
+mbh, mdot, r, alpha = 100, 0.01, 10, 0.1
 
 # initialize exapmle accretion disk
-dv_init_disk(10,0.003,10)
-dv_init_ss73(0.05)
-dv_eval_globals()
+alf_init(c_double(mbh), c_double(mdot), c_double(r), c_double(alpha))
 
 zscal = 6.4651E+04
 
 # prepare memtory
-nz = 2**10
+nz = 2**11
 z  = np.ndarray(nz)
 y  = np.ndarray((4,nz),  order = 'F')
 dy = np.ndarray((4,nz),  order = 'F')
-a  = np.ndarray((8,nz),  order = 'F')
+a  = np.ndarray((10,nz),  order = 'F')
 
 # run integration
-dv_run_ss73(z,nz,y,dy,a)
+alf_run(z,c_int(nz),y,dy,a)
 
 # interpolate initial values for new model
-nx = 300
+nx = 2**8
 ny = 3
 x = np.linspace(0, z.max(), nx)
 Y = np.ndarray(nx*ny)
@@ -32,6 +33,7 @@ Y = np.ndarray(nx*ny)
 Y[0::ny] = np.linspace(1e-3, 0, nx)
 Y[1::ny] = np.linspace(2.71 * a[1,0], a[1,0], nx)
 Y[2::ny] = np.linspace(0, y[2,0], nx)
+dY = np.ndarray(nx*ny)
 
 T_floor = a[1,0]
 
@@ -52,7 +54,7 @@ from matplotlib import rc
 cmap = get_cmap('YlOrRd')
 cmap = get_cmap('Greys')
 
-
+mrx_init(mbh, mdot, r, alpha, 0)
 
 def ramp(it, niter, n = 1, ramp_0 = 0):
     t = np.clip(it / (niter - 1.0), 0, 1)
@@ -71,7 +73,6 @@ niter_full = 8
 
 rc('font', family='serif', size=11)
 
-dY = np.ndarray(nx*ny)
 special = [0, niter-1]
 for it in range(niter):
     fig,ax = plt.subplots(1, 3, figsize=(16 * 0.7,9 * 0.7))
@@ -96,7 +97,7 @@ for it in range(niter):
     ax[2].plot(z / zscal, y[2,:], color=color_gray)
 
     # generate the matrix and solve
-    dv_generate_corrections(x,nx,Y,dY,ny)
+    mrx_advance(mrx_model(0,0,0), x, nx, Y, dY, ny)
 
     rmp = ramp_trig(it, niter - niter_full, 0.01)
 

@@ -33,6 +33,10 @@ program dv_alpha
     a_labels(c_heat_max)= 'Gammamax'
     a_labels(c_compW)   = 'compW'
     a_labels(c_compY)   = 'compY'
+    a_labels(c_kabs)    = 'kabs'
+    a_labels(c_ksct)    = 'ksct'
+
+    ngrid = 4096
 
     call rdargvgl
     call rdargvrk4
@@ -47,10 +51,12 @@ program dv_alpha
     call init_alpha(mbh, mdot, radius, alpha)
     call run_alpha(z,ngrid,y,dy,a,nmax)
 
-    write (11, fmparec) "rho_0", a(c_rho,ngrid), "Central density"
-    write (11, fmparec) "temp_0", a(c_tgas,ngrid), "Central gas temperature"
-    write (11, fmparfc) "alpha", alpha, "Alpha parameter"
-    close(11)
+    open(newunit = upar, file = trim(outfn) // '.txt', action = 'write')
+    write (upar, fmparec) "rho_0", a(c_rho,ngrid), "Central density"
+    write (upar, fmparec) "temp_0", a(c_tgas,ngrid), "Central gas temperature"
+    write (upar, fmparfc) "alpha", alpha, "Alpha parameter"
+    call wpar_gl(upar)
+    close(upar)
 
     call write_results_3(z,ngrid,y,dy,y_labels,ny,a,a_labels,na,outfn)
 

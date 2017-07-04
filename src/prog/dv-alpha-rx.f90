@@ -4,9 +4,10 @@ program dv_alpha_relax
   use globals
   use settings
   use iso_fortran_env, only: sp => real32, dp => real64
+  use ieee_arithmetic, only: ieee_is_normal, ieee_is_nan
   use fileunits
   use relaxation
-  use ss73solution, only: apxdisk, dvapx1, diskapx2
+  use ss73solution, only: apxdisk, apx_estim, apx_refine
   use grid, only: space_linear, space_linlog
 
   !----------------------------------------------------------------------------!
@@ -15,15 +16,21 @@ program dv_alpha_relax
   type(config) :: cfg
   integer :: model
   integer :: ny = 3, i, iter
-  integer, dimension(2) :: niter = [ 18, 8 ]
+  integer, dimension(2) :: niter = [ 36, 8 ]
   character(2**8) :: fn
-  real(dp), allocatable, target :: x(:), Y(:), dY(:), M(:,:)
+  real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:)
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad
-  real(dp) :: rhoc, Tc, Hdisk, err
+  real(dp) :: rhoc, Tc, Hdisk, err, t
+  integer, dimension(6) :: C_
 
-  ngrid = 2**8
 
   !----------------------------------------------------------------------------!
+
+  ngrid = 2**7
+  htop = 4
+
+  !----------------------------------------------------------------------------!
+
   call rdargvgl
   call mincf_read(cfg)
   call rdconfgl(cfg)
@@ -37,22 +44,31 @@ program dv_alpha_relax
   ! get the model number
   model = mrx_number( .FALSE., .FALSE., .FALSE. )
   ny = mrx_ny(model)
+  call mrx_sel_hash(model, C_)
+
+  allocate( x(ngrid), x0(ngrid), Y(ny*ngrid), dY(ny*ngrid), M(ny*ngrid,ny*ngrid) )
 
   !----------------------------------------------------------------------------!
-  allocate( x(ngrid), Y(ny*ngrid), dY(ny*ngrid), M(ny*ngrid,ny*ngrid) )
+
+  call apx_estim(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
+  call apx_refine(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
+
+  !----------------------------------------------------------------------------!
 
   forall (i = 1:ngrid)
-    x(i) = space_linear(i,ngrid,12d0) * zscale
+    x(i) = space_linlog(i,ngrid,htop) * Hdisk
+    x0(i) = space_linlog(i,ngrid,htop) / htop
   end forall
 
-  y_rho   => Y(1::ny)
-  y_temp  => Y(2::ny)
-  y_frad  => Y(3::ny)
+  y_rho   => Y(C_(1)::ny)
+  y_temp  => Y(C_(2)::ny)
+  y_frad  => Y(C_(4)::ny)
 
   !----------------------------------------------------------------------------!
-  call dvapx1(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
-  call diskapx2(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
-  call apxdisk(rhoc, Tc, Teff, Hdisk, x, y_rho, y_temp, y_frad)
+
+  y_frad = x0 * facc
+  y_temp = exp(-0.5*(x/Hdisk)**2) * (Tc - 0.841 * Teff) + 0.841 * Teff
+  y_rho =  rhoc * (exp(-0.5*(x/Hdisk)**2) + 1e-5)
 
   !----------------------------------------------------------------------------!
   call saveiter(0)
@@ -67,7 +83,8 @@ program dv_alpha_relax
     write(ulog,'(I5,Es12.4)') iter, err
 
     Y = Y + dY * ramp1(iter,niter(1))
-    y_rho = merge(y_rho, 0.0_dp, y_rho > 0)
+
+    y_rho = merge(y_rho, 0.0_dp, ieee_is_normal(y_rho) .and. (y_rho > 0))
     y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
 
     call saveiter(iter)
@@ -87,7 +104,8 @@ program dv_alpha_relax
     write(ulog,'(I5,Es12.4)') niter(1) + iter, err
 
     Y = Y + dY * ramp2(iter, niter(2), 0.5d0)
-    y_rho = merge(y_rho, 0.0_dp, y_rho > 0)
+
+    y_rho = merge(y_rho, 0.0_dp, ieee_is_normal(y_rho) .and. (y_rho > 0))
     y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
 
     call saveiter(niter(1) + iter)
@@ -97,7 +115,15 @@ program dv_alpha_relax
 
   write (ulog,*) '--- DONE'
 
-  deallocate(x,Y,M,dY)
+  open(newunit = upar, file = trim(outfn) // '.txt', action = 'write')
+  write (upar, fmparec) "rho_0", rhoc, "Central density"
+  write (upar, fmparec) "temp_0", Tc, "Central gas temperature"
+  write (upar, fmparec) "Hdisk", Hdisk, "Disk height [cm]"
+  write (upar, fmparfc) "alpha", alpha, "Alpha parameter"
+  call wpar_gl(upar)
+  close(upar)
+
+  deallocate(x,x0,Y,M,dY)
 
 contains
 
@@ -108,7 +134,9 @@ contains
     write (fn,'(A,".",I0.3,".dat")') trim(outfn),iter
     open(33, file = trim(fn), action = 'write', status = 'new')
     do i = 1,ngrid
-      write (33,'(I6,4Es12.4)') i, x(i) / zscale, y_rho(i) / rhoc, y_temp(i) / teff, y_frad(i) / facc
+      write (33,'(I6,7Es12.4)') i, x(i), y_rho(i), y_temp(i), y_temp(i),  &
+            y_frad(i), 0d0, 0d0, fksct(y_rho(i), y_temp(i)),  &
+            fkabs(y_rho(i), y_temp(i))
     end do
     close(33)
   end subroutine

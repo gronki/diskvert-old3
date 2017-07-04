@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq, symbols, Integer, Rational, Matrix, MatrixSymbol, Wild
+from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq, symbols, Integer, Rational, Matrix, MatrixSymbol, Wild, simplify
 from numpy import ndarray, zeros, linspace, logspace, meshgrid
 from sys import stdin, stdout, stderr
 
@@ -188,9 +188,9 @@ for enableCorona, enableMagnetic, enableConduction in [
     #--------------------------------------------------------------------------#
     # Dyfuzja promieniowania
     #
-    zeta_rad = 16 * sigma * T_rad**3 / (3 * kappa * rho)
+    kappa_dyfu = 16 * sigma * T_rad**3 / (3 * kappa * rho)
     equations.append(
-        F_rad + zeta_rad * Derivative(T_rad,z)
+        F_rad + kappa_dyfu * Derivative(T_rad,z)
     )
 
 
@@ -199,7 +199,9 @@ for enableCorona, enableMagnetic, enableConduction in [
     #
 
     GasHeating = alpha * omega * P_tot
-    if enableMagnetic: GasHeating = - vrise(z) * Derivative(P_mag,z)
+    # if enableMagnetic: GasHeating = - vrise(z) * Derivative(P_mag,z)
+    if enableMagnetic:
+        GasHeating = 2 * P_mag * vrise(z).diff(z) - alpha * omega * P_tot
     equations.append(
         Derivative(F_rad,z) + Derivative(F_cond,z) - GasHeating
     )
@@ -226,7 +228,7 @@ for enableCorona, enableMagnetic, enableConduction in [
             kappa_abs * (T_gas + T_rad) * (T_gas**2 + T_rad**2) \
             + kappa_sct * 4 * k * T_rad**4 / ( m_el * c**2 )
         )
-        equations.append(SourceFunction - Derivative(F_rad,z))
+        equations.append(T_gas * (SourceFunction - Derivative(F_rad,z)))
         boundL.append( T_gas - T_rad )
 
     #--------------------------------------------------------------------------#
@@ -255,6 +257,7 @@ for enableCorona, enableMagnetic, enableConduction in [
 
     def discretize(eq):
         if eq == 0: return eq
+        eq = simplify(eq)
         for iy,y in zip(range(len(yvar)),yvar):
             eq = eq.subs(Derivative(y,z),D[iy]).subs(y,Y[iy])
         for k,v in global_variables.items():
