@@ -15,8 +15,8 @@ setup (
     ],
     entry_points = {
         'console_scripts': [
-            'dvpl-alpha-rx=diskvert.plot_alpharx:main_plotmulti',
-            'dvpl-alpha-rx-combine=diskvert.plot_alpharx:main_plotcumul',
+            'dv-plot-rx=diskvert.plotrx:main_plotmulti',
+            'dv-plot-rx-cumul=diskvert.plotrx:main_plotcumul',
         ],
     },
     install_requires = [

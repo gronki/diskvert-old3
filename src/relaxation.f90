@@ -217,6 +217,64 @@ contains
     if (present(y0)) y = y0 + (1 - y0) * y
   end function
 
+  !----------------------------------------------------------------------------!
+  subroutine mrx_transfer(nr, newnr, z, Y)
+    use slf_cgs, only: cgs_k_over_mh
+    integer, intent(in) :: newnr
+    integer, intent(inout) :: nr
+    real(r64), intent(in), dimension(:) :: z
+    real(r64), intent(inout), dimension(:), allocatable :: Y
+    real(r64), dimension(:), allocatable :: y_old
+    ! column order: rho, Tgas, Trad, Frad, Pmag, Fcond
+    integer, dimension(6) :: c_, c_old_
+    integer :: ny, ny_old
+
+    call mrx_sel_hash(nr,c_old_)
+    ny_old = mrx_ny(nr)
+    call mrx_sel_hash(newnr,c_)
+    ny = mrx_ny(newnr)
+
+    call move_alloc(y, y_old)
+    allocate(y(size(z)*ny))
+
+    ! density, temperature and radiative flux are present in all models
+    Y(c_(1)::ny) = Y_old(c_old_(1)::ny_old)
+    Y(c_(3)::ny) = Y_old(c_old_(3)::ny_old)
+    Y(c_(4)::ny) = Y_old(c_old_(4)::ny_old)
+
+    ! if radiative and gas temperature are different in the new model,
+    ! then set it equal to "diffusive" temperature
+    if ( c_(2) .ne. c_(3) ) then
+      Y(c_(2)::ny) = Y_old(c_old_(2)::ny_old)
+    end if
+
+    ! transfer magnetic pressure if present in new model
+    if ( c_(5) .ne. 0 ) then
+      ! if the old model also had it, just copy
+      if ( c_old_(5) .ne. 0 ) then
+        Y(c_(5)::ny) = Y_old(c_old_(5)::ny_old)
+      else
+        ! if not, set magnetic beta to constant value of 100
+        Y(c_(5)::ny) = 0.01 * 2 * cgs_k_over_mh * Y(c_(1)::ny) * Y(c_(2)::ny)
+      end if
+    end if
+
+    ! transfer thermal conduction flux if present in new model
+    if ( c_(6) .ne. 0 ) then
+      ! if the old model also had it, just copy
+      if ( c_old_(6) .ne. 0 ) then
+        Y(c_(6)::ny) = Y_old(c_old_(6)::ny_old)
+      else
+        ! if not, just set to zero
+        Y(c_(6)::ny) = 0
+      end if
+    end if
+
+    deallocate(y_old)
+    nr = newnr
+
+  end subroutine
+
   include 'coefficients.fi'
 
 end module relaxation

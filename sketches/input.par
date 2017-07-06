@@ -1,0 +1,15 @@
+# masa czarnej dziury (x Msun)
+mbh 10
+
+# tempo akrecji (x Mdot edd)
+mdot 0.007
+
+# promien obliczeniowy (x Rschw)
+radius 10
+
+# parametr alfa
+alpha 0.01
+
+# predkosc wznoszenia pola (dla modelu magnetycznego)
+zeta 0.505
+zeta 0.255

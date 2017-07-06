@@ -2,10 +2,10 @@
 # coding: utf-8
 
 from diskvert.cgs import *
-from diskvert.col2python import col2python
+from diskvert.col2python import col2python, outfname
 
 import numpy as np
-from numpy import interp,arange,where,zeros,log10,array,load
+from numpy import interp,arange,where,zeros,log10,array,load,linspace,logspace
 from numpy import save as npsave
 from numpy import array as nparray
 from numpy import sqrt as npsqrt
@@ -34,7 +34,7 @@ parser.add_argument('--logT-max', type=float, default = 3.0,
 parser.add_argument('--logT-min', type=float, default = -1.5,
         help=u"logarytm minimalnej temperatury")
 # 2. Wyświetlanie
-parser.add_argument('--display-range', type=float, default = 0.1,
+parser.add_argument('--display-range', type=float, default = 0.12,
         help=u"zakres wyświetlany przy pomocy kolorów")
 parser.add_argument('--resolution', type=int, default = 96,
         help=u"ile przedziałów w osi X")
@@ -42,6 +42,8 @@ parser.add_argument('--contours', type=int, default = 6,
         help=u"ile konturów po każdej stronie")
 parser.add_argument('--colormap', type=str, default = 'diskvert1',
         help=u"wybór mapy kolorów dla matplotlib")
+parser.add_argument('--force', '-f', action='store_true',
+        help=u"oblicza dokładnie według siatki z pliku")
 # 3. Techniczne
 parser.add_argument('--show', action='store_true',
         help=u"Wyświetla okienko zamiast zapisywania pliku")
@@ -55,9 +57,6 @@ parser.add_argument('inputfile',
 args = parser.parse_args()
 
 ########################################################################################
-
-if re.search(r'(\.tgz|\.tar\.gz)$', args.inputfile) == None:
-    print(u"Oczekuję pliku w formacie .tar.gz lub .tgz (dostałem: %s)" % args.inputfile)
 
 # Dekompresujemy i wczytujemy ze StringIO plik
 print 'Wczytywanie...'
@@ -82,8 +81,8 @@ tlim_hi = args.logT_max
 ########################################################################################
 
 
-kram_abs_0 = info['kappa_abs_0']
-kappa_es = info['kappa_es']
+kram_abs_0 = info.kappa_abs_0
+kappa_es = info.kappa_es
 
 print u'Stała w przybliżeniu Kramersa: %.3e' % kram_abs_0
 
@@ -96,21 +95,21 @@ def kappa_drho(rho,temp):
 
 ########################################################################################
 
-tcen = log10(info['temp_0'])
+tcen = log10(info.temp_0)
 t0 = log10(interp(zmin, d['h'], d['trad']))
-
-nx = int(args.resolution / 96.0 * (args.dpi * 9))
-ny = int(args.resolution / 96.0 * (args.dpi * 3))
 
 tlim_lo = tlim_lo + t0
 tlim_hi = tlim_hi + t0
 
-xax = arange(zlim[0], zlim[1], (zlim[1] - zlim[0]) / nx)
-nx = len(xax)
+if args.force:
+    xax = filter(lambda x: x >= zmin and x <= zmax,d['h'])
+    nx = len(xax)
+else:
+    nx = int(args.resolution / 96.0 * (args.dpi * 9))
+    xax = linspace(zlim[0], zlim[1], nx)
 
-yax = 10 ** arange(tlim_lo,tlim_hi,(tlim_hi-tlim_lo)/ny)
-ny = len(yax)
-
+ny = int(args.resolution / 96.0 * (args.dpi * 3))
+yax = logspace(tlim_lo,tlim_hi,ny)
 
 print ' --> obrazek o wymiarach %dx%d' % (nx,ny)
 
@@ -245,6 +244,7 @@ if args.show:
     plt.show()
     print(u"ZAKRES: --Z-min %0.2f --Z-max %0.2f" % ax.get_xlim())
 else:
-    plt.savefig(args.output if args.output != None \
-        else re.sub(r'(\.tgz|\.tar\.gz)$', '.cool2D.png', args.inputfile),
-        dpi = args.dpi)
+    pngfn = args.output if args.output != None \
+        else outfname(args.inputfile,'.cool2D.png')
+    plt.savefig(pngfn, dpi = args.dpi)
+    print "zapisano do {}".format(pngfn)

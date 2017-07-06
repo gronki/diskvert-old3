@@ -13,7 +13,7 @@ LDFLAGS = -L.
 LDLIBS = -lopenblas
 
 FC = f95
-CFLAGS = -g -Wall -O2 -march=native -mieee-fp
+CFLAGS = -g -Wall -O3 -march=native -mieee-fp
 FFLAGS = $(CFLAGS) -Warray-temporaries -Wpedantic -Wno-unused-dummy-argument
 CPPFLAGS = -DVERSION=$(VERSION)
 
@@ -88,7 +88,7 @@ install-user: install
 
 include make_dependencies.inc
 
-relaxation.o    : lapack.a
+relaxation.o    : lapack.a $(wildcard src/*.fi)
 settings.o      : libconfort.a
 
 #################  PLIKI BINARNE  #################
@@ -102,7 +102,7 @@ lapack.a: $(OBJECTS_LAPACK)
 
 libconfort.a:
 	$(MAKE) -C libconfort libconfort.a
-	ln -s libconfort/libconfort.a $@
+	ln -sf libconfort/libconfort.a $@
 
 bin:
 	mkdir -p $@

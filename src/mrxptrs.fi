@@ -1,36 +1,36 @@
 select case (nr)
 case(1)
     f => mrx_coeffalphdyfu
-    fbL => mrx_coeffalphdyfu_bL
-    fbR => mrx_coeffalphdyfu_bR
+    fbl => mrx_coeffalphdyfu_bl
+    fbr => mrx_coeffalphdyfu_br
 case(2)
     f => mrx_coeffalphcmpt
-    fbL => mrx_coeffalphcmpt_bL
-    fbR => mrx_coeffalphcmpt_bR
+    fbl => mrx_coeffalphcmpt_bl
+    fbr => mrx_coeffalphcmpt_br
 case(3)
     f => mrx_coeffmagndyfu
-    fbL => mrx_coeffmagndyfu_bL
-    fbR => mrx_coeffmagndyfu_bR
+    fbl => mrx_coeffmagndyfu_bl
+    fbr => mrx_coeffmagndyfu_br
 case(4)
     f => mrx_coeffmagncmpt
-    fbL => mrx_coeffmagncmpt_bL
-    fbR => mrx_coeffmagncmpt_bR
+    fbl => mrx_coeffmagncmpt_bl
+    fbr => mrx_coeffmagncmpt_br
 case(5)
     f => mrx_coeffalphdyfucond
-    fbL => mrx_coeffalphdyfucond_bL
-    fbR => mrx_coeffalphdyfucond_bR
+    fbl => mrx_coeffalphdyfucond_bl
+    fbr => mrx_coeffalphdyfucond_br
 case(6)
     f => mrx_coeffalphcmptcond
-    fbL => mrx_coeffalphcmptcond_bL
-    fbR => mrx_coeffalphcmptcond_bR
+    fbl => mrx_coeffalphcmptcond_bl
+    fbr => mrx_coeffalphcmptcond_br
 case(7)
     f => mrx_coeffmagndyfucond
-    fbL => mrx_coeffmagndyfucond_bL
-    fbR => mrx_coeffmagndyfucond_bR
+    fbl => mrx_coeffmagndyfucond_bl
+    fbr => mrx_coeffmagndyfucond_br
 case(8)
     f => mrx_coeffmagncmptcond
-    fbL => mrx_coeffmagncmptcond_bL
-    fbR => mrx_coeffmagncmptcond_bR
+    fbl => mrx_coeffmagncmptcond_bl
+    fbr => mrx_coeffmagncmptcond_br
 case default
     error stop
 end select

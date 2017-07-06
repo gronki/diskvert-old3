@@ -87,6 +87,16 @@ real(real64), dimension(:), intent(out) :: B
 real(real64), dimension(:,:), intent(out) :: MB
 {B}\n{MB}\nend subroutine\n\n"""
 
+fsub_constr = """pure subroutine {name}_ctr (z,Y,F,C,MC)
+use iso_fortran_env, only: real64
+implicit none
+real(real64), intent(in) :: z
+real(real64), dimension(:), intent(in) :: Y
+real(real64), dimension(:,:), intent(in) :: F
+real(real64), dimension(:), intent(out) :: C
+real(real64), dimension(:,:), intent(out) :: MC
+{B}\n{MB}\nend subroutine\n\n"""
+
 #------------------------------------------------------------------------------#
 
 fswptrs = open('src/mrxptrs.fi','w')
@@ -174,6 +184,7 @@ for enableCorona, enableMagnetic, enableConduction in [
     #--------------------------------------------------------------------------#
 
     equations = []
+    constraints = []
     boundL = []
     boundR = []
 
@@ -198,12 +209,12 @@ for enableCorona, enableMagnetic, enableConduction in [
     # Bilans grzania i chlodzenia
     #
 
-    GasHeating = alpha * omega * P_tot
-    # if enableMagnetic: GasHeating = - vrise(z) * Derivative(P_mag,z)
+    heat = alpha * omega * P_tot
+    # if enableMagnetic: heat = - vrise(z) * Derivative(P_mag,z)
     if enableMagnetic:
-        GasHeating = 2 * P_mag * vrise(z).diff(z) - alpha * omega * P_tot
+        heat = 2 * P_mag * vrise(z).diff(z) - alpha * omega * P_tot
     equations.append(
-        Derivative(F_rad,z) + Derivative(F_cond,z) - GasHeating
+        Derivative(F_rad,z) + Derivative(F_cond,z) - heat
     )
     boundL.append( F_rad )
     boundR.append( F_rad + F_mag + F_cond - F_acc )
@@ -224,12 +235,15 @@ for enableCorona, enableMagnetic, enableConduction in [
     # Funkcja zrodlowa
     #
     if enableCorona:
-        SourceFunction = 4 * sigma * rho * ( T_gas - T_rad ) * (
-            kappa_abs * (T_gas + T_rad) * (T_gas**2 + T_rad**2) \
-            + kappa_sct * 4 * k * T_rad**4 / ( m_el * c**2 )
-        )
-        equations.append(T_gas * (SourceFunction - Derivative(F_rad,z)))
-        boundL.append( T_gas - T_rad )
+        sdyf = kappa_abs * (T_gas + T_rad) * (T_gas**2 + T_rad**2)
+        sdyf = 0
+        ssct = kappa_sct * 4 * k * T_rad**4 / ( m_el * c**2 )
+        radcool = 4 * sigma * rho * (T_gas - T_rad) * (sdyf + ssct)
+        if enableConduction:
+            equations.append(radcool - Derivative(F_rad,z))
+        else:
+            equations.append(radcool - heat)
+        boundL.append(T_gas - T_rad)
 
     #--------------------------------------------------------------------------#
     # Dyfuzja ciepla przez przewodnictwo
@@ -238,17 +252,18 @@ for enableCorona, enableMagnetic, enableConduction in [
         equations.append(
             F_cond + kappa_cond * Derivative(T_gas,z)
         )
-        boundL.append( F_cond )
+        boundL.append(F_cond)
 
     #--------------------------------------------------------------------------#
 
-    assert len(equations) == len(yvar)
-    assert len(boundL) + len(boundR) == len(yvar)
-
-    neq = len(equations)
+    na = len(equations)
+    nc = len(constraints)
     ny = len(yvar)
     nbl = len(boundL)
     nbr = len(boundR)
+
+    assert na + nc == ny
+    assert na == nbl + nbr
 
     Y = MatrixSymbol('Y', ny, 1)
     D = MatrixSymbol('D', ny, 1)
@@ -257,8 +272,8 @@ for enableCorona, enableMagnetic, enableConduction in [
 
     def discretize(eq):
         if eq == 0: return eq
-        eq = simplify(eq)
-        for iy,y in zip(range(len(yvar)),yvar):
+        # eq = simplify(eq)
+        for iy,y in zip(range(ny),yvar):
             eq = eq.subs(Derivative(y,z),D[iy]).subs(y,Y[iy])
         for k,v in global_variables.items():
             eq = eq.subs(k,Symbol(v, real = True, positive = k.is_positive))
@@ -279,38 +294,6 @@ for enableCorona, enableMagnetic, enableConduction in [
 
     #--------------------------------------------------------------------------#
 
-    A = Matrix(zeros((neq,)))
-    MY = Matrix(zeros((neq,ny)))
-    MD = Matrix(zeros((neq,ny)))
-
-    for ieq,eq in zip(range(len(equations)),equations):
-        A[ieq] = discretize(-eq)
-        for iy,y in zip(range(len(yvar)),yvar):
-            MY[ieq,iy] = discretize(eq.diff(y))
-            MD[ieq,iy] = discretize(eq.diff(Derivative(y,z)))
-
-    #--------------------------------------------------------------------------#
-
-    BL = Matrix(zeros((nbl,)))
-    MBL = Matrix(zeros((nbl,ny)))
-
-    for ib,b in zip(range(len(boundL)),boundL):
-        BL[ib] = discretize(-b)
-        for iy,y in zip(range(len(yvar)),yvar):
-            MBL[ib,iy] = discretize(b.diff(y))
-
-    #--------------------------------------------------------------------------#
-
-    BR = Matrix(zeros((nbr,)))
-    MBR = Matrix(zeros((nbr,ny)))
-
-    for ib,b in zip(range(len(boundR)),boundR):
-        BR[ib] = discretize(-b)
-        for iy,y in zip(range(len(yvar)),yvar):
-            MBR[ib,iy] = discretize(b.diff(y))
-
-    #--------------------------------------------------------------------------#
-
     fcoeffsrc.write("\n!{s}!\n! {A}\n! {B}\n! {C}\n!{s}!\n\n".format(
         s = "-"*78,
         A = ("heating-cooling balance" if enableCorona else "thermal diffusion"),
@@ -318,6 +301,17 @@ for enableCorona, enableMagnetic, enableConduction in [
         C = ("radiation + thermal conduction" if enableConduction \
             else "radiative energy transport"),
     ))
+    #--------------------------------------------------------------------------#
+
+    A = Matrix(zeros((na,)))
+    MY = Matrix(zeros((na,ny)))
+    MD = Matrix(zeros((na,ny)))
+
+    for ieq,eq in zip(range(na),equations):
+        A[ieq] = discretize(-eq)
+        for iy,y in zip(range(ny),yvar):
+            MY[ieq,iy] = discretize(eq.diff(y))
+            MD[ieq,iy] = discretize(eq.diff(Derivative(y,z)))
 
     fcoeffsrc.write(fsub_coeff.format(
         name = routine_name,
@@ -326,18 +320,60 @@ for enableCorona, enableMagnetic, enableConduction in [
         MY = fprinter.doprint(MY, 'MY'),
         MD = fprinter.doprint(MD, 'MD'),
     ))
-    fcoeffsrc.write(fsub_bound.format(
-        name = routine_name, lr = 'bl',
-        ny = ':', nb = ':', nf = len(global_functions),
-        B = fprinter.doprint(BL, 'B'),
-        MB = fprinter.doprint(MBL, 'MB'),
-    ))
-    fcoeffsrc.write(fsub_bound.format(
-        name = routine_name, lr = 'br',
-        ny = ":", nb = ":", nf = len(global_functions),
-        B = fprinter.doprint(BR, 'B'),
-        MB = fprinter.doprint(MBR, 'MB'),
-    ))
+
+    #--------------------------------------------------------------------------#
+
+    if nc > 0:
+        C = Matrix(zeros((nc,)))
+        MC = Matrix(zeros((nc,ny)))
+
+        for ic,c in zip(range(nc),constraints):
+            C[ic] = discretize(-c)
+            for iy,y in zip(range(ny),yvar):
+                MC[ic,iy] = discretize(c.diff(y))
+
+        fcoeffsrc.write(fsub_constr.format(
+            name = routine_name,
+            ny = ':', nb = ':', nf = len(global_functions),
+            B = fprinter.doprint(C, 'C'),
+            MB = fprinter.doprint(MC, 'MC'),
+        ))
+
+    #--------------------------------------------------------------------------#
+
+    if nbl > 0:
+        BL = Matrix(zeros((nbl,)))
+        MBL = Matrix(zeros((nbl,ny)))
+
+        for ib,b in zip(range(nbl),boundL):
+            BL[ib] = discretize(-b)
+            for iy,y in zip(range(ny),yvar):
+                MBL[ib,iy] = discretize(b.diff(y))
+
+        fcoeffsrc.write(fsub_bound.format(
+            name = routine_name, lr = 'bl',
+            ny = ':', nb = ':', nf = len(global_functions),
+            B = fprinter.doprint(BL, 'B'),
+            MB = fprinter.doprint(MBL, 'MB'),
+        ))
+
+    #--------------------------------------------------------------------------#
+
+    if nbr > 0:
+        BR = Matrix(zeros((nbr,)))
+        MBR = Matrix(zeros((nbr,ny)))
+
+        for ib,b in zip(range(nbr),boundR):
+            BR[ib] = discretize(-b)
+            for iy,y in zip(range(ny),yvar):
+                MBR[ib,iy] = discretize(b.diff(y))
+
+        fcoeffsrc.write(fsub_bound.format(
+            name = routine_name, lr = 'br',
+            ny = ":", nb = ":", nf = len(global_functions),
+            B = fprinter.doprint(BR, 'B'),
+            MB = fprinter.doprint(MBR, 'MB'),
+        ))
 
     fcoeffsrc.write("\n")
 
@@ -347,12 +383,18 @@ for enableCorona, enableMagnetic, enableConduction in [
 
     fswname.write ('    name = \"{}\"\n'.format(basename))
     fswptrs.write ('    f => {}\n'.format(routine_name))
-    fswptrs.write ('    fbL => {}\n'.format(routine_name+'_bL'))
-    fswptrs.write ('    fbR => {}\n'.format(routine_name+'_bR'))
-    fswynum.write ('    ny = {}\n'.format(len(yvar)))
-    fswdims.write ('    n = {}\n'.format(len(yvar)))
-    fswdims.write ('    nbL = {}\n'.format(len(boundL)))
-    fswdims.write ('    nbR = {}\n'.format(len(boundR)))
+    if nbl > 0:
+        fswptrs.write ('    fbl => {}\n'.format(routine_name+'_bl'))
+    if nbr > 0:
+        fswptrs.write ('    fbr => {}\n'.format(routine_name+'_br'))
+    if nc > 0:
+        fswptrs.write ('    fc => {}\n'.format(routine_name+'_ctr'))
+    fswynum.write ('    ny = {}\n'.format(ny))
+    fswdims.write ('    ny = {}\n'.format(ny))
+    fswdims.write ('    na = {}\n'.format(na))
+    fswdims.write ('    nc = {}\n'.format(nc))
+    fswdims.write ('    nbl = {}\n'.format(nbl))
+    fswdims.write ('    nbr = {}\n'.format(nbr))
     fswhash.write ('    ihash = [{}]\n'.format(",".join([ str(i+1) \
             for i in yval_hash ])))
 

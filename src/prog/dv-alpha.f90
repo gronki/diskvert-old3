@@ -55,6 +55,11 @@ program dv_alpha
     write (upar, fmparec) "rho_0", a(c_rho,ngrid), "Central density"
     write (upar, fmparec) "temp_0", a(c_tgas,ngrid), "Central gas temperature"
     write (upar, fmparfc) "alpha", alpha, "Alpha parameter"
+    write (upar, fmpare) "zscale", fzscale(mbh,mdot,radius)
+    write (upar, fmparl) "has_corona", &
+          & (cfg_temperature_method == EQUATION_BALANCE)
+    write (upar, fmparl) "has_magnetic", .FALSE.
+    write (upar, fmparl) "has_conduction", .FALSE.
     call wpar_gl(upar)
     close(upar)
 

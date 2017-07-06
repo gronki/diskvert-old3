@@ -21,12 +21,12 @@ parser.add_argument('--output', '-o', type=str,
 parser.add_argument('--dpi', type=int, default = 96,
         help=u"Rozdzielczość DPI")
 parser.add_argument('inputfile',
-        help=u"Wyjście z programu w formacie .tar.gz")
+        help=u"Wyjście z programu w formacie .tar.gz lub .dat")
 
 args = parser.parse_args()
 
-if re.search(r'(\.tgz|\.tar\.gz)$', args.inputfile) == None:
-    print(u"Oczekuję pliku w formacie .tar.gz lub .tgz (dostałem: %s)" % args.inputfile)
+if re.search(r'(\.tgz|\.tar\.gz|\.dat)$', args.inputfile) == None:
+    print(u"Oczekuję pliku w formacie .tar.gz lub .dat (dostałem: %s)" % args.inputfile)
 
 (data, info) = col2python(args.inputfile)
 
@@ -106,10 +106,10 @@ ax.legend(loc='lower right', fontsize = 9)
 ax = plt.subplot2grid( grid_dim, (0,2) )
 ax.set_title(u"Strumień")
 ax.axhline(1, color='#8B8B8B', linewidth=0.8)
-ax.plot(xax(ax), data['fmag'] / info['flux_acc'], color='#0E709A', label=u"Magnetyczny")
-ax.plot(xax(ax), data['frad'] / info['flux_acc'], color='#B43216', label=u"Promienisty")
-ax.plot(xax(ax), data['flxbond'] / info['flux_acc'], color='#AD867E', linestyle='--', label=u"Warunek brzegowy")
-ax.plot(xax(ax), data['fgen'] / info['flux_acc'], color='black', linewidth=2.0, label=u"Całkowity")
+ax.plot(xax(ax), data['fmag'] / info.flux_acc, color='#0E709A', label=u"Magnetyczny")
+ax.plot(xax(ax), data['frad'] / info.flux_acc, color='#B43216', label=u"Promienisty")
+ax.plot(xax(ax), data['flxbond'] / info.flux_acc, color='#AD867E', linestyle='--', label=u"Warunek brzegowy")
+ax.plot(xax(ax), data['fgen'] / info.flux_acc, color='black', linewidth=2.0, label=u"Całkowity")
 ax.set_ylim( [0,1.2] )
 # ax.set_yscale('log')
 plt.grid(True)
@@ -122,12 +122,12 @@ ax = plt.subplot2grid( grid_dim, (1,2) )
 ax.set_ylim(-0.1,0.5)
 ax.set_title(u"Grzanie i chłodzenie")
 # ax.set_yscale('log')
-ax.plot(xax(ax), (data['d*fgen'] - data['d*frad'])  * info['zscale'] / info['flux_acc'], color='#0E709A', label=u"Strumień magnetyczny")
-ax.plot(xax(ax), data['cool_tot'] * info['zscale'] / info['flux_acc'], color='#369818', label=u"Chłodzenie promieniste (netto)")
-ax.plot(xax(ax), data['d*frad'] * info['zscale'] / info['flux_acc'], color='#B43216', label=u"Grzanie magnetyczne")
+ax.plot(xax(ax), (data['d*fgen'] - data['d*frad'])  * info.zscale / info.flux_acc, color='#0E709A', label=u"Strumień magnetyczny")
+ax.plot(xax(ax), data['cool_tot'] * info.zscale / info.flux_acc, color='#369818', label=u"Chłodzenie promieniste (netto)")
+ax.plot(xax(ax), data['d*frad'] * info.zscale / info.flux_acc, color='#B43216', label=u"Grzanie magnetyczne")
 # ax.plot(xax(ax), data['d*frad'] * data['z'] / data['frad'], '.', color='#408FA1', label=u"Warunek brzegowy")
-ax.plot(xax(ax), data['heat_max'] * info['zscale'] / info['flux_acc'], ':', color='#5B3027', label=u"Grzanie maksymalne (patrz dok.)")
-ax.plot(xax(ax), data['d*fgen'] * info['zscale'] / info['flux_acc'], color='black', linewidth=2.0, label=u"Całkowity bilans")
+ax.plot(xax(ax), data['heat_max'] * info.zscale / info.flux_acc, ':', color='#5B3027', label=u"Grzanie maksymalne (patrz dok.)")
+ax.plot(xax(ax), data['d*fgen'] * info.zscale / info.flux_acc, color='black', linewidth=2.0, label=u"Całkowity bilans")
 plt.grid(True)
 
 ax.legend(loc='upper right',fontsize=9)
@@ -186,5 +186,5 @@ if args.show:
     plt.show()
 else:
     plt.savefig(args.output if args.output != None \
-        else re.sub(r'(\.tgz|\.tar\.gz)$', '.png', args.inputfile),
+        else re.sub(r'(\.tgz|\.tar\.gz|\.dat)$', '.png', args.inputfile),
         dpi = args.dpi)

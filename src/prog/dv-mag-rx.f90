@@ -6,6 +6,9 @@ program dv_mag_relax
   use iso_fortran_env, only: sp => real32, dp => real64
   use fileunits
   use relaxation
+  use relaxutils
+  use slf_deriv, only: deriv
+  use rxsettings
   use ss73solution, only: apxdisk, apx_estim, apx_refine
   use grid, only: space_linear, space_linlog
 
@@ -15,11 +18,13 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model
   integer :: ny = 3, i, iter, nitert = 0
-  integer, dimension(3) :: niter = [ 36, 12, 52 ]
+  integer, dimension(3) :: niter = [ 36, 8, 120 ]
   character(2**8) :: fn
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:)
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, y_pmag, y_Trad
+  real(dp), allocatable, dimension(:) :: tau, d_frad
   real(dp) :: rhoc, Tc, Hdisk, err, t
+  logical :: user_ff, user_bf
   integer, dimension(6) :: c_
 
   !----------------------------------------------------------------------------!
@@ -30,10 +35,14 @@ program dv_mag_relax
   !----------------------------------------------------------------------------!
 
   call rdargvgl
+  call rdargvrx
   call mincf_read(cfg)
   call rdconfgl(cfg)
   call rdconf(cfg)
   call mincf_free(cfg)
+
+  user_ff = use_opacity_ff
+  user_bf = use_opacity_bf
 
   !----------------------------------------------------------------------------!
   ! calculate the global parameters
@@ -44,7 +53,7 @@ program dv_mag_relax
   ny = mrx_ny(model)
   call mrx_sel_hash(model, C_)
 
-  allocate( x(ngrid), x0(ngrid), Y(ny*ngrid), dY(ny*ngrid), M(ny*ngrid,ny*ngrid) )
+  allocate( x(ngrid), x0(ngrid), Y(ny*ngrid), dY(ny*ngrid), M(ny*ngrid,ny*ngrid), tau(ngrid), d_frad(ngrid) )
 
   !----------------------------------------------------------------------------!
 
@@ -76,10 +85,11 @@ program dv_mag_relax
   end associate
 
   !----------------------------------------------------------------------------!
-  call saveiter(0)
 
-  kramers_opacity_ff = .false.
-  kramers_opacity_bf = .false.
+  if (cfg_write_all_iters) call saveiter(0)
+
+  use_opacity_ff = .false.
+  use_opacity_bf = .false.
   relx_opacity_es : do iter = 1,niter(1)
 
     call mrx_advance(model, x, Y, M, dY)
@@ -91,151 +101,169 @@ program dv_mag_relax
     y_rho = merge(y_rho, epsilon(1d0)*rhoc, y_rho > epsilon(1d0)*rhoc)
     y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
 
-    call saveiter(nitert + iter)
+    if (cfg_write_all_iters) call saveiter(nitert + iter)
 
   end do relx_opacity_es
 
   nitert = nitert + niter(1)
 
   !----------------------------------------------------------------------------!
-  write (ulog,*) '--- ff+bf opacity is on'
 
-  kramers_opacity_ff = .true.
-  kramers_opacity_bf = .false.
-  relx_opacity_full : do iter = 1,niter(2)
+  use_opacity_ff = user_ff
+  use_opacity_bf = user_bf
 
-    call mrx_advance(model, x, Y, M, dY)
+  if ( use_opacity_bf .or. use_opacity_ff ) then
 
-    err = sum(merge((dY/Y)**2, 0d0, Y.ne.0)) / sum(merge(1, 0, Y.ne.0))
-    write(ulog,'(I5,Es12.4)') nitert+iter, err
+    write (ulog,*) '--- ff+bf opacity is on'
 
-    Y = Y + dY * ramp2(iter,niter(2))
-    y_rho = merge(y_rho, epsilon(1d0)*rhoc, y_rho > epsilon(1d0)*rhoc)
-    y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
+    relx_opacity_full : do iter = 1,niter(2)
 
-    call saveiter(nitert + iter)
+      call mrx_advance(model, x, Y, M, dY)
 
-  end do relx_opacity_full
+      err = sum(merge((dY/Y)**2, 0d0, Y.ne.0)) / sum(merge(1, 0, Y.ne.0))
+      write(ulog,'(I5,Es12.4)') nitert+iter, err
 
-  nitert = nitert + niter(2)
+      Y = Y + dY * ramp2(iter,niter(2),0.5d0)
+      y_rho = merge(y_rho, epsilon(1d0)*rhoc, y_rho > epsilon(1d0)*rhoc)
+      y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
+
+      if (cfg_write_all_iters) call saveiter(nitert + iter)
+
+    end do relx_opacity_full
+
+    nitert = nitert + niter(2)
+
+  end if
 
   !----------------------------------------------------------------------------!
-  write (ulog,*) '--- corona is on'
 
-  call mrx_transfer(model, mrx_number( .TRUE., .TRUE., .FALSE. ), x, Y)
+  if ( cfg_temperature_method == EQUATION_BALANCE ) then
 
-  ny = mrx_ny(model)
-  call mrx_sel_hash(model,c_)
+    write (ulog,*) '--- corona is on'
 
-  deallocate(dY,M)
-  allocate(dY(ny*ngrid), M(ny*ngrid,ny*ngrid))
+    call mrx_transfer(model, mrx_number( .TRUE., .TRUE., .FALSE. ), x, Y)
 
-  y_rho   => Y(C_(1)::ny)
-  y_temp  => Y(C_(2)::ny)
-  y_trad  => Y(C_(3)::ny)
-  y_frad  => Y(C_(4)::ny)
-  y_pmag  => Y(C_(5)::ny)
+    ny = mrx_ny(model)
+    call mrx_sel_hash(model,c_)
 
-  relx_corona : do iter = 1,niter(3)
+    deallocate(dY,M)
+    allocate(dY(ny*ngrid), M(ny*ngrid,ny*ngrid))
 
-    call mrx_advance(model, x, Y, M, dY)
+    y_rho   => Y(C_(1)::ny)
+    y_temp  => Y(C_(2)::ny)
+    y_trad  => Y(C_(3)::ny)
+    y_frad  => Y(C_(4)::ny)
+    y_pmag  => Y(C_(5)::ny)
 
-    err = sum(merge((dY/Y)**2, 0d0, Y.ne.0)) / sum(merge(1, 0, Y.ne.0))
-    write(ulog,'(I5,Es12.4)') nitert+iter, err
+    call deriv(x, y_frad, d_frad)
 
-    Y = Y + dY * ramp1(iter,niter(3)) * 0.01
-    y_rho = merge(y_rho, epsilon(1d0)*rhoc, y_rho > epsilon(1d0)*rhoc)
-    y_trad = merge(y_trad, teff / 2, y_trad > teff / 2)
-    y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
+    forall (i = 1:ngrid)
+      y_temp(i) = y_trad(i) + d_frad(i) * (cgs_mel * cgs_c**2) &
+            & / (16 * cgs_boltz * (cgs_kapes*y_rho(i)) &
+            & * (cgs_stef*y_trad(i)**4) )
+      !// y_rho(i) = y_rho(i) * (y_trad(i)/y_temp(i))**(0.25)
+    end forall
 
-    call saveiter(nitert + iter)
+    nitert = nitert + 1
+    if (cfg_write_all_iters) call saveiter(nitert)
 
-  end do relx_corona
+    relx_corona : do iter = 1,niter(3)
+
+      call mrx_advance(model, x, Y, M, dY)
+
+      err = sum(merge((dY/Y)**2, 0d0, Y.ne.0)) / sum(merge(1, 0, Y.ne.0))
+      write(ulog,'(I5,Es12.4)') nitert+iter, err
+
+      Y = Y + dY * 0.005 * ramp1(iter, niter(3))
+      forall (i = 1:ngrid)
+        y_rho(i) = merge(y_rho(i), epsilon(1d0)*rhoc,   &
+              & y_rho(i) > epsilon(1d0)*rhoc)
+        y_trad(i) = merge(y_trad(i), teff / 2, y_trad(i) > teff / 2)
+        y_temp(i) = merge(y_temp(i), y_trad(i), y_temp(i) >= y_trad(i))
+      end forall
+
+      if (cfg_write_all_iters) call saveiter(nitert + iter)
+
+    end do relx_corona
+
+    nitert = nitert + niter(3)
+
+  end if
 
   write (ulog,*) '--- DONE'
 
+  open(33, file = trim(outfn) // '.dat', action = 'write', status = 'new')
+  call saveresult(33)
+  close(33)
+
+  !----------------------------------------------------------------------------!
+
   open(newunit = upar, file = trim(outfn) // '.txt', action = 'write')
+  call wpar_gl(upar)
+  write (upar, fmparfc) "alpha", alpha, "Alpha parameter"
+  write (upar, fmparfc) "zeta", zeta, "Zeta parameter"
+  write (upar, fmpare) "zscale", fzscale(mbh,mdot,radius)
   write (upar, fmparec) "rho_0", rhoc, "Central density"
   write (upar, fmparec) "temp_0", Tc, "Central gas temperature"
   write (upar, fmparec) "Hdisk", Hdisk, "Disk height [cm]"
-  write (upar, fmparfc) "alpha", alpha, "Alpha parameter"
-  write (upar, fmparfc) "zeta", zeta, "Zeta parameter"
-  call wpar_gl(upar)
+  write (upar, fmhdr)  "Model information"
+  write (upar, fmpari) "model", model
+  write (upar, fmpari) "niter", nitert
+  write (upar, fmparl) "has_corona", &
+        & (cfg_temperature_method == EQUATION_BALANCE)
+  write (upar, fmparl) "has_magnetic", .TRUE.
+  write (upar, fmparl) "has_conduction", .FALSE.
   close(upar)
 
-  deallocate(x,x0,Y,M,dY)
+  open(34, file = trim(outfn) // ".col", action = 'write')
+  write(34, fmcol) 'i', 'i4'
+  write(34, fmcol) 'z', 'f4'
+  write(34, fmcol) 'h', 'f4'
+  write(34, fmcol) 'tau', 'f4'
+  write(34, fmcol) 'rho', 'f4'
+  write(34, fmcol) 'temp', 'f4'
+  write(34, fmcol) 'trad', 'f4'
+  write(34, fmcol) 'frad', 'f4'
+  write(34, fmcol) 'ksct', 'f4'
+  write(34, fmcol) 'kabs', 'f4'
+  write(34, fmcol) 'kcnd', 'f4'
+  write(34, fmcol) 'pgas', 'f4'
+  write(34, fmcol) 'prad', 'f4'
+  write(34, fmcol) 'pmag', 'f4'
+  write(34, fmcol) 'beta', 'f4'
+  write(34, fmcol) 'd*frad', 'f4'
+  close(34)
+
+  deallocate(x,x0,Y,M,dY,tau,d_frad)
 
 contains
 
   !----------------------------------------------------------------------------!
-  subroutine mrx_transfer(nr, newnr, z, Y)
-    use slf_cgs, only: cgs_k_over_mh
-    integer, intent(in) :: newnr
-    integer, intent(inout) :: nr
-    real(dp), intent(in), dimension(:) :: z
-    real(dp), intent(inout), dimension(:), allocatable :: Y
-    real(dp), dimension(:), allocatable :: y_old
-    ! column order: rho, Tgas, Trad, Frad, Pmag, Fcond
-    integer, dimension(6) :: c_, c_old_
-    integer :: ny, ny_old
-
-    call mrx_sel_hash(nr,c_old_)
-    ny_old = mrx_ny(nr)
-    call mrx_sel_hash(newnr,c_)
-    ny = mrx_ny(newnr)
-
-    call move_alloc(y, y_old)
-    allocate(y(size(z)*ny))
-
-    ! density, temperature and radiative flux are present in all models
-    Y(c_(1)::ny) = Y_old(c_old_(1)::ny_old)
-    Y(c_(3)::ny) = Y_old(c_old_(3)::ny_old)
-    Y(c_(4)::ny) = Y_old(c_old_(4)::ny_old)
-
-    ! if radiative and gas temperature are different in the new model,
-    ! then set it equal to "diffusive" temperature
-    if ( c_(2) .ne. c_(3) ) then
-      Y(c_(2)::ny) = Y_old(c_old_(2)::ny_old)
-    end if
-
-    ! transfer magnetic pressure if present in new model
-    if ( c_(5) .ne. 0 ) then
-      ! if the old model also had it, just copy
-      if ( c_old_(5) .ne. 0 ) then
-        Y(c_(5)::ny) = Y_old(c_old_(5)::ny_old)
-      else
-        ! if not, set magnetic beta to constant value of 100
-        Y(c_(5)::ny) = 0.01 * 2 * cgs_k_over_mh * Y(c_(1)::ny) * Y(c_(2)::ny)
-      end if
-    end if
-
-    ! transfer thermal conduction flux if present in new model
-    if ( c_(6) .ne. 0 ) then
-      ! if the old model also had it, just copy
-      if ( c_old_(6) .ne. 0 ) then
-        Y(c_(6)::ny) = Y_old(c_old_(6)::ny_old)
-      else
-        ! if not, just set to zero
-        Y(c_(6)::ny) = 0
-      end if
-    end if
-
-    deallocate(y_old)
-    nr = newnr
-
-  end subroutine
-
-  !----------------------------------------------------------------------------!
   subroutine saveiter(iter)
+    use relaxutils
     integer, intent(in) :: iter
-    integer :: i
     write (fn,'(A,".",I0.3,".dat")') trim(outfn),iter
     open(33, file = trim(fn), action = 'write', status = 'new')
-    do i = 1,ngrid
-      write (33,'(I6,7Es12.4)') i, x(i), &
-            & y_rho(i), y_temp(i), y_trad(i), y_frad(i), y_pmag(i), 0d0
-    end do
+    call saveresult(33)
     close(33)
+  end subroutine
+
+  subroutine saveresult(u)
+    integer, intent(in) :: u
+    real(r64) :: pgas, prad
+    integer :: i
+    call mktaues(x,y_rho,y_temp,tau)
+    call deriv(x, y_frad, d_frad)
+
+    do i = 1,ngrid
+      pgas =  cgs_k_over_mh / miu * y_rho(i) * y_temp(i)
+      prad = cgs_a / 3 * y_trad(i)**4
+      write (u,'(I6,15Es12.4)') i, x(i), x(i) / zscale, tau(i), &
+      y_rho(i), y_temp(i), y_trad(i), y_frad(i),  &
+      fksct(y_rho(i), y_temp(i)), fkabs(y_rho(i), y_temp(i)), &
+      fkcnd(y_rho(i), y_temp(i)), &
+      pgas, prad, y_pmag(i), pgas / y_pmag(i), d_frad(i)
+    end do
   end subroutine
 
   !----------------------------------------------------------------------------!

@@ -53,10 +53,10 @@ contains
   subroutine apxdisk2d_c(mbh, mdot, r, alpha, z, rho, T, Frad, nr, nz)  &
         &  bind(C, name = 'apxdisk2d')
     use iso_c_binding, only: c_double, c_int
+    integer(c_int), value :: nr,nz
     real(c_double), intent(in), value :: mbh, mdot,  alpha
     real(c_double), intent(in) :: r(nr), z(nz)
     real(c_double), intent(out) :: rho(nz,nr), T(nz,nr), Frad(nz,nr)
-    integer(c_int), value :: nr,nz
 
     call apxdisk2d(mbh, mdot, r, alpha, z, rho, T, Frad)
   end subroutine

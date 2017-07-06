@@ -67,8 +67,9 @@ module modelmag
                 p_flxbond   = 33, &
                 p_cool_crit = 34, &
                 p_heat_dyfu = 35, &
-                p_tbil = 36, & ! 36 to 40
-                p_zscal = 41
+                p_heat = 36, &
+                p_tbil = 37, & ! 37 to 41
+                p_zscal = 42
 
 contains
 
@@ -106,20 +107,24 @@ contains
         write (upar, fmparec) "rho_0_estim", rho_0_estim, "Central density (estimate)"
         write (upar, fmparec) "temp_0_estim", temp_0_estim, "Central gas temperature (estimate)"
 
-        rho_0_hi = rho_0_estim * 316
-        rho_0_lo = rho_0_estim / 316
-        itmax = 64
+        rho_0_hi = rho_0_estim * 31.6
+        rho_0_lo = rho_0_estim * 0.0316
+        itmax = ceiling((log10(31.6)-log10(max_iteration_error))/log10(2.0))
+
+        write (ulog, '("itmax = ",I0)') itmax
 
         associate(nz => size(z))
+
+        write (ulog,"(A5,A5,3A14,A10)") "i0", "*", "rho0", "Fgen", "Facc" , "ACTN"
 
         iter_rho: do iter0=1,itmax
 
             rho_0 = sqrt(rho_0_lo*rho_0_hi)
 
-            temp_0_hi = temp_0_estim * 100
-            temp_0_lo = temp_0_estim / 100
+            temp_0_hi = temp_0_estim * 31.6
+            temp_0_lo = temp_0_estim * 0.0316
 
-            write (ulog,"(2A5,4A14,A7,A10)") "i0", "i", "T0", "Frad", "Fbound", "error", "clip", "actn"
+            !// write (ulog,"(2A5,4A14,A7,A10)") "i0", "i", "T0", "Frad", "Fbound", "error", "clip", "actn"
 
             iter_temp: do iter=1,itmax
 
@@ -133,32 +138,32 @@ contains
                 if (  nmax .lt. nz-1  ) then
                     if ( zeta .gt. 1 ) then
                         temp_0_hi = sqrt(temp_0_hi*temp_0)
-                        buf = "\/! TEMP"
+                        !// buf = "\/! TEMP"
                     else
                         temp_0_lo = temp_0
-                        buf = "/\! TEMP"
+                        !// buf = "/\! TEMP"
                     end if
                 else
                     if (  par(p_flxbond,nmax) .lt. val(v_flux,nmax)  ) then
                         temp_0_lo = temp_0
-                        buf = "/\  TEMP"
+                        !// buf = "/\  TEMP"
                     else if ( par(p_flxbond,nmax) .gt. val(v_flux,nmax)) then
                         temp_0_hi = temp_0
-                        buf = "\/  TEMP"
+                        !// buf = "\/  TEMP"
                     else
                         exit iter_temp
                     end if
                 end if
 
-                write (ulog,"(2I5,3Es14.6,F14.7,F7.1,A10)") iter0, iter, &
-                    & temp_0, val(v_flux,nmax), par(p_flxbond,nmax), &
-                    & par(p_flxbond,nmax) / val(v_flux,nmax) - 1, &
-                    & 100.0 * nmax / nz, trim(buf)
+                !// write (ulog,"(2I5,3Es14.6,F14.7,F7.1,A10)") iter0, iter, &
+                !//     & temp_0, val(v_flux,nmax), par(p_flxbond,nmax), &
+                !//     & par(p_flxbond,nmax) / val(v_flux,nmax) - 1, &
+                !//     & 100.0 * nmax / nz, trim(buf)
 
                 if ( abs(2*(par(p_flxbond,nmax) - val(v_flux,nmax) )        &
                         /(par(p_flxbond,nmax) + val(v_flux,nmax) ))     &
                         .lt. max_iteration_error ) then
-                    write (ulog,"(A,Es9.1,A)") "Maximum precision ",max_iteration_error," reached."
+                    !// write (ulog,"(A,Es9.1,A)") "Maximum precision ",max_iteration_error," reached."
                     exit iter_temp
                 end if
 
@@ -176,10 +181,10 @@ contains
                 buf = "== RHO"
             end if
 
-            write (ulog,*) "   ========================================="
-            write (ulog,"(A5,A5,3A14,A10)") "i0", "*", "rho0", "Fgen", "Facc" , "ACTN"
+            !// write (ulog,*) "   ========================================="
+            !// write (ulog,"(A5,A5,3A14,A10)") "i0", "*", "rho0", "Fgen", "Facc" , "ACTN"
             write (ulog,"(I5,A5,3Es14.6,A10)") iter0, "*", rho_0, val(v_fgen,nmax), Facc , trim(buf)
-            write (ulog,*) "   ========================================="
+            !// write (ulog,*) "   ========================================="
 
             if ( abs(2*(val(v_fgen,nmax) - Facc)/(val(v_fgen,nmax) + Facc)) .lt. max_iteration_error ) then
                 write (ulog,"(A,Es9.1,A)") "Maximum precision ",max_iteration_error," reached."
@@ -252,8 +257,6 @@ contains
         ! this constant.
         real(r64), parameter :: toler = 3
 
-        logical :: isnormal(size(a))
-
         real(r64) :: epsi
         real(r64) :: heat
         real(r64) :: alpha_eff
@@ -296,6 +299,7 @@ contains
         a(p_temp) = a(p_Trad)
 
         heat = 2 * y(v_pmag) * a(p_vrise_t) - alpha_eff * omega * a(p_ptot)
+        a(p_heat) = heat
 
         call calc_compW(heat, y(v_pgas), y(v_prad), a(p_heat_max), a(p_compW))
         a(p_temp_compton) = heat * cgs_mel * cgs_c &
@@ -303,30 +307,38 @@ contains
 
         select case (cfg_temperature_method)
         case (EQUATION_EQUILIBR)
-            a(p_temp) = a(p_Trad)* (1 + a(p_compW))
-            ! a(p_temp) = sqrt(a(p_trad)**2 + a(p_temp_compton)**2)
+            a(p_temp) = a(p_Trad)
+
         case (EQUATION_COMPTON)
             a(p_temp) = a(p_Trad) * (1 + a(p_compW))
             call calc_compswitch(y(v_pgas),a(p_temp),a(p_compsw))
             a(p_temp) = a(p_Trad) * (1 + a(p_compsw)*a(p_compW))
+
         case (EQUATION_BALANCE)
             fcool_heat = heat
             fcool_prad = y(v_prad)
             fcool_pgas = y(v_pgas)
             fcool_trad = a(p_trad)
-            if ( .not.cfg_balance_multi ) then
-                a(p_tbil) = log(a(p_trad)**2 + a(p_temp_compton)**2) / 2
-                call findzer(a(p_tbil), log(a(p_trad) * 0.8), &
-                      & log(1d10), 1d-9, fcool)
-                a(p_temp) = exp(a(p_tbil))
-            else
-                a(p_tbil+0:p_tbil+4) = 0
 
-                call solve_balance_multi(a(p_tbil+0:p_tbil+4), n,&
-                        & log(1d6), log(1d10), 50, fcool)
+            a(p_tbil) = log(a(p_trad)**2 + a(p_temp_compton)**2) / 2
 
-                a(p_temp) = exp(a(p_tbil+0))
-            end if
+            call findzer(a(p_tbil), log(a(p_trad) * 0.8), &
+                  & log(1d10), 1d-9, fcool)
+
+            a(p_temp) = exp(a(p_tbil))
+        case (EQUATION_MULTIBIL)
+          fcool_heat = heat
+          fcool_prad = y(v_prad)
+          fcool_pgas = y(v_pgas)
+          fcool_trad = a(p_trad)
+
+          a(p_tbil+0:p_tbil+4) = 0
+
+          call solve_balance_multi(a(p_tbil+0:p_tbil+4), n,&
+                & log(1d6), log(1d10), 50, fcool)
+
+          a(p_temp) = exp(a(p_tbil+0))
+
         case default
             error stop "incorrect value of cfg_temperature_method"
         end select
@@ -374,19 +386,18 @@ contains
 
         a(p_valfv) = sqrt( 2 * y(v_pmag) / a(p_rho) )
 
-        isnormal = ieee_is_normal(a)
-        isnormal(p_rho) = isnormal(p_rho) .and. ( a(p_rho) > 0 )
-        isnormal(p_temp) = isnormal(p_temp) .and. ( a(p_temp) > 0 )
+        search_for_nans: do i = 1,size(a)
+          if ( .not. ieee_is_normal(a(i)) ) then
+            write (ulog, "(Es11.3,' found in field ',I0)") a(i),i
+            abort = .TRUE.
+            exit search_for_nans
+          end if
+        end do search_for_nans
 
-        if ( any(.not. isnormal) ) then
-            abort = .true.
-            iterate_search_error: do i = 1, size(a)
-                if (.not.isnormal(i)) then
-                    write (ulog, "(Es11.3,' found in field ',I0)") a(i),i
-                end if
-            end do iterate_search_error
+        if ( a(p_rho) <= 0 .or. a(p_temp) <= 0 .or. y(v_flux) < 0 ) then
+          write (ulog,*) 'something important is negative. aborting'
+          abort = .TRUE.
         end if
-
 
         ! alpha may be deleted by MRI shutoff
         alpha_eff = alpha

@@ -68,12 +68,17 @@ program dv_mag
     write (upar, fmparec) "beta_rad_0", val(v_pgas,1) / val(v_prad,1), &
                                 & "Radiative beta at the equator"
     write (upar, fmparec) "dzeta_0", zeta, "Parametr zeta"
+    write (upar, fmparec) "zeta", zeta, "Parametr zeta"
 
     write (upar, fmparec) "flux_acc", sol_facc_edd * (mdot / mbh) * (1 - sqrt(3/radius)) / radius**3, "erg/cm2/s"
     write (upar, fmpare) "zscale", fzscale(mbh, mdot, radius)
     write (upar, fmparec) "flux_gen_top", val(v_fgen,nmax), "erg/cm2/s"
     write (upar, fmparec) "flux_rad_top", val(v_flux,nmax), "erg/cm2/s"
     write (upar, fmparec) "flux_bound_top", par(p_flxbond,nmax), "erg/cm2/s"
+    write (upar, fmparl) "has_corona", &
+          & (cfg_temperature_method == EQUATION_BALANCE)
+    write (upar, fmparl) "has_magnetic", .TRUE.
+    write (upar, fmparl) "has_conduction", .FALSE.
     call wpar_gl(upar)
 
     close(upar)
@@ -179,6 +184,7 @@ contains
         p_labels(p_tbil+3) = 'TBIL4'
         p_labels(p_tbil+4) = 'TBIL5'
         p_labels(p_zscal) = 'h'
+        p_labels(p_heat) = 'heat'
 
     end subroutine
 

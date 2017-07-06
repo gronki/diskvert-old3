@@ -60,15 +60,16 @@ contains
         real(r64), intent(inout), dimension(na,nz) :: a
         integer(c_int), intent(out) :: nmax
         real(r64) :: h_hi, h_lo, h
-        integer :: i,it
+        integer :: i,it,niter
 
         h = 4 * hdisk / zscale
-        h_hi = h * 8
-        h_lo = h / 8
+        niter = ceiling((log10(1e1-1e-1)-log10(max_iteration_error))/log10(2.0))
+        h_hi = h * 10
+        h_lo = h / 10
 
         write (ulog,'(A10,A10,A12,A7,A5)') "ITER", "H", "FLX", "MAX", "ACTN"
 
-        do it=1,56
+        do it=1,niter
             h = sqrt(h_hi*h_lo)
 
             forall (i = 1:nz)  z(i) = space_linlog_r(i,nz,h) * zscale

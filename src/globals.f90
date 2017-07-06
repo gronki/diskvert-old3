@@ -3,7 +3,7 @@ module globals
     use iso_fortran_env, only: r64 => real64
     use slf_cgs
 
-    implicit none !------------------------------------------------------------!
+    implicit none !--------------------------------------------------------!
 
     real, parameter, private :: X0 = 0.68d0 / cgs_kapes_hydrogen - 1
     ! real, parameter, private :: X0 = 0.7381
@@ -17,16 +17,19 @@ module globals
     real(r64) :: kappa_bf_0 = 4.34d25 * Z0 * (1 + X0)
     real(r64) :: kappa_abs_0 = 3.68d22 * (1 - Z0) * (1 + X0)
 
-    logical :: kramers_opacity_ff = .true.
-    logical :: kramers_opacity_bf = .true.
+    logical :: use_opacity_ff = .true.
+    logical :: use_opacity_bf = .true.
 
     real(r64) :: mbh, mdot
 
     real(r64), parameter :: miu = 0.50
     real(r64), parameter :: pi = 4*atan(real(1,r64))
 
-contains !---------------------------------------------------------------------!
+    !   którego równania użyc?
+    character, parameter :: EQUATION_EQUILIBR = 'D', EQUATION_BALANCE = 'E'
+    character :: cfg_temperature_method = EQUATION_EQUILIBR
 
+contains !-----------------------------------------------------------------!
 
     elemental subroutine cylinder(mbh, mdot, r, omega, flux, teff, zscale)
         real(r64), intent(in) :: mbh, mdot, r
@@ -53,15 +56,15 @@ contains !---------------------------------------------------------------------!
       teff = ( flux / cgs_stef ) ** (1d0 / 4d0)
     end function
 
-!------------------------------------------------------------------------------!
+!--------------------------------------------------------------------------!
 
     elemental function kapabs0(X, Z) result(kab0)
         real(r64), intent(in) :: X, Z
         real(r64) :: kab0, kff0, kbf0
         kff0 = 3.68d22 * (1 - Z) * (1 + X)
         kbf0 = 4.34d25 * Z * (1 + X)
-        kab0 = merge(kff0, 0.0_r64, kramers_opacity_ff)   &
-             + merge(kbf0, 0.0_r64, kramers_opacity_bf)
+        kab0 = merge(kff0, 0.0_r64, use_opacity_ff)   &
+             + merge(kbf0, 0.0_r64, use_opacity_bf)
     end function
 
     elemental function kapes0(X, Z) result(kes0)
@@ -70,7 +73,7 @@ contains !---------------------------------------------------------------------!
         kes0 = cgs_kapes_hydrogen * (1 + X) / 2 + 0*Z
     end function
 
-!------------------------------------------------------------------------------!
+!--------------------------------------------------------------------------!
 
     elemental function fksct(rho,T) result(ksct)
         real(r64), intent(in) :: rho,T
@@ -96,7 +99,7 @@ contains !---------------------------------------------------------------------!
         kT = 0 ! ksct0 * redT
     end subroutine
 
-!------------------------------------------------------------------------------!
+!--------------------------------------------------------------------------!
 
     elemental function fkabs(rho,T) result(kabs)
         real(r64), intent(in) :: rho,T
@@ -114,7 +117,7 @@ contains !---------------------------------------------------------------------!
         kT = (-7d0/2d0) * kap / T
     end subroutine
 
-!------------------------------------------------------------------------------!
+!--------------------------------------------------------------------------!
 
     elemental function fkcnd(rho,T) result(kcnd)
       real(r64), intent(in) :: rho,T
@@ -131,17 +134,6 @@ contains !---------------------------------------------------------------------!
       kT = 0
     end subroutine
 
-!------------------------------------------------------------------------------!
 
-  subroutine wpar_gl(u)
-    use fileunits, only: fmpare, fmparf, fmparl
-    integer, intent(in) :: u
-    write (u, fmpare) "kappa_abs_0", kapabs0(abuX,abuZ)
-    write (u, fmpare) "kappa_es", kapes0(abuX,abuZ)
-    write (u, fmparf) "X", abuX
-    write (u, fmparf) "Z", abuZ
-    write (u, fmparl) "kappa_ff", kramers_opacity_ff
-    write (u, fmparl) "kappa_bf", kramers_opacity_bf
-  end subroutine
 
 end module
