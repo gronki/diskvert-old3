@@ -76,4 +76,5 @@ mrx_advance = CFACTORY(__libdv, 'mrx_advance_c', [
     (ndpointer(c_double,1), 'in', 'Y'),
     (ndpointer(c_double,1), 'inout', 'dY'),
     (c_int, 'in', 'ny'),
+    (POINTER(c_int), 'out', 'errno'),
 ])

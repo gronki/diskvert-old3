@@ -1,20 +1,20 @@
 select case (nr)
 case(1)
-    name = "alphdyfu"
-case(2)
-    name = "alphcmpt"
-case(3)
-    name = "magndyfu"
-case(4)
-    name = "magncmpt"
+  name = "AD"
 case(5)
-    name = "alphdyfucond"
-case(6)
-    name = "alphcmptcond"
+  name = "ADT"
+case(3)
+  name = "MD"
 case(7)
-    name = "magndyfucond"
+  name = "MDT"
+case(2)
+  name = "AC"
+case(6)
+  name = "ACT"
+case(4)
+  name = "MC"
 case(8)
-    name = "magncmptcond"
+  name = "MCT"
 case default
-    error stop
+  error stop
 end select

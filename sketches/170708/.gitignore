@@ -1,0 +1,8 @@
+D-*.par
+*.dat
+*.col
+*.log
+*.out
+*.png
+*.txt
+run.sh

@@ -8,7 +8,7 @@ module heatbalance
 
 contains
 
-  subroutine heatbil(T, Trad, Pgas, heat)
+  pure subroutine heatbil(T, Trad, Pgas, heat)
 
     real(r64), intent(inout) :: T
     real(r64), intent(in) :: Trad, Pgas, heat

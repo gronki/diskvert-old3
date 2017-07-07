@@ -77,7 +77,8 @@ def plot(name, z, tau, rho, temp, flux, ztop):
     axes[0].set_ylim(3e-9,1e0)
     axes[1].plot(z * 1e-5, temp)
     axes[1].set_ylabel('temperature')
-    axes[1].set_ylim(0,2e7)
+    axes[1].set_ylim(1e6,1e12)
+    axes[1].set_yscale('log')
     axes[2].plot(z * 1e-5, flux)
     axes[2].set_ylabel('flux rad')
     axes[2].set_ylim(0,4e20)
@@ -92,19 +93,22 @@ def plot(name, z, tau, rho, temp, flux, ztop):
 from filelist import files
 
 for fn,ft in files.items():
-    if ft == 'AK':
-        d,p = col2python('{}.dat'.format(fn))
-        plot(fn, d['z'], d['tau_es'], d['rho'], d['tgas'], d['frad'], \
-                12 * p.zscale)
-    if ft == 'AX':
-        d,p = col2python(fn+'.dat')
-        plot(fn, d['z'], d['tau'], d['rho'], d['temp'], d['frad'], \
-                12 * p.zscale)
-    if ft == 'MK':
-        d,p = col2python(fn+'.dat')
-        plot(fn, d['z'], d['tau'], d['rho'], d['temp'], d['frad'], \
-                80 * p.zscale)
-    if ft == 'MX':
-        d,p = col2python(fn+'.dat')
-        plot(fn,  d['z'], d['tau'], d['rho'], d['temp'], d['frad'], \
-                80 * p.zscale)
+    try:
+        if ft == 'AK':
+            d,p = col2python('{}.dat'.format(fn))
+            plot(fn, d['z'], d['tau_es'], d['rho'], d['tgas'], d['frad'], \
+                    12 * p.zscale)
+        if ft == 'AX':
+            d,p = col2python(fn+'.dat')
+            plot(fn, d['z'], d['tau'], d['rho'], d['temp'], d['frad'], \
+                    12 * p.zscale)
+        if ft == 'MK':
+            d,p = col2python(fn+'.dat')
+            plot(fn, d['z'], d['tausct'], d['rho'], d['temp'], d['frad'], \
+                    80 * p.zscale)
+        if ft == 'MX':
+            d,p = col2python(fn+'.dat')
+            plot(fn,  d['z'], d['tau'], d['rho'], d['temp'], d['frad'], \
+                    80 * p.zscale)
+    except Exception as e:
+        print "error {}".format(e)

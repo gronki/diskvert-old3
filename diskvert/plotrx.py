@@ -42,7 +42,7 @@ def rxread(name = 'disk', frames = None):
 
     data = {}
 
-    framenrs = range(info.niter + 1)
+    framenrs = range(info.niter)
     if frames: framenrs = filter(lambda i: 0 <= i and i <= info.niter, frames)
 
     for i in unique(framenrs):

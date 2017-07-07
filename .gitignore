@@ -5,7 +5,7 @@
 *.mod
 *.smod
 *.pyc
-/diskvert-*.tar.*
+/*.tar.gz
 /build
 /*.egg-info
 /dist

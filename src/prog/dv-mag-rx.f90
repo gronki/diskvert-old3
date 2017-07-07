@@ -16,9 +16,9 @@ program dv_mag_relax
   implicit none
 
   type(config) :: cfg
-  integer :: model
+  integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0
-  integer, dimension(3) :: niter = [ 36, 8, 120 ]
+  integer, dimension(3) :: niter = [ 36, 8, 256 ]
   character(2**8) :: fn
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:)
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, y_pmag, y_Trad
@@ -29,8 +29,8 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
 
-  ngrid = 2**7
-  htop = 18
+  ngrid = 720
+  htop = 48
 
   !----------------------------------------------------------------------------!
 
@@ -92,20 +92,20 @@ program dv_mag_relax
   use_opacity_bf = .false.
   relx_opacity_es : do iter = 1,niter(1)
 
-    call mrx_advance(model, x, Y, M, dY)
+    call mrx_advance(model, x, Y, M, dY, errno)
 
     err = sum(merge((dY/Y)**2, 0d0, Y.ne.0)) / sum(merge(1, 0, Y.ne.0))
-    write(ulog,'(I5,Es12.4)') nitert+iter, err
+    write(ulog,'(I5,Es12.4)') nitert+1, err
 
-    Y = Y + dY * ramp1(iter,niter(1))
-    y_rho = merge(y_rho, epsilon(1d0)*rhoc, y_rho > epsilon(1d0)*rhoc)
-    y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
+    Y = Y + dY * ramp3(iter,niter(1))
+    ! y_rho = merge(y_rho, epsilon(1d0)*rhoc, y_rho > epsilon(1d0)*rhoc)
+    ! y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
 
-    if (cfg_write_all_iters) call saveiter(nitert + iter)
+    nitert = nitert + 1
+    if (cfg_write_all_iters) call saveiter(nitert)
 
   end do relx_opacity_es
 
-  nitert = nitert + niter(1)
 
   !----------------------------------------------------------------------------!
 
@@ -118,20 +118,20 @@ program dv_mag_relax
 
     relx_opacity_full : do iter = 1,niter(2)
 
-      call mrx_advance(model, x, Y, M, dY)
+      call mrx_advance(model, x, Y, M, dY, errno)
 
       err = sum(merge((dY/Y)**2, 0d0, Y.ne.0)) / sum(merge(1, 0, Y.ne.0))
-      write(ulog,'(I5,Es12.4)') nitert+iter, err
+      write(ulog,'(I5,Es12.4)') nitert+1, err
 
       Y = Y + dY * ramp2(iter,niter(2),0.5d0)
-      y_rho = merge(y_rho, epsilon(1d0)*rhoc, y_rho > epsilon(1d0)*rhoc)
-      y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
+      ! y_rho = merge(y_rho, epsilon(1d0)*rhoc, y_rho > epsilon(1d0)*rhoc)
+      ! y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
 
-      if (cfg_write_all_iters) call saveiter(nitert + iter)
+      nitert = nitert + 1
+      if (cfg_write_all_iters) call saveiter(nitert)
 
     end do relx_opacity_full
 
-    nitert = nitert + niter(2)
 
   end if
 
@@ -158,10 +158,10 @@ program dv_mag_relax
     call deriv(x, y_frad, d_frad)
 
     forall (i = 1:ngrid)
-      y_temp(i) = y_trad(i) + d_frad(i) * (cgs_mel * cgs_c**2) &
+      y_temp(i) = d_frad(i) * (cgs_mel * cgs_c**2) &
             & / (16 * cgs_boltz * (cgs_kapes*y_rho(i)) &
             & * (cgs_stef*y_trad(i)**4) )
-      !// y_rho(i) = y_rho(i) * (y_trad(i)/y_temp(i))**(0.25)
+      y_temp(i) = sqrt(y_temp(i)**2 + y_trad(i)**2)
     end forall
 
     nitert = nitert + 1
@@ -169,30 +169,32 @@ program dv_mag_relax
 
     relx_corona : do iter = 1,niter(3)
 
-      call mrx_advance(model, x, Y, M, dY)
+      call mrx_advance(model, x, Y, M, dY, errno)
+
+      if (errno .ne. 0) exit relx_corona
 
       err = sum(merge((dY/Y)**2, 0d0, Y.ne.0)) / sum(merge(1, 0, Y.ne.0))
-      write(ulog,'(I5,Es12.4)') nitert+iter, err
+      write(ulog,'(I5,Es12.4)') nitert+1, err
 
-      Y = Y + dY * 0.005 * ramp1(iter, niter(3))
-      forall (i = 1:ngrid)
-        y_rho(i) = merge(y_rho(i), epsilon(1d0)*rhoc,   &
-              & y_rho(i) > epsilon(1d0)*rhoc)
-        y_trad(i) = merge(y_trad(i), teff / 2, y_trad(i) > teff / 2)
-        y_temp(i) = merge(y_temp(i), y_trad(i), y_temp(i) >= y_trad(i))
-      end forall
+      if (ieee_is_nan(err)) exit relx_corona
 
-      if (cfg_write_all_iters) call saveiter(nitert + iter)
+      Y = Y + dY * ramp3(iter, niter(3))
+
+      where (y_trad < teff * 0.80) y_trad = teff * 0.80
+      where (y_temp < teff * 0.80) y_temp = teff * 0.80
+      where (.not.ieee_is_normal(y_rho) .or. y_rho < epsilon(1d0)*rhoc) &
+            y_rho = epsilon(1d0)*rhoc
+
+      nitert = nitert + 1
+      if (cfg_write_all_iters) call saveiter(nitert)
 
     end do relx_corona
-
-    nitert = nitert + niter(3)
 
   end if
 
   write (ulog,*) '--- DONE'
 
-  open(33, file = trim(outfn) // '.dat', action = 'write', status = 'new')
+  open(33, file = trim(outfn) // '.dat', action = 'write')
   call saveresult(33)
   close(33)
 
@@ -243,7 +245,7 @@ contains
     use relaxutils
     integer, intent(in) :: iter
     write (fn,'(A,".",I0.3,".dat")') trim(outfn),iter
-    open(33, file = trim(fn), action = 'write', status = 'new')
+    open(33, file = trim(fn), action = 'write')
     call saveresult(33)
     close(33)
   end subroutine
@@ -258,7 +260,7 @@ contains
     do i = 1,ngrid
       pgas =  cgs_k_over_mh / miu * y_rho(i) * y_temp(i)
       prad = cgs_a / 3 * y_trad(i)**4
-      write (u,'(I6,15Es12.4)') i, x(i), x(i) / zscale, tau(i), &
+      write (u,'(I6,15ES14.5E3)') i, x(i), x(i) / zscale, tau(i), &
       y_rho(i), y_temp(i), y_trad(i), y_frad(i),  &
       fksct(y_rho(i), y_temp(i)), fkabs(y_rho(i), y_temp(i)), &
       fkcnd(y_rho(i), y_temp(i)), &

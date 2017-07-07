@@ -15,7 +15,6 @@ LDLIBS = -lopenblas
 FC = f95
 CFLAGS = -g -Wall -O3 -march=native -mieee-fp
 FFLAGS = $(CFLAGS) -Warray-temporaries -Wpedantic -Wno-unused-dummy-argument
-CPPFLAGS = -DVERSION=$(VERSION)
 
 OBJECTS_LAPACK = $(addsuffix .o,$(basename $(notdir \
 	$(wildcard src/lapack/*.[fF]))))
@@ -110,13 +109,20 @@ bin:
 $(BINARIES): bin/%: $(OBJECTS_UTIL) %.o libconfort.a | libdiskvert.so bin
 	$(FC) $(LDFLAGS) $^ -ldiskvert $(LDLIBS) -o $@
 
+#################  PAKOWANIE  #################
+
+dist: distclean
+	tar czfv pydiskvert-$(VERSION).tar.gz 				\
+		$(shell git ls-files --exclude-standard)  	\
+		--transform "s/^/pydiskvert-$(VERSION)\//"
+
 #################  SPRZATANIE  #################
 
 clean:
 	$(RM) *.mod *.smod *.a *.o diskvert/*.pyc generate_coefficients/*.pyc
-	$(RM) -r dist *.egg-info build
 	$(MAKE) -C libconfort clean
 distclean: clean
+	$(RM) -r dist *.egg-info build
 	$(RM) -r bin mod
 	$(RM) *.so diskvert-paths.sh
 	$(MAKE) -C libconfort distclean

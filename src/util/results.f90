@@ -33,16 +33,16 @@ contains
 
         open(unit=34, file=(trim(outfn) // '.dat'), action='write')
 
-        write (34,'(300A13)', advance="no") 'N', 'Z', labels
+        write (34,'(300A14)', advance="no") 'N', 'Z', labels
 
         do i=1,(2 + ny)
             write (buf, '("(",I0,")")') i
-            write (34, '(A13)', advance="no") trim(buf)
+            write (34, '(A14)', advance="no") trim(buf)
         end do
         write (34,'(A)') ''
 
         do i = 1, nx
-            write (34,'(I13,120Es13.4E3)')  i, x(i), y(:,i)
+            write (34,'(I14,120ES14.5E3)')  i, x(i), y(:,i)
         end do
 
         close(34)
@@ -75,26 +75,26 @@ contains
 
         open(unit=34, file=(trim(outfn) // '.dat'), action='write')
 
-        write (34,'(2A13)', advance="no") 'N', 'Z'
+        write (34,'(2A14)', advance="no") 'N', 'Z'
 
         do i=1,ny
-            write (34, '(A13)', advance="no") trim(y_labels(i))
+            write (34, '(A14)', advance="no") trim(y_labels(i))
         end do
         do i=1,ny
-            write (34, '(A13)', advance="no") "D*" // trim(y_labels(i))
+            write (34, '(A14)', advance="no") "D*" // trim(y_labels(i))
         end do
         do i=1,na
-            write (34, '(A13)', advance="no") trim(a_labels(i))
+            write (34, '(A14)', advance="no") trim(a_labels(i))
         end do
         write (34,'(A)') ''
         do i=1,(2 + 2*ny + na)
             write (buf, '("(",I0,")")') i
-            write (34, '(A13)', advance="no") trim(buf)
+            write (34, '(A14)', advance="no") trim(buf)
         end do
         write (34,'(A)') ''
 
         do i = 1, nx
-            write (34,'(I13,120Es13.4E3)')  i, x(i), y(:,i), dy(:,i), a(:,i)
+            write (34,'(I14,120ES14.5E3)')  i, x(i), y(:,i), dy(:,i), a(:,i)
         end do
 
         close(34)

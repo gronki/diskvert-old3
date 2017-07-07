@@ -16,9 +16,9 @@ program dv_alpha_relax
   implicit none
 
   type(config) :: cfg
-  integer :: model
-  integer :: ny = 3, i, iter, nitert = 0
-  integer, dimension(2) :: niter = [ 36, 12 ]
+  integer :: model, errno
+  integer :: ny = 3, i, iter, globiter = 0
+  integer, dimension(2) :: niter = [ 48, 12 ]
   character(2**8) :: fn
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:)
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, tau, y_trad
@@ -28,8 +28,8 @@ program dv_alpha_relax
 
   !----------------------------------------------------------------------------!
 
-  ngrid = 2**7
-  htop = 4
+  ngrid = 576
+  htop = 5
 
   !----------------------------------------------------------------------------!
 
@@ -68,38 +68,23 @@ program dv_alpha_relax
 
   y_rho   => Y(C_(1)::ny)
   y_temp  => Y(C_(2)::ny)
-  y_trad  => Y(C_(2)::ny)
+  y_trad  => Y(C_(3)::ny)
   y_frad  => Y(C_(4)::ny)
 
   !----------------------------------------------------------------------------!
 
-  y_frad = x0 * facc
-  y_temp = exp(-0.5*(x/Hdisk)**2) * (Tc - 0.841 * Teff) + 0.841 * Teff
-  y_rho =  rhoc * (exp(-0.5*(x/Hdisk)**2) + 1e-5)
+  forall (i = 1:ngrid)
+    y_frad(i) = x0(i) * facc
+    y_temp(i) = (1 - x0(i)) * (Tc - 0.841 * Teff) + 0.841 * Teff
+    y_rho(i) =  rhoc * (exp(-0.5*(x(i)/Hdisk)**2) + 1e-8)
+  end forall
 
   !----------------------------------------------------------------------------!
-  if (cfg_write_all_iters) call saveiter(0)
 
   use_opacity_ff = .false.
   use_opacity_bf = .false.
 
-  relx_opacity_es : do iter = 1,niter(1)
-
-    call mrx_advance(model, x, Y, M, dY)
-
-    err = sum(merge((dY/Y)**2, 0d0, Y.ne.0)) / sum(merge(1, 0, Y.ne.0))
-    write(ulog,'(I5,Es12.4)') iter, err
-
-    Y = Y + dY * ramp1(iter,niter(1))
-
-    y_rho = merge(y_rho, 0.0_dp, ieee_is_normal(y_rho) .and. (y_rho > 0))
-    y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
-
-    if (cfg_write_all_iters) call saveiter(iter)
-
-  end do relx_opacity_es
-
-  nitert = nitert + niter(1)
+  call mrx_relax(model, x, y, niter(1), 0d0, errno)
 
   !----------------------------------------------------------------------------!
 
@@ -107,83 +92,38 @@ program dv_alpha_relax
   use_opacity_bf = user_bf
 
   if ( use_opacity_ff .or. use_opacity_bf ) then
-    write (ulog,*) '--- bf+ff opacity is ON'
 
-    relx_opacity_full : do iter = 1,niter(2)
+    write (ulog,'(" --- ",A)') 'bf+ff opacity is ON'
+    call mrx_relax(model, x, y, niter(2), 0.5d0, errno)
 
-      call mrx_advance(model, x, Y, M, dY)
-
-      err = sum(merge((dY/Y)**2, 0d0, Y.ne.0)) / sum(merge(1, 0, Y.ne.0))
-      write(ulog,'(I5,Es12.4)') niter(1) + iter, err
-
-      Y = Y + dY * ramp2(iter, niter(2), 0.5d0)
-
-      y_rho = merge(y_rho, 0.0_dp, ieee_is_normal(y_rho) .and. (y_rho > 0))
-      y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
-
-      if (cfg_write_all_iters) call saveiter(niter(1) + iter)
-
-    end do relx_opacity_full
-
-    nitert = nitert + niter(2)
   end if
 
   !----------------------------------------------------------------------------!
 
-  write (ulog,*) '--- DONE'
+  write (ulog,'(" --- ",A)') 'complete'
 
-  open(33, file = trim(outfn) // '.dat', action = 'write', status = 'new')
-  call saveresult(33)
+  open(33, file = trim(outfn) // '.dat', action = 'write')
+  call wrdat(33)
   close(33)
 
   !----------------------------------------------------------------------------!
 
 
   open(newunit = upar, file = trim(outfn) // '.txt', &
-      action = 'write', status = 'new')
-  write (upar, fmpari) "model", model
-  write (upar, fmpari) "niter", nitert
-  write (upar, fmpare) "zscale", fzscale(mbh,mdot,radius)
-  write (upar, fmparec) "rho_0", rhoc, "Central density"
-  write (upar, fmparec) "temp_0", Tc, "Central gas temperature"
-  write (upar, fmparec) "Hdisk", Hdisk, "Disk height [cm]"
-  write (upar, fmparfc) "alpha", alpha, "Alpha parameter"
-  write (upar, fmparl) "has_corona", .FALSE.
-  write (upar, fmparl) "has_magnetic", .FALSE.
-  write (upar, fmparl) "has_conduction", .FALSE.
+      action = 'write')
+  call wrpar(upar)
   call wpar_gl(upar)
   close(upar)
 
-  open(34, file = trim(outfn) // ".col", action = 'write', status = 'new')
-  write(34, fmcol) 'i', 'i4'
-  write(34, fmcol) 'z', 'f4'
-  write(34, fmcol) 'h', 'f4'
-  write(34, fmcol) 'tau', 'f4'
-  write(34, fmcol) 'rho', 'f4'
-  write(34, fmcol) 'temp', 'f4'
-  write(34, fmcol) 'frad', 'f4'
-  write(34, fmcol) 'ksct', 'f4'
-  write(34, fmcol) 'kabs', 'f4'
-  write(34, fmcol) 'kcnd', 'f4'
-  write(34, fmcol) 'pgas', 'f4'
-  write(34, fmcol) 'prad', 'f4'
+  open(34, file = trim(outfn) // ".col", action = 'write')
+  call wrcol(34)
   close(34)
 
   deallocate(x,x0,Y,M,dY,tau)
 
 contains
 
-  !----------------------------------------------------------------------------!
-  subroutine saveiter(iter)
-    use relaxutils
-    integer, intent(in) :: iter
-    write (fn,'(A,".",I0.3,".dat")') trim(outfn),iter
-    open(33, file = trim(fn), action = 'write', status = 'new')
-    call saveresult(33)
-    close(33)
-  end subroutine
-
-  subroutine saveresult(u)
+  subroutine wrdat(u)
     integer, intent(in) :: u
     integer :: i
     real(dp) :: pgas,prad
@@ -191,11 +131,41 @@ contains
     do i = 1,ngrid
       pgas =  cgs_k_over_mh / miu * y_rho(i) * y_temp(i)
       prad = cgs_a / 3 * y_trad(i)**4
-      write (u,'(I6,11Es12.4)') i, x(i), x(i) / zscale, tau(i), &
+      write (u,'(I6,11ES14.5E3)') i, x(i), x(i) / zscale, tau(i), &
       y_rho(i), y_temp(i), y_frad(i),   &
       fksct(y_rho(i), y_temp(i)), fkabs(y_rho(i), y_temp(i)), &
       fkcnd(y_rho(i), y_temp(i)), pgas, prad
     end do
+  end subroutine
+
+  subroutine wrpar(u)
+    integer, intent(in) :: u
+    write (u, fmpari) "model", model
+    write (u, fmpari) "niter", globiter
+    write (u, fmpare) "zscale", fzscale(mbh,mdot,radius)
+    write (u, fmparec) "rho_0", rhoc, "Central density"
+    write (u, fmparec) "temp_0", Tc, "Central gas temperature"
+    write (u, fmparec) "Hdisk", Hdisk, "Disk height [cm]"
+    write (u, fmparfc) "alpha", alpha, "Alpha parameter"
+    write (u, fmparl) "has_corona", .FALSE.
+    write (u, fmparl) "has_magnetic", .FALSE.
+    write (u, fmparl) "has_conduction", .FALSE.
+  end subroutine
+
+  subroutine wrcol(u)
+    integer, intent(in) :: u
+    write(u, fmcol) 'i', 'i4'
+    write(u, fmcol) 'z', 'f4'
+    write(u, fmcol) 'h', 'f4'
+    write(u, fmcol) 'tau', 'f4'
+    write(u, fmcol) 'rho', 'f4'
+    write(u, fmcol) 'temp', 'f4'
+    write(u, fmcol) 'frad', 'f4'
+    write(u, fmcol) 'ksct', 'f4'
+    write(u, fmcol) 'kabs', 'f4'
+    write(u, fmcol) 'kcnd', 'f4'
+    write(u, fmcol) 'pgas', 'f4'
+    write(u, fmcol) 'prad', 'f4'
   end subroutine
 
   !----------------------------------------------------------------------------!

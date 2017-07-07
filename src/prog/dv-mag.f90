@@ -24,7 +24,10 @@ program dv_mag
 
     call init_labels
 
-    ngrid = 18432
+    ngrid = 69984
+    ngrid = 98304
+    htop = 120
+    max_iteration_error = 1e-9
 
     call rdargvgl
     call rdargvrk4
@@ -33,7 +36,7 @@ program dv_mag
     call rdconf(cfg)
     call mincf_free(cfg)
 
-    ! open(newunit = ulog, file = trim(outfn) // ".log", action = "write")
+    open(newunit = ulog, file = trim(outfn) // ".log", action = "write")
     open(newunit = upar, file = trim(outfn) // ".txt", action = "write")
     call init_m1(mbh, mdot, radius, alpha, zeta)
 

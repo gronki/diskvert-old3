@@ -1,36 +1,44 @@
 select case (nr)
 case(1)
-    f => mrx_coeffalphdyfu
-    fbl => mrx_coeffalphdyfu_bl
-    fbr => mrx_coeffalphdyfu_br
-case(2)
-    f => mrx_coeffalphcmpt
-    fbl => mrx_coeffalphcmpt_bl
-    fbr => mrx_coeffalphcmpt_br
-case(3)
-    f => mrx_coeffmagndyfu
-    fbl => mrx_coeffmagndyfu_bl
-    fbr => mrx_coeffmagndyfu_br
-case(4)
-    f => mrx_coeffmagncmpt
-    fbl => mrx_coeffmagncmpt_bl
-    fbr => mrx_coeffmagncmpt_br
+  fa  => MRX_COEFF_1AD
+  fc  => NULL()
+  fbl => MRX_COEFF_1AD_BL
+  fbr => MRX_COEFF_1AD_BR
 case(5)
-    f => mrx_coeffalphdyfucond
-    fbl => mrx_coeffalphdyfucond_bl
-    fbr => mrx_coeffalphdyfucond_br
-case(6)
-    f => mrx_coeffalphcmptcond
-    fbl => mrx_coeffalphcmptcond_bl
-    fbr => mrx_coeffalphcmptcond_br
+  fa  => MRX_COEFF_5ADT
+  fc  => NULL()
+  fbl => MRX_COEFF_5ADT_BL
+  fbr => MRX_COEFF_5ADT_BR
+case(3)
+  fa  => MRX_COEFF_3MD
+  fc  => NULL()
+  fbl => MRX_COEFF_3MD_BL
+  fbr => MRX_COEFF_3MD_BR
 case(7)
-    f => mrx_coeffmagndyfucond
-    fbl => mrx_coeffmagndyfucond_bl
-    fbr => mrx_coeffmagndyfucond_br
+  fa  => MRX_COEFF_7MDT
+  fc  => NULL()
+  fbl => MRX_COEFF_7MDT_BL
+  fbr => MRX_COEFF_7MDT_BR
+case(2)
+  fa  => MRX_COEFF_2AC
+  fc  => MRX_COEFF_2AC_CTR
+  fbl => MRX_COEFF_2AC_BL
+  fbr => MRX_COEFF_2AC_BR
+case(6)
+  fa  => MRX_COEFF_6ACT
+  fc  => NULL()
+  fbl => MRX_COEFF_6ACT_BL
+  fbr => MRX_COEFF_6ACT_BR
+case(4)
+  fa  => MRX_COEFF_4MC
+  fc  => MRX_COEFF_4MC_CTR
+  fbl => MRX_COEFF_4MC_BL
+  fbr => MRX_COEFF_4MC_BR
 case(8)
-    f => mrx_coeffmagncmptcond
-    fbl => mrx_coeffmagncmptcond_bl
-    fbr => mrx_coeffmagncmptcond_br
+  fa  => MRX_COEFF_8MCT
+  fc  => NULL()
+  fbl => MRX_COEFF_8MCT_BL
+  fbr => MRX_COEFF_8MCT_BR
 case default
-    error stop
+  error stop
 end select

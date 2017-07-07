@@ -2,3 +2,5 @@
 *.col
 *.txt
 *.png
+*.log
+*.out

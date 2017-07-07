@@ -8,9 +8,9 @@ commands_pl2d = []
 
 cml1 = dict(
     AK = 'dv-alpha',
-    AX = 'dv-alpha-rx -n 300',
-    MK = 'dv-mag -top 100',
-    MX = 'dv-mag-rx -top 37 -n 300',
+    AX = 'dv-alpha-rx',
+    MK = 'dv-mag',
+    MX = 'dv-mag-rx',
 )
 cml2 = dict(
     D = '',
@@ -23,7 +23,7 @@ cml3 = dict(
 )
 
 for ss in ['X','K']:
-    for sm in ['D','W','C']:
+    for sm in ['D','C']:
         for sh in ['A','M']:
             for so in ['F','FB']:
                 if ss == 'X' and sm == 'W': continue

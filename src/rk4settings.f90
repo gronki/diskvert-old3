@@ -16,7 +16,7 @@ module rk4settings
   logical :: cfg_single_run = .false.
 
   !   jaki jest dopuszczalny blad iteracji
-  real(r64) :: max_iteration_error = 1e-6
+  real(r64) :: max_iteration_error = 1e-7
 
   !   czy umozliwic wylaczenie MRI?
   logical :: cfg_allow_mri_shutdown = .false.

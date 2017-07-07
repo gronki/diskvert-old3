@@ -31,7 +31,7 @@ module modelmag
                 v_flux =    6, &
                 v_fgen =    7
 
-    integer, parameter :: n_pars = 41, &
+    integer, parameter :: n_pars = 43, &
                 p_rho       = 1, &
                 p_temp      = 2, &
                 p_Trad      = 3, &
@@ -67,9 +67,9 @@ module modelmag
                 p_flxbond   = 33, &
                 p_cool_crit = 34, &
                 p_heat_dyfu = 35, &
-                p_heat = 36, &
-                p_tbil = 37, & ! 37 to 41
-                p_zscal = 42
+                p_heat = 36,    &
+                p_zscal = 37,   &
+                p_tbil = 38 ! +5
 
 contains
 
@@ -86,8 +86,7 @@ contains
 
     subroutine run_m1(z,val,der,par,nmax)
 
-        use alphasimp, only: run_alpha_simple, minidisk => y, &
-            md_rho => c_rho, md_temp => c_temp, mininn => nn
+        use ss73solution, only: apx_estim, apx_refine
 
         ! ilosc przedzialow obliczeniowych
         real(r64), intent(inout), dimension(:) :: z
@@ -95,15 +94,17 @@ contains
         real(r64), intent(inout), dimension(n_pars,size(z)) :: par
         integer, intent(out) :: nmax
         real(r64) :: rho_0, temp_0
-        real(r64) :: rho_0_estim, temp_0_estim
+        real(r64) :: rho_0_estim, temp_0_estim, h_estim
         real(r64) :: temp_0_hi, temp_0_lo
         real(r64) :: rho_0_hi, rho_0_lo
         integer :: iter, iter0, itmax
         character(len=1024) :: buf
 
-        call run_alpha_simple(mbh, mdot, radius, alpha)
-        rho_0_estim = minidisk(md_rho,mininn)
-        temp_0_estim = minidisk(md_temp,mininn)
+        call apx_estim(mbh, mdot, radius, alpha, &
+              & rho_0_estim, temp_0_estim, h_estim)
+        call apx_refine(mbh, mdot, radius, alpha, &
+              & rho_0_estim, temp_0_estim, h_estim)
+
         write (upar, fmparec) "rho_0_estim", rho_0_estim, "Central density (estimate)"
         write (upar, fmparec) "temp_0_estim", temp_0_estim, "Central gas temperature (estimate)"
 
@@ -230,7 +231,6 @@ contains
         val(v_taues,1)  = 0
         val(v_tauth,1)  = 0
         val(v_fgen,1)   = 0
-        !// zeta = 0.5 * alpha * (beta_0 / (val(v_pgas,1)/val(v_prad,1)) + beta_0 + 1.)
 
         !solve the equations
         if ( cfg_euler_integration ) then
@@ -323,7 +323,7 @@ contains
             a(p_tbil) = log(a(p_trad)**2 + a(p_temp_compton)**2) / 2
 
             call findzer(a(p_tbil), log(a(p_trad) * 0.8), &
-                  & log(1d10), 1d-9, fcool)
+                  & log(1d12), 1d-9, fcool)
 
             a(p_temp) = exp(a(p_tbil))
         case (EQUATION_MULTIBIL)
@@ -335,7 +335,7 @@ contains
           a(p_tbil+0:p_tbil+4) = 0
 
           call solve_balance_multi(a(p_tbil+0:p_tbil+4), n,&
-                & log(1d6), log(1d10), 50, fcool)
+                & log(a(p_trad) * 0.8), log(1d12), 50, fcool)
 
           a(p_temp) = exp(a(p_tbil+0))
 

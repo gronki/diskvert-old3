@@ -1,24 +1,19 @@
+rm -f *.{col,txt,dat,log,png}
 
-f() {
-	i=$1
-	dv-plot-rx MCFX $i
-	diskvert-cooling2D --force MCFX.dat[$i]
-}
-set -e
-
-rm MCFX.*
-cat input.par | dv-mag-rx -top 37 -n 600 -all -corona -no-bf -o MCFX
-
-for i in $(seq 44 120)
-do
-f $i &
-if test $(( (i+1) % 12 )) == 0; then
-	wait
-fi
-done
+cat input.par | dv-mag-rx -no-bf -corona -all -o MCFX &
+cat input.par | dv-mag-rx -no-bf -o MDFX &
+cat input.par | dv-mag -no-bf -o MDFK &
+cat input.par | dv-mag -no-bf -compton -o MWFK &
+cat input.par | dv-mag -no-bf -corona -o MCFK &
 
 wait
 
-animate -delay 9 MCFX.???.png &
-animate -delay 9 MCFX.???.cool2D.png &
+diskvert-cooling2D MDFK.dat &
+diskvert-cooling2D MDFX.dat &
+diskvert-cooling2D MWFK.dat &
+diskvert-cooling2D MCFK.dat &
 
+wait
+
+itmax=$(cat MCFX.txt | grep niter | awk '{ print $2 }')
+bash plot.sh $(seq 0 $itmax)
