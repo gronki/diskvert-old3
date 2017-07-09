@@ -66,8 +66,6 @@ ax.set_ylim([tc * 3e-2,tc * 3e2])
 ax.set_yscale('log')
 ax.plot(xax(ax), data['tcompt'], '--', color='#3C5395', linewidth=1.0,
     label=u"Komptonowska")
-ax.plot(xax(ax), (data['compw'] + 1)*data['trad'], color='#3C5395', linewidth=1.0,
-    label=u"Komptonowska (z poprawką)")
 ax.plot(xax(ax), data['trad'], color='#C4094C', linewidth=1.0,
     label=u"Promien. $T_{\\rm rad}=\\left(\\frac{3c}{4\\sigma} P_{\\rm rad} \\right)^{1/4}$")
 ax.plot(xax(ax), data['temp'], color='black', linewidth=1.8,

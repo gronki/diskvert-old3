@@ -9,7 +9,8 @@ from numpy import interp,arange,where,zeros,log10,array,load,linspace,logspace
 from numpy import save as npsave
 from numpy import array as nparray
 from numpy import sqrt as npsqrt
-from math import asinh,log10
+from math import asinh
+from numpy import log10
 
 from matplotlib import rc
 from matplotlib.colors import LinearSegmentedColormap
@@ -34,7 +35,7 @@ parser.add_argument('--logT-max', type=float, default = 3.0,
 parser.add_argument('--logT-min', type=float, default = -1.5,
         help=u"logarytm minimalnej temperatury")
 # 2. Wyświetlanie
-parser.add_argument('--display-range', type=float, default = 0.12,
+parser.add_argument('--display-range', type=float, default = 0.2,
         help=u"zakres wyświetlany przy pomocy kolorów")
 parser.add_argument('--resolution', type=int, default = 96,
         help=u"ile przedziałów w osi X")
@@ -232,13 +233,13 @@ ax.contour(xax,yax,cool_net_dT.transpose(),
         linewidths = (lscale * 1.9 * seq1(nc)),
         colors=['w']*(2*nc-1))
 # czarne kontury - bilans
-ax.contour(xax,yax,cool_net.transpose(),\
+ax.contour(xax,yax,log10(1 - cool_net.transpose()),\
         display_range * seq2(nc),
         linewidths = (lscale * 2.3 * seq1(nc)),
         colors=['#003300']*(2*nc-1) )
 
 # pasek na prawo
-plt.colorbar(mp,ax=ax,label='$\\left( \\Lambda_{\\rm heat} - \\Lambda_{\\rm cool} \\right) /  \\Lambda_{\\rm heat}$')
+plt.colorbar(mp,ax=ax,label='$\\log \\left( \\Lambda_{\\rm cool} / \\Lambda_{\\rm heat} \\right) $')
 
 if args.show:
     plt.show()

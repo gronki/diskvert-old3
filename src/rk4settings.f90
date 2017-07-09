@@ -21,7 +21,8 @@ module rk4settings
   !   czy umozliwic wylaczenie MRI?
   logical :: cfg_allow_mri_shutdown = .false.
 
-  character, parameter :: EQUATION_COMPTON = 'C', EQUATION_MULTIBIL = 'M'
+  character, parameter :: EQUATION_COMPTON = 'W', EQUATION_MULTIBIL = 'M', &
+      EQUATION_COMPTON_2 = 'X'
 
 contains
 
@@ -44,6 +45,8 @@ contains
         cfg_euler_integration = .FALSE.
       case ("-compton")
         cfg_temperature_method = EQUATION_COMPTON
+      case ("-compton2")
+        cfg_temperature_method = EQUATION_COMPTON_2
       case ("-balance-multi")
         cfg_temperature_method = EQUATION_MULTIBIL
       case ("-max-iteration-error","-precision")

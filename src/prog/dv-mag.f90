@@ -24,7 +24,6 @@ program dv_mag
 
     call init_labels
 
-    ngrid = 69984
     ngrid = 98304
     htop = 120
     max_iteration_error = 1e-9

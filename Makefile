@@ -13,8 +13,10 @@ LDFLAGS = -L.
 LDLIBS = -lopenblas
 
 FC = f95
-CFLAGS = -g -Wall -O3 -march=native -mieee-fp
-FFLAGS = $(CFLAGS) -Warray-temporaries -Wpedantic -Wno-unused-dummy-argument
+MARCH = native
+FFLAGS = -g -Wall -pedantic -O3 -march=$(MARCH) -mieee-fp \
+	-Warray-temporaries -Wfunction-elimination \
+	-Wrealloc-lhs-all -Wno-unused-dummy-argument
 
 OBJECTS_LAPACK = $(addsuffix .o,$(basename $(notdir \
 	$(wildcard src/lapack/*.[fF]))))
@@ -53,9 +55,9 @@ install: all
 	@echo "Description: compute vertical structure of accretion disks" | tee -a $(pkgconfigdir)/diskvert.pc
 	@echo "Cflags: -I$(fmoddir)/diskvert" | tee -a $(pkgconfigdir)/diskvert.pc
 	@echo "Libs: -L$(libdir) -ldiskvert" | tee -a $(pkgconfigdir)/diskvert.pc
-	@echo "export PATH=\"\$$PATH:$(bindir)\"" | tee diskvert-paths.sh
-	@echo "export LD_LIBRARY_PATH=\"\$$LD_LIBRARY_PATH:$(libdir)\"" | tee -a diskvert-paths.sh
-	@echo "export PKG_CONFIG_PATH=\"\$$PKG_CONFIG_PATH:$(pkgconfigdir)\"" | tee -a diskvert-paths.sh
+	@echo "export PATH=\"$(bindir):\$$PATH\"" | tee diskvert-paths.sh
+	@echo "export LD_LIBRARY_PATH=\"$(libdir):\$$LD_LIBRARY_PATH\"" | tee -a diskvert-paths.sh
+	@echo "export PKG_CONFIG_PATH=\"$(pkgconfigdir):\$$PKG_CONFIG_PATH\"" | tee -a diskvert-paths.sh
 	@echo
 	@echo "Program installed in $(bindir) and $(libdir). Invoke one of the following:"
 	@echo
