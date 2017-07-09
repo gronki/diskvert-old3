@@ -5,4 +5,6 @@ D.*.par
 *.out
 *.png
 *.txt
+*.tar
+*.tar.gz
 run.sh
