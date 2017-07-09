@@ -305,9 +305,6 @@ contains
         * rhotemp * a(p_trad)**4
   a(p_compw) = a(p_heat) / (a(p_heat_max) - a(p_heat))
 
-  ! this should die in pain
-  a(p_temp_compton) = a(p_trad) * (1 + a(p_compW))
-
   select case (cfg_temperature_method)
   case (EQUATION_EQUILIBR)
     a(p_temp) = a(p_Trad)
@@ -317,18 +314,15 @@ contains
     call calc_compswitch(y(v_pgas),a(p_temp),a(p_compsw))
 
   case (EQUATION_COMPTON_2)
-    a(p_temp) = a(p_Trad) * sqrt(1 + a(p_compW)**2)
-    a(p_rho) =  rhotemp / a(p_temp)
-
     a(p_heat_max) = 16 * cgs_stef * rhotemp * a(p_trad)**3 * (  &
-        fkabs(a(p_rho), a(p_temp)) + kappa_es * cgs_k_over_mec2 * a(p_trad) &
+        fkabs(rhotemp / a(p_trad), a(p_trad))     &
+        + kappa_es * cgs_k_over_mec2 * a(p_trad)  &
     )
 
     a(p_temp) = a(p_Trad) * (1 + a(p_heat) / (a(p_heat_max) - a(p_heat)))
-    a(p_rho) =  rhotemp / a(p_temp)
 
     a(p_heat_max) = 4 * cgs_stef * rhotemp * (          &
-      fkabs(a(p_rho), a(p_temp))                        &
+      fkabs(rhotemp / a(p_temp), a(p_temp))             &
       * (a(p_trad) + a(p_temp))                         &
       * (a(p_trad)**2 + a(p_temp)**2)                   &
       + 4 * cgs_kapes * cgs_k_over_mec2 * a(p_trad)**4  &
@@ -371,6 +365,10 @@ contains
 
   a(p_rho) =  rhotemp / a(p_temp)
   call KAPPABS(a(p_rho), a(p_temp), kabs, kabs_rho, kabs_T)
+
+  a(p_temp_compton) = a(p_heat) &
+        / (16 * cgs_stef * kappa_es * cgs_k_over_mec2 &
+        * a(p_rho) * a(p_trad)**4)
 
   a(p_kappa) = kabs + kappa_es
   epsi = kabs / a(p_kappa)
