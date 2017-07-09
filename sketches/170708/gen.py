@@ -5,7 +5,7 @@ import numpy as np
 from multiprocessing import cpu_count
 
 ncpu = cpu_count()
-radii = np.logspace(np.log10(3.1), np.log10(1000), 432)
+radii = np.logspace(np.log10(3.1), np.log10(1000), 12*48)
 
 s0 = open('input.par','r').read()
 
