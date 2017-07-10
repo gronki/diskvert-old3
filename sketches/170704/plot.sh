@@ -15,7 +15,7 @@ plb() {
     for i in $frames
     do
         diskvert-cooling2D --force MCFX.dat[$i]  &
-        if test $(( (i+1) % 24 )) == 0; then wait; fi
+	if test $(( (i+1) % $(nproc) )) == 0; then wait; fi
     done
 
     wait && eog MCFX.???.cool2D.png &

@@ -8,7 +8,7 @@ contains
 
   subroutine rdargvrx
     integer :: i,errno
-    character(2**8) :: arg, nextarg
+    character(2**8) :: arg
 
     do i = 1, command_argument_count()
       call get_command_argument(i, arg)

@@ -86,7 +86,7 @@ contains
 
   subroutine run_m1(z,val,der,par,nmax)
 
-    use ss73solution, only: apx_estim, apx_refine
+    use ss73solution, only: apx_estim, apx_refin
 
     ! ilosc przedzialow obliczeniowych
     real(r64), intent(inout), dimension(:) :: z
@@ -102,7 +102,7 @@ contains
 
     call apx_estim(mbh, mdot, radius, alpha, &
     & rho_0_estim, temp_0_estim, h_estim)
-    call apx_refine(mbh, mdot, radius, alpha, &
+    call apx_refin(mbh, mdot, radius, alpha, &
     & rho_0_estim, temp_0_estim, h_estim)
 
     write (upar, fmparec) "rho_0_estim", rho_0_estim, "Central density (estimate)"

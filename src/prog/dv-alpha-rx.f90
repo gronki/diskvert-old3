@@ -9,7 +9,7 @@ program dv_alpha_relax
   use fileunits
   use relaxation
   use rxsettings
-  use ss73solution, only: apxdisk, apx_estim, apx_refine
+  use ss73solution, only: apxdisk, apx_estim, apx_refin
   use grid, only: space_linear, space_linlog
 
   !----------------------------------------------------------------------------!
@@ -57,7 +57,7 @@ program dv_alpha_relax
   !----------------------------------------------------------------------------!
 
   call apx_estim(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
-  call apx_refine(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
+  call apx_refin(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
 
   !----------------------------------------------------------------------------!
 

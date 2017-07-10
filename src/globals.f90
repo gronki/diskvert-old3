@@ -5,9 +5,9 @@ module globals
 
     implicit none !--------------------------------------------------------!
 
-    real, parameter, private :: X0 = 0.68d0 / cgs_kapes_hydrogen - 1
-    ! real, parameter, private :: X0 = 0.7381
-    real, parameter, private :: Z0 = 0.0134
+    real(r64), parameter, private :: X0 = 0.68d0 / cgs_kapes_hydrogen - 1
+    ! real(r64), parameter, private :: X0 = 0.7381
+    real(r64), parameter, private :: Z0 = 0.0134
 
     real(r64) :: abuX = X0
     real(r64) :: abuZ = Z0

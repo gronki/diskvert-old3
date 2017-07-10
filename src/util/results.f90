@@ -24,7 +24,7 @@ contains
         character(len=*), dimension(size(y,1)), intent(in) :: labels
         character(len=*), intent(in) :: outfn
         character(len=50) :: buf
-        integer :: i,nl
+        integer :: i
 
         integer :: nx,ny
 
@@ -70,7 +70,7 @@ contains
         character(len=*), dimension(ny), intent(in) :: y_labels
         character(len=*), dimension(na), intent(in) :: a_labels
         character(len=*), intent(in) :: outfn
-        integer :: i,nl
+        integer :: i
         character(len=50) :: buf
 
         open(unit=34, file=(trim(outfn) // '.dat'), action='write')

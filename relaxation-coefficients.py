@@ -147,13 +147,13 @@ for balance, magnetic, conduction in choices:
     ksct = Function('fksct')(rho,T_gas)
     kcnd = Function('fkcnd')(rho,T_gas)
 
-    global_functions = set([ kabs, ksct, kcnd ])
+    fvec = [ kabs, ksct, kcnd ]
 
-    fval = MatrixSymbol('F', 3, len(global_functions))
+    fval = MatrixSymbol('F', 3, len(fvec))
 
     def function_derivatives(eq):
         functions_extra = []
-        for ifun,f in zip(range(len(global_functions)),global_functions):
+        for ifun,f in zip(range(len(fvec)),fvec):
             nargs = len(f.args)
             ff = f.func
             w = [ Wild('w{}'.format(i)) for i in range(nargs) ]

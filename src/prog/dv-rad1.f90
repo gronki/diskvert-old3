@@ -46,7 +46,7 @@ program dv_rad1
     H2 = H1
 
     compute_precise_model: do i = 1,n
-        call apx_refine(mbh, mdot, r(i), alpha, rho2(i), T2(i), H2(i))
+        call apx_refin(mbh, mdot, r(i), alpha, rho2(i), T2(i), H2(i))
 
         call init_alpha(mbh, mdot, r(i), alpha)
         call run_alpha(z,nz,y,dy,ap,nmax)

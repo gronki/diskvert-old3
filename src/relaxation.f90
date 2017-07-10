@@ -178,8 +178,8 @@ contains
               &   M2 => M(nbl+(i-1)*ny+1+nc:nbl+i*ny, i*ny+1:(i+1)*ny),  &
               &   Y1 => Y((i-1)*ny+1:i*ny), Y2 => Y(i*ny+1:(i+1)*ny))
 
-        YM = (Y2 + Y1) / 2
-        DY = (Y2 - Y1) / dx
+        YM(:) = (Y2 + Y1) / 2
+        DY(:) = (Y2 - Y1) / dx
 
         call kappabs(YM(c_(1)), YM(c_(2)), FV(1,1), FV(2,1), FV(3,1))
         call kappsct(YM(c_(1)), YM(c_(2)), FV(1,2), FV(2,2), FV(3,2))
@@ -187,8 +187,8 @@ contains
 
         call FA(xm, YM, DY, FV, Ai, MY, MD)
 
-        M1 = MY / 2 - MD / dx
-        M2 = MY / 2 + MD / dx
+        M1(:,:) = MY / 2 - MD / dx
+        M2(:,:) = MY / 2 + MD / dx
 
       end associate
 

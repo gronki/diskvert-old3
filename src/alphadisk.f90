@@ -12,7 +12,7 @@ module alphadisk
     use rk4settings
     use fileunits
     use heatbalance
-    use ss73solution, only: apx_estim, apx_refine
+    use ss73solution, only: apx_estim, apx_refin
 
     implicit none
 
@@ -43,7 +43,7 @@ contains
         alpha = alph
         call cylinder(mbh, mdot, radius, omega, Facc, Teff, zscale)
         call apx_estim(mbh, mdot, radius, alpha, rhoc, tempc, hdisk)
-        call apx_refine(mbh, mdot, radius, alpha, rhoc, tempc, hdisk)
+        call apx_refin(mbh, mdot, radius, alpha, rhoc, tempc, hdisk)
     end subroutine
 
     SUBROUTINE ALF_GETN(NY1,NA1) BIND(C)

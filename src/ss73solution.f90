@@ -41,7 +41,7 @@ contains
     call apx_sel(mbh, mdot, r, alpha, r12, r23, rhoc, Tc, H)
 
     do i = 1,size(R)
-      call apx_refine(mbh, mdot, r(i), alpha, rhoc(i), Tc(i), H(i))
+      call apx_refin(mbh, mdot, r(i), alpha, rhoc(i), Tc(i), H(i))
     end do
 
     do concurrent (i = 1:size(z), j = 1:size(r))
@@ -289,7 +289,7 @@ contains
 
   end subroutine
 
-!--------------------------------- APX_REFINE ---------------------------------!
+!--------------------------------- apx_refin ---------------------------------!
 !  solves the equation system for disk structure, starting from given initial  !
 !                                   solution                                   !
 !----------------------------------- INPUTS -----------------------------------!
@@ -303,7 +303,7 @@ contains
 !                          H: final disk height                                !
 !------------------------------------------------------------------------------!
 
-    subroutine apx_refine(mbh, mdot, r, alpha, rho, T, H)
+    subroutine apx_refin(mbh, mdot, r, alpha, rho, T, H)
         real(r64), intent(in) :: mbh, mdot, r, alpha
         real(r64), intent(inout) :: rho,T,H
         real(r64), dimension(3,3) :: M

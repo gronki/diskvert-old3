@@ -88,7 +88,7 @@ contains
         real, intent(in) :: fltval
         character(len=*), intent(in), optional :: unit
         integer, intent(in), optional :: file
-        character(len=128) :: buf, buf2
+        character(len=128) :: buf
         character(len=128) :: fmt
         integer :: ios
         integer :: funit

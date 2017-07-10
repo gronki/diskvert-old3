@@ -9,7 +9,7 @@ program dv_mag_relax
   use relaxutils
   use slf_deriv, only: deriv
   use rxsettings
-  use ss73solution, only: apxdisk, apx_estim, apx_refine
+  use ss73solution, only: apxdisk, apx_estim, apx_refin
   use grid, only: space_linear, space_linlog
 
   !----------------------------------------------------------------------------!
@@ -18,12 +18,12 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0
-  integer, dimension(3) :: niter = [ 36, 8, 256 ]
-  character(2**8) :: fn
+  integer, dimension(3) :: niter = [ 36, 8, 52 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:)
+  logical, dimension(:), allocatable :: errmask
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, y_pmag, y_Trad
   real(dp), allocatable, dimension(:) :: tau, d_frad
-  real(dp) :: rhoc, Tc, Hdisk, err, t
+  real(dp) :: rhoc, Tc, Hdisk, err, err0
   logical :: user_ff, user_bf
   integer, dimension(6) :: c_
 
@@ -53,12 +53,13 @@ program dv_mag_relax
   ny = mrx_ny(model)
   call mrx_sel_hash(model, C_)
 
-  allocate( x(ngrid), x0(ngrid), Y(ny*ngrid), dY(ny*ngrid), M(ny*ngrid,ny*ngrid), tau(ngrid), d_frad(ngrid) )
+  allocate( x(ngrid), x0(ngrid), Y(ny*ngrid), dY(ny*ngrid),  M(ny*ngrid,ny*ngrid), tau(ngrid), d_frad(ngrid) )
+  allocate(errmask(ny*ngrid))
 
   !----------------------------------------------------------------------------!
 
   call apx_estim(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
-  call apx_refine(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
+  call apx_refin(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
 
   !----------------------------------------------------------------------------!
 
@@ -75,13 +76,17 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
 
-  y_frad = x0 * facc
-  y_temp =exp(-0.5*(x/Hdisk)**2) * (Tc - 0.841 * Teff) + 0.841 * Teff
-  y_rho =  rhoc * (exp(-0.5*(x/Hdisk)**2) + epsilon(1.0_dp))
-
   associate (beta_0 => 2 * zeta / alpha - 1)
-    y_pmag = 2 * cgs_k_over_mh * y_rho * y_temp   &
-          & / (beta_0 * exp(- 0.5 * (x / Hdisk)**2 ) + 2e-2)
+    if (beta_0 < 0) error stop "MAGNETIC BETA cannot be negative! " &
+          & // "zeta > alpha / 2!!!"
+    forall (i = 1:ngrid)
+      y_frad(i) = x0(i) * facc
+      y_temp(i) = (1 - x0(i)) * (Tc - 0.841 * Teff) + 0.841 * Teff
+      y_rho(i) =  rhoc * (exp(-0.5*(x(i)/Hdisk)**2) + 1e-8)
+
+      y_pmag(i) = 2 * cgs_k_over_mh * y_rho(i) * y_temp(i)   &
+            & / (beta_0 * exp(- 0.5 * (x(i) / Hdisk)**2 ) + 1e-2)
+    end forall
   end associate
 
   !----------------------------------------------------------------------------!
@@ -90,19 +95,28 @@ program dv_mag_relax
 
   use_opacity_ff = .false.
   use_opacity_bf = .false.
+  err0 = 0
+
   relx_opacity_es : do iter = 1,niter(1)
 
     call mrx_advance(model, x, Y, M, dY, errno)
 
-    err = sum(merge((dY/Y)**2, 0d0, Y.ne.0)) / sum(merge(1, 0, Y.ne.0))
-    write(ulog,'(I5,Es12.4)') nitert+1, err
+    forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
+        & .and. ieee_is_normal(dY(i))
+    err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
+    write(ulog,'(I5,ES9.2)') nitert+1, err
 
-    Y = Y + dY * ramp3(iter,niter(1))
-    ! y_rho = merge(y_rho, epsilon(1d0)*rhoc, y_rho > epsilon(1d0)*rhoc)
-    ! y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
+    Y(:) = Y + dY * ramp3(iter,niter(1))
 
     nitert = nitert + 1
     if (cfg_write_all_iters) call saveiter(nitert)
+
+    if (err < 1e-3 .and. err0 / err > 100) then
+      write (ulog, '("convergence reached with error = ",ES9.2)') err
+      exit relx_opacity_es
+    end if
+
+    err0 = err
 
   end do relx_opacity_es
 
@@ -112,6 +126,8 @@ program dv_mag_relax
   use_opacity_ff = user_ff
   use_opacity_bf = user_bf
 
+  err0 = 0
+
   if ( use_opacity_bf .or. use_opacity_ff ) then
 
     write (ulog,*) '--- ff+bf opacity is on'
@@ -120,15 +136,22 @@ program dv_mag_relax
 
       call mrx_advance(model, x, Y, M, dY, errno)
 
-      err = sum(merge((dY/Y)**2, 0d0, Y.ne.0)) / sum(merge(1, 0, Y.ne.0))
-      write(ulog,'(I5,Es12.4)') nitert+1, err
+      forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
+          & .and. ieee_is_normal(dY(i))
+      err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
+      write(ulog,'(I5,ES9.2)') nitert+1, err
 
-      Y = Y + dY * ramp2(iter,niter(2),0.5d0)
-      ! y_rho = merge(y_rho, epsilon(1d0)*rhoc, y_rho > epsilon(1d0)*rhoc)
-      ! y_temp = merge(y_temp, teff / 2, y_temp > teff / 2)
+      Y(:) = Y + dY * ramp2(iter,niter(2),0.5d0)
 
       nitert = nitert + 1
       if (cfg_write_all_iters) call saveiter(nitert)
+
+      if (err < 1e-3 .and. err0 / err > 100) then
+        write (ulog, '("convergence reached with error = ",ES9.2)') err
+        exit relx_opacity_full
+      end if
+
+      err0 = err
 
     end do relx_opacity_full
 
@@ -141,13 +164,15 @@ program dv_mag_relax
 
     write (ulog,*) '--- corona is on'
 
+    err0 = 0
+
     call mrx_transfer(model, mrx_number( .TRUE., .TRUE., .FALSE. ), x, Y)
 
     ny = mrx_ny(model)
     call mrx_sel_hash(model,c_)
 
-    deallocate(dY,M)
-    allocate(dY(ny*ngrid), M(ny*ngrid,ny*ngrid))
+    deallocate(dY,M,errmask)
+    allocate(dY(ny*ngrid), M(ny*ngrid,ny*ngrid),errmask(ny*ngrid))
 
     y_rho   => Y(C_(1)::ny)
     y_temp  => Y(C_(2)::ny)
@@ -157,12 +182,12 @@ program dv_mag_relax
 
     call deriv(x, y_frad, d_frad)
 
-    forall (i = 1:ngrid)
-      y_temp(i) = d_frad(i) * (cgs_mel * cgs_c**2) &
-            & / (16 * cgs_boltz * (cgs_kapes*y_rho(i)) &
-            & * (cgs_stef*y_trad(i)**4) )
-      y_temp(i) = sqrt(y_temp(i)**2 + y_trad(i)**2)
-    end forall
+    ! forall (i = 1:ngrid)
+    !   y_temp(i) = d_frad(i) * (cgs_mel * cgs_c**2) &
+    !         & / (16 * cgs_boltz * (cgs_kapes*y_rho(i)) &
+    !         & * (cgs_stef*y_trad(i)**4) )
+    !   y_temp(i) = sqrt(y_temp(i)**2 + y_trad(i)**2)
+    ! end forall
 
     nitert = nitert + 1
     if (cfg_write_all_iters) call saveiter(nitert)
@@ -173,12 +198,14 @@ program dv_mag_relax
 
       if (errno .ne. 0) exit relx_corona
 
-      err = sum(merge((dY/Y)**2, 0d0, Y.ne.0)) / sum(merge(1, 0, Y.ne.0))
-      write(ulog,'(I5,Es12.4)') nitert+1, err
+      forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
+          & .and. ieee_is_normal(dY(i))
+      err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
+      write(ulog,'(I5,ES9.2)') nitert+1, err
 
       if (ieee_is_nan(err)) exit relx_corona
 
-      Y = Y + dY * ramp3(iter, niter(3))
+      Y(:) = Y + dY * ramp3(iter, niter(3))
 
       where (y_trad < teff * 0.80) y_trad = teff * 0.80
       where (y_temp < teff * 0.80) y_temp = teff * 0.80
@@ -187,6 +214,13 @@ program dv_mag_relax
 
       nitert = nitert + 1
       if (cfg_write_all_iters) call saveiter(nitert)
+
+      if (err < 1e-3 .and. err0 / err > 100) then
+        write (ulog, '("convergence reached with error = ",ES9.2)') err
+        exit relx_corona
+      end if
+
+      err0 = err
 
     end do relx_corona
 
@@ -236,7 +270,7 @@ program dv_mag_relax
   write(34, fmcol) 'd*frad', 'f4'
   close(34)
 
-  deallocate(x,x0,Y,M,dY,tau,d_frad)
+  deallocate(x,x0,Y,M,dY,tau,d_frad,errmask)
 
 contains
 
@@ -244,6 +278,7 @@ contains
   subroutine saveiter(iter)
     use relaxutils
     integer, intent(in) :: iter
+    character(256) :: fn
     write (fn,'(A,".",I0.3,".dat")') trim(outfn),iter
     open(33, file = trim(fn), action = 'write')
     call saveresult(33)
