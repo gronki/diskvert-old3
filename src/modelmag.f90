@@ -31,7 +31,7 @@ module modelmag
   v_flux =    6, &
   v_fgen =    7
 
-  integer, parameter :: n_pars = 43, &
+  integer, parameter :: n_pars = 42, &
   p_rho       = 1, &
   p_temp      = 2, &
   p_Trad      = 3, &
