@@ -26,6 +26,7 @@ program dv_mag_relax
   real(dp) :: rhoc, Tc, Hdisk, err, err0
   logical :: user_ff, user_bf
   integer, dimension(6) :: c_
+  integer, parameter :: upar = 92
 
   !----------------------------------------------------------------------------!
 
@@ -40,6 +41,8 @@ program dv_mag_relax
   call rdconfgl(cfg)
   call rdconf(cfg)
   call mincf_free(cfg)
+
+  open(upar, file = trim(outfn) // '.txt', action = 'write')
 
   user_ff = use_opacity_ff
   user_bf = use_opacity_bf
@@ -104,7 +107,7 @@ program dv_mag_relax
     forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
         & .and. ieee_is_normal(dY(i))
     err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-    write(ulog,'(I5,ES9.2)') nitert+1, err
+    write(uerr,'(I5,ES9.2)') nitert+1, err
 
     Y(:) = Y + dY * ramp3(iter,niter(1))
 
@@ -112,7 +115,7 @@ program dv_mag_relax
     if (cfg_write_all_iters) call saveiter(nitert)
 
     if (err < 1e-3 .and. err0 / err > 100) then
-      write (ulog, '("convergence reached with error = ",ES9.2)') err
+      write (uerr, '("convergence reached with error = ",ES9.2)') err
       exit relx_opacity_es
     end if
 
@@ -130,7 +133,7 @@ program dv_mag_relax
 
   if ( use_opacity_bf .or. use_opacity_ff ) then
 
-    write (ulog,*) '--- ff+bf opacity is on'
+    write (uerr,*) '--- ff+bf opacity is on'
 
     relx_opacity_full : do iter = 1,niter(2)
 
@@ -139,7 +142,7 @@ program dv_mag_relax
       forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
           & .and. ieee_is_normal(dY(i))
       err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-      write(ulog,'(I5,ES9.2)') nitert+1, err
+      write(uerr,'(I5,ES9.2)') nitert+1, err
 
       Y(:) = Y + dY * ramp2(iter,niter(2),0.5d0)
 
@@ -147,7 +150,7 @@ program dv_mag_relax
       if (cfg_write_all_iters) call saveiter(nitert)
 
       if (err < 1e-3 .and. err0 / err > 100) then
-        write (ulog, '("convergence reached with error = ",ES9.2)') err
+        write (uerr, '("convergence reached with error = ",ES9.2)') err
         exit relx_opacity_full
       end if
 
@@ -162,7 +165,7 @@ program dv_mag_relax
 
   if ( cfg_temperature_method == EQUATION_BALANCE ) then
 
-    write (ulog,*) '--- corona is on'
+    write (uerr,*) '--- corona is on'
 
     err0 = 0
 
@@ -201,7 +204,7 @@ program dv_mag_relax
       forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
           & .and. ieee_is_normal(dY(i))
       err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-      write(ulog,'(I5,ES9.2)') nitert+1, err
+      write(uerr,'(I5,ES9.2)') nitert+1, err
 
       if (ieee_is_nan(err)) exit relx_corona
 
@@ -216,7 +219,7 @@ program dv_mag_relax
       if (cfg_write_all_iters) call saveiter(nitert)
 
       if (err < 1e-3 .and. err0 / err > 100) then
-        write (ulog, '("convergence reached with error = ",ES9.2)') err
+        write (uerr, '("convergence reached with error = ",ES9.2)') err
         exit relx_corona
       end if
 
@@ -226,7 +229,7 @@ program dv_mag_relax
 
   end if
 
-  write (ulog,*) '--- DONE'
+  write (uerr,*) '--- DONE'
 
   open(33, file = trim(outfn) // '.dat', action = 'write')
   call saveresult(33)
@@ -234,7 +237,6 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
 
-  open(newunit = upar, file = trim(outfn) // '.txt', action = 'write')
   call wpar_gl(upar)
   write (upar, fmparfc) "alpha", alpha, "Alpha parameter"
   write (upar, fmparfc) "zeta", zeta, "Zeta parameter"
@@ -250,26 +252,27 @@ program dv_mag_relax
         & (cfg_temperature_method == EQUATION_BALANCE)
   write (upar, fmparl) "has_magnetic", .TRUE.
   write (upar, fmparl) "has_conduction", .FALSE.
-  close(upar)
 
-  open(34, file = trim(outfn) // ".col", action = 'write')
-  write(34, fmcol) 'i', 'i4'
-  write(34, fmcol) 'z', 'f4'
-  write(34, fmcol) 'h', 'f4'
-  write(34, fmcol) 'tau', 'f4'
-  write(34, fmcol) 'rho', 'f4'
-  write(34, fmcol) 'temp', 'f4'
-  write(34, fmcol) 'trad', 'f4'
-  write(34, fmcol) 'frad', 'f4'
-  write(34, fmcol) 'ksct', 'f4'
-  write(34, fmcol) 'kabs', 'f4'
-  write(34, fmcol) 'kcnd', 'f4'
-  write(34, fmcol) 'pgas', 'f4'
-  write(34, fmcol) 'prad', 'f4'
-  write(34, fmcol) 'pmag', 'f4'
-  write(34, fmcol) 'beta', 'f4'
-  write(34, fmcol) 'd*frad', 'f4'
-  close(34)
+  open(35, file = trim(outfn) // ".col", action = 'write')
+  write(35, fmcol) 'i', 'i4'
+  write(35, fmcol) 'z', 'f4'
+  write(35, fmcol) 'h', 'f4'
+  write(35, fmcol) 'tau', 'f4'
+  write(35, fmcol) 'rho', 'f4'
+  write(35, fmcol) 'temp', 'f4'
+  write(35, fmcol) 'trad', 'f4'
+  write(35, fmcol) 'frad', 'f4'
+  write(35, fmcol) 'ksct', 'f4'
+  write(35, fmcol) 'kabs', 'f4'
+  write(35, fmcol) 'kcnd', 'f4'
+  write(35, fmcol) 'pgas', 'f4'
+  write(35, fmcol) 'prad', 'f4'
+  write(35, fmcol) 'pmag', 'f4'
+  write(35, fmcol) 'beta', 'f4'
+  write(35, fmcol) 'd*frad', 'f4'
+  close(35)
+
+  close(upar)
 
   deallocate(x,x0,Y,M,dY,tau,d_frad,errmask)
 

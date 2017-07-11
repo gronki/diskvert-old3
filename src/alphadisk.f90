@@ -67,7 +67,7 @@ contains
         h_hi = h * 10
         h_lo = h / 10
 
-        write (ulog,'(A10,A10,A12,A7,A5)') "ITER", "H", "FLX", "MAX", "ACTN"
+        write (uerr,'(A10,A10,A12,A7,A5)') "ITER", "H", "FLX", "MAX", "ACTN"
 
         do it=1,niter
             h = sqrt(h_hi*h_lo)
@@ -87,12 +87,12 @@ contains
 
             if ( nmax < nz ) then
                 h_hi = h
-                write (ulog,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_Frad,nmax) / Facc, 100.0 * nmax / nz, '\/'
+                write (uerr,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_Frad,nmax) / Facc, 100.0 * nmax / nz, '\/'
             else if (y(c_Frad,nz) > 1e-10 * Facc) then
                 h_lo = h
-                write (ulog,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_Frad,nmax) / Facc, 100.0 * nmax / nz, '/\'
+                write (uerr,'(I10,F10.3,Es12.4,F7.1,A5)') it, h, y(c_Frad,nmax) / Facc, 100.0 * nmax / nz, '/\'
             else
-                write (ulog,'("iteration finished")')
+                write (uerr,'("iteration finished")')
                 exit
             end if
         end do

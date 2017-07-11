@@ -280,7 +280,7 @@ contains
     errno = 0
     call mrx_sel_hash(nr,ch)
     call mrx_sel_ny(nr,ny)
-    write(ulog,'(A5,1X,A9)') 'ITER', 'ERROR'
+    write(uerr,'(A5,1X,A9)') 'ITER', 'ERROR'
 
     relax: do it = 1, niter
 
@@ -300,18 +300,18 @@ contains
       where (.not.ieee_is_normal(dy)) dy = 0
 
       err = sum(yerr) / sum(yerrmask)
-      write(ulog,'(I5,1X,Es9.2)') it, err
+      write(uerr,'(I5,1X,Es9.2)') it, err
 
       Y = Y + dY * ramp3(it,niter,r)
 
       if ( err .lt. 3e-8 ) then
-        write (ulog, '("error = ",ES9.2,", exiting")') err
+        write (uerr, '("error = ",ES9.2,", exiting")') err
         exit relax
       end if
 
     end do relax
 
-    write (ulog, '("errno: ",I0)') errno
+    write (uerr, '("errno: ",I0)') errno
   end subroutine
 
   !----------------------------------------------------------------------------!

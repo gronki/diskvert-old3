@@ -22,6 +22,8 @@ program dv_mag
     character(len=12) :: p_labels(n_pars), v_labels(n_vals)
     real(r64) :: radius = 10, alpha = 0.1, zeta = 0.2, rho_0_user, temp_0_user
 
+    integer, parameter :: upar = 92
+
     call init_labels
 
     ngrid = 98304
@@ -35,8 +37,7 @@ program dv_mag
     call rdconf(cfg)
     call mincf_free(cfg)
 
-    open(newunit = ulog, file = trim(outfn) // ".log", action = "write")
-    open(newunit = upar, file = trim(outfn) // ".txt", action = "write")
+    open(upar, file = trim(outfn) // ".txt", action = "write")
     call init_m1(mbh, mdot, radius, alpha, zeta)
 
     allocate( z(ngrid) )
@@ -87,7 +88,6 @@ program dv_mag
     close(upar)
 
     call write_results_3(z,ngrid,val,der,v_labels,n_vals,par,p_labels,n_pars,outfn)
-    ! close(ulog)
 
 contains
 

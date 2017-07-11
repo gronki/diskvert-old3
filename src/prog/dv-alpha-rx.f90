@@ -93,14 +93,14 @@ program dv_alpha_relax
 
   if ( use_opacity_ff .or. use_opacity_bf ) then
 
-    write (ulog,'(" --- ",A)') 'bf+ff opacity is ON'
+    write (uerr,'(" --- ",A)') 'bf+ff opacity is ON'
     call mrx_relax(model, x, y, niter(2), 0.5d0, errno)
 
   end if
 
   !----------------------------------------------------------------------------!
 
-  write (ulog,'(" --- ",A)') 'complete'
+  write (uerr,'(" --- ",A)') 'complete'
 
   open(33, file = trim(outfn) // '.dat', action = 'write')
   call wrdat(33)
@@ -109,11 +109,11 @@ program dv_alpha_relax
   !----------------------------------------------------------------------------!
 
 
-  open(newunit = upar, file = trim(outfn) // '.txt', &
+  open(33, file = trim(outfn) // '.txt', &
       action = 'write')
-  call wrpar(upar)
-  call wpar_gl(upar)
-  close(upar)
+  call wrpar(33)
+  call wpar_gl(33)
+  close(33)
 
   open(34, file = trim(outfn) // ".col", action = 'write')
   call wrcol(34)

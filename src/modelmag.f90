@@ -105,18 +105,15 @@ contains
     call apx_refin(mbh, mdot, radius, alpha, &
     & rho_0_estim, temp_0_estim, h_estim)
 
-    write (upar, fmparec) "rho_0_estim", rho_0_estim, "Central density (estimate)"
-    write (upar, fmparec) "temp_0_estim", temp_0_estim, "Central gas temperature (estimate)"
-
     rho_0_hi = rho_0_estim * 31.6
     rho_0_lo = rho_0_estim * 0.0316
     itmax = ceiling((log10(31.6)-log10(max_iteration_error))/log10(2.0))
 
-    write (ulog, '("itmax = ",I0)') itmax
+    write (uerr, '("itmax = ",I0)') itmax
 
     associate(nz => size(z))
 
-      write (ulog,"(A5,A5,3A14,A10)") "i0", "*", "rho0", "Fgen", "Facc" , "ACTN"
+      write (uerr,"(A5,A5,3A14,A10)") "i0", "*", "rho0", "Fgen", "Facc" , "ACTN"
 
       iter_rho: do iter0=1,itmax
 
@@ -125,7 +122,7 @@ contains
         temp_0_hi = temp_0_estim * 31.6
         temp_0_lo = temp_0_estim * 0.0316
 
-        write (ulog,"(2A5,4A14,A7,A10)") "i0", "i", "T0", "Frad", "Fbound", "error", "clip", "actn"
+        write (uerr,"(2A5,4A14,A7,A10)") "i0", "i", "T0", "Frad", "Fbound", "error", "clip", "actn"
 
         iter_temp: do iter=1,itmax
 
@@ -156,7 +153,7 @@ contains
             end if
           end if
 
-          write (ulog,"(2I5,3Es14.6,F14.7,F7.1,A10)") iter0, iter, &
+          write (uerr,"(2I5,3Es14.6,F14.7,F7.1,A10)") iter0, iter, &
              & temp_0, val(v_flux,nmax), par(p_flxbond,nmax), &
              & par(p_flxbond,nmax) / val(v_flux,nmax) - 1, &
              & 100.0 * nmax / nz, trim(buf)
@@ -181,13 +178,13 @@ contains
           buf = "== RHO"
         end if
 
-        write (ulog,*) "       ---"
-        write (ulog,"(A5,A5,3A14,A10)") "i0", "*", "rho0", "Fgen", "Facc" , "ACTN"
-        write (ulog,"(I5,A5,3Es14.6,A10)") iter0, "*", rho_0, val(v_fgen,nmax), Facc , trim(buf)
-        write (ulog,*) "       ---"
+        write (uerr,*) "       ---"
+        write (uerr,"(A5,A5,3A14,A10)") "i0", "*", "rho0", "Fgen", "Facc" , "ACTN"
+        write (uerr,"(I5,A5,3Es14.6,A10)") iter0, "*", rho_0, val(v_fgen,nmax), Facc , trim(buf)
+        write (uerr,*) "       ---"
 
         if ( abs(2*(val(v_fgen,nmax) - Facc)/(val(v_fgen,nmax) + Facc)) .lt. max_iteration_error ) then
-          write (ulog,"(A,Es9.1,A)") "Maximum precision ",max_iteration_error," reached."
+          write (uerr,"(A,Es9.1,A)") "Maximum precision ",max_iteration_error," reached."
           exit iter_rho
         end if
 
@@ -410,14 +407,14 @@ contains
 
   search_for_nans: do i = 1,size(a)
     if ( .not. ieee_is_normal(a(i)) ) then
-      write (ulog, "(Es11.3,' found in field ',I0)") a(i),i
+      write (uerr, "(Es11.3,' found in field ',I0)") a(i),i
       abort = .TRUE.
       exit search_for_nans
     end if
   end do search_for_nans
 
   if ( a(p_rho) <= 0 .or. a(p_temp) <= 0 .or. y(v_flux) < 0 ) then
-    write (ulog,*) 'something important is negative. aborting'
+    write (uerr,*) 'something important is negative. aborting'
     abort = .TRUE.
   end if
 

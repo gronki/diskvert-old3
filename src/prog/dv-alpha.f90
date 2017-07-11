@@ -19,6 +19,7 @@ program dv_alpha
     real(r64), allocatable, dimension(:,:) :: y,dy,a
     real(r64) :: radius, alpha
     type(config) :: cfg
+    integer, parameter :: upar = 92
 
 
     y_labels(c_Pgas)    = 'Pgas'
@@ -51,7 +52,7 @@ program dv_alpha
     call init_alpha(mbh, mdot, radius, alpha)
     call run_alpha(z,ngrid,y,dy,a,nmax)
 
-    open(newunit = upar, file = trim(outfn) // '.txt', action = 'write')
+    open(upar, file = trim(outfn) // '.txt', action = 'write')
     write (upar, fmparec) "rho_0", a(c_rho,ngrid), "Central density"
     write (upar, fmparec) "temp_0", a(c_tgas,ngrid), "Central gas temperature"
     write (upar, fmparfc) "alpha", alpha, "Alpha parameter"
