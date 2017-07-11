@@ -7,23 +7,29 @@ module slf_random
     real(r64), parameter, private :: pi = 4*atan(real(1,r64))
 
     interface random_number_gauss
+#     if __GNUC__ < 6
+        module procedure :: random_number_gauss_one
+        module procedure :: random_number_gauss_arr
+        module procedure :: random_number_gauss_2arr
+#     else
         module subroutine random_number_gauss_one(a)
-            real(r64), intent(out) :: a
+          real(r64), intent(out) :: a
         end subroutine
 
         module subroutine random_number_gauss_arr(B)
-            real(r64), intent(out), dimension(:) :: B
+          real(r64), intent(out), dimension(:) :: B
         end subroutine
 
         module subroutine random_number_gauss_2arr(C,D)
-            real(r64), intent(out), dimension(:) :: C
-            real(r64), intent(out), dimension(size(C)) :: D
+          real(r64), intent(out), dimension(:) :: C
+          real(r64), intent(out), dimension(size(C)) :: D
         end subroutine
+#     endif
     end interface random_number_gauss
 
 contains
 
-    subroutine random_init_urandom()
+    subroutine random_seed_urandom()
         integer :: n,err
         integer, allocatable :: seed(:)
 

@@ -10,11 +10,10 @@ pkgconfigdir = $(libdir)/pkgconfig
 
 INCLUDE = -Ilibconfort
 LDFLAGS = -L.
-LDLIBS = -lopenblas
+LDLIBS = -lblas
 
-FC = f95
-MARCH = native
-FFLAGS = -g -Wall -pedantic -O3 -march=$(MARCH) -mieee-fp \
+FC = gfortran
+FFLAGS = -g -Wall -pedantic -O3 -march=native -mieee-fp \
 	-Warray-temporaries -Wfunction-elimination \
 	-Wrealloc-lhs-all -Wno-unused-dummy-argument
 
