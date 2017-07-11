@@ -1,33 +1,30 @@
 #!/usr/bin/env bash
 
-rysuj() {
-diskvert-new-plot ${1}.dat -o ${1}.Z.png
-diskvert-new-plot --tau ${1}.dat -o ${1}.T.png
-diskvert-cooling2D ${1}.dat -o ${1}.C.png
-}
+#F=MCFK
+#cat $1.par | tee $F.$1.par | dv-mag -corona -no-bf -o $F.$1
+#tar czf $F.$1.tar.gz $F.$1.{dat,col,txt,log,par}
+#rm -f $F.$1.{dat,col,txt,log,par}
 
-cat D.${1}.par | dv-alpha -n 4000 -no-bf -o ADFK.${1}
-tar cfv ADFK.${1}.tar ADFK.$1.{dat,col,txt} && rm -f ADFK.$1.{dat,col,txt}
-gzip ADFK.${1}.tar
+F=MWFK
+cat $1.par | tee $F.$1.par | dv-mag -compton2 -n 12000 -no-bf -o $F.$1
+tar czf $F.$1.tar.gz $F.$1.{dat,col,txt,log,par}
+rm -f $F.$1.{dat,col,txt,log,par}
 
-cat D.${1}.par | dv-mag -n 12000 -no-bf -o MDFK.${1}
-rysuj MDFK.${1}
-tar cfv MDFK.${1}.tar MDFK.$1.{dat,col,txt,log} && rm -f MDFK.$1.{dat,col,txt,log}
-gzip MDFK.${1}.tar
+F=MWFBK
+cat $1.par | tee $F.$1.par | dv-mag -compton2 -n 12000 -o $F.$1
+tar czf $F.$1.tar.gz $F.$1.{dat,col,txt,log,par}
+rm -f $F.$1.{dat,col,txt,log,par}
 
-cat D.${1}.par | dv-mag -n 12000 -compton2 -no-bf -o MWFK.${1}
-rysuj MWFK.${1}
-tar cfv MWFK.${1}.tar MWFK.$1.{dat,col,txt,log} && rm -f MWFK.$1.{dat,col,txt,log}
-gzip MWFK.${1}.tar
+F=MCFX
+cat $1.par | tee $F.$1.par | dv-mag-rx -n 1200 -no-bf -o $F.$1
+tar czf $F.$1.tar.gz $F.$1.{dat,col,txt,par}
+rm -f $F.$1.{dat,col,txt,par}
 
-# cat D.${1}.par | dv-mag -compton2 -o MWFBK.${1}
-# rysuj MWFBK.${1}
-# tar cfv MWFBK.${1}.tar MWFBK.$1.{dat,col,txt} && rm -f MWFBK.$1.{dat,col,txt}
-# gzip MWFBK.${1}.tar
+F=MCFBX
+cat $1.par | tee $F.$1.par | dv-mag-rx -n 1200 -o $F.$1
+tar czf $F.$1.tar.gz $F.$1.{dat,col,txt,par}
+rm -f $F.$1.{dat,col,txt,par}
 
-cat D.${1}.par | dv-mag -n 72000 -corona -no-bf -o MCFK.${1}
-rysuj MCFK.${1}
-tar cfv MCFK.${1}.tar MCFK.$1.{dat,col,txt,log} && rm -f MCFK.$1.{dat,col,txt,log}
-gzip MCFK.${1}.tar
+rm -f $1.par
 
-echo ${1} | tee -a finished.log
+echo $1 | tee -a finished.log

@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-rm *.dat D.*.par *.txt *.log *.col
+rm *.dat ???.par *.txt *.log *.col

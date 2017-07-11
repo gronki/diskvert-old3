@@ -18,7 +18,7 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0
-  integer, dimension(3) :: niter = [ 36, 8, 52 ]
+  integer, dimension(3) :: niter = [ 36, 8, 96 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:)
   logical, dimension(:), allocatable :: errmask
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, y_pmag, y_Trad
