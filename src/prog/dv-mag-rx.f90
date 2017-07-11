@@ -82,6 +82,7 @@ program dv_mag_relax
   associate (beta_0 => 2 * zeta / alpha - 1)
     if (beta_0 < 0) error stop "MAGNETIC BETA cannot be negative! " &
           & // "zeta > alpha / 2!!!"
+    write (upar,fmpare) 'beta_0', beta_0
     forall (i = 1:ngrid)
       y_frad(i) = x0(i) * facc
       y_temp(i) = (1 - x0(i)) * (Tc - 0.841 * Teff) + 0.841 * Teff
