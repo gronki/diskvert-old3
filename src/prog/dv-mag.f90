@@ -65,6 +65,7 @@ program dv_mag
     write (upar, fmparec) "temp_0", par(p_temp,1), "Central gas temperature"
     write (upar, fmparec) "T_rad_0", par(p_Trad,1), &
                                 & "Central radiation temperature"
+    write (upar, fmpare) "radius", radius
 
     write (upar, fmparec) "beta_0", val(v_pgas,1) / val(v_pmag,1), "Beta on the equator"
     write (upar, fmparec) "beta_rad_0", val(v_pgas,1) / val(v_prad,1), &

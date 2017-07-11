@@ -56,6 +56,7 @@ program dv_alpha
     write (upar, fmparec) "temp_0", a(c_tgas,ngrid), "Central gas temperature"
     write (upar, fmparfc) "alpha", alpha, "Alpha parameter"
     write (upar, fmpare) "zscale", fzscale(mbh,mdot,radius)
+    write (upar, fmpare) "radius", radius
     write (upar, fmparl) "has_corona", &
           & (cfg_temperature_method == EQUATION_BALANCE)
     write (upar, fmparl) "has_magnetic", .FALSE.

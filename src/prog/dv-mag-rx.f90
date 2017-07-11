@@ -238,6 +238,7 @@ program dv_mag_relax
   call wpar_gl(upar)
   write (upar, fmparfc) "alpha", alpha, "Alpha parameter"
   write (upar, fmparfc) "zeta", zeta, "Zeta parameter"
+  write (upar, fmpare) "radius", radius
   write (upar, fmpare) "zscale", fzscale(mbh,mdot,radius)
   write (upar, fmparec) "rho_0", rhoc, "Central density"
   write (upar, fmparec) "temp_0", Tc, "Central gas temperature"

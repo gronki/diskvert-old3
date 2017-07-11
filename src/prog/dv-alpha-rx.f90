@@ -142,6 +142,7 @@ contains
     integer, intent(in) :: u
     write (u, fmpari) "model", model
     write (u, fmpari) "niter", globiter
+    write (u, fmpare) "radius", radius
     write (u, fmpare) "zscale", fzscale(mbh,mdot,radius)
     write (u, fmparec) "rho_0", rhoc, "Central density"
     write (u, fmparec) "temp_0", Tc, "Central gas temperature"
