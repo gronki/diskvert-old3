@@ -48,7 +48,7 @@ program dv_alpha_relax
   call mrx_init(mbh, mdot, radius, alpha)
 
   ! get the model number
-  model = mrx_number( .FALSE., .FALSE., .FALSE. )
+  model = mrx_number( 'D', .FALSE., .FALSE. )
   ny = mrx_ny(model)
   call mrx_sel_hash(model, C_)
 

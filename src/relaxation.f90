@@ -49,12 +49,26 @@ contains
 
   !----------------------------------------------------------------------------!
 
-  pure function mrx_number(compton, magnetic, conduction) result(nr)
-    logical, intent(in) :: compton,magnetic,conduction
+  pure function mrx_number(bil, magnetic, conduction) result(nr)
+    logical, intent(in) :: magnetic,conduction
+    character, intent(in) :: bil
     integer :: nr
-    nr = 1  + merge(1, 0, compton)      &
-            + merge(2, 0, magnetic)     &
-            + merge(4, 0, conduction)
+
+    nr = 1
+
+    select case (bil)
+    case (EQUATION_DIFFUSION)
+    case (EQUATION_COMPTON)
+      nr = nr + 1
+    case (EQUATION_BALANCE)
+      nr = nr + 3
+    case default
+      error stop "wrong character for bil, allowed: D,W,C"
+    end select
+
+    if (magnetic)   nr = nr + 4
+    if (conduction) nr = nr + 8
+    
   end function
 
   pure subroutine mrx_sel_name (nr, name)

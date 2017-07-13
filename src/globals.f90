@@ -26,8 +26,9 @@ module globals
     real(r64), parameter :: pi = 4*atan(real(1,r64))
 
     !   którego równania użyc?
-    character, parameter :: EQUATION_EQUILIBR = 'D', EQUATION_BALANCE = 'E'
-    character :: cfg_temperature_method = EQUATION_EQUILIBR
+    character, parameter :: EQUATION_DIFFUSION = 'D', &
+          EQUATION_BALANCE = 'C', EQUATION_COMPTON = 'W'
+    character :: cfg_temperature_method = EQUATION_DIFFUSION
 
 contains !-----------------------------------------------------------------!
 

@@ -9,10 +9,11 @@ module relaxation_c
 contains
 
   subroutine mrx_number_c(cor, mag, cnd, nr) bind(C)
-    integer(c_int), intent(in), value :: cor, mag, cnd
+    integer(c_int), intent(in), value :: mag, cnd
+    character(c_char), intent(in), value :: cor
     integer(c_int), intent(out) :: nr
 
-    nr = mrx_number(cor .ne. 0, mag .ne. 0, cnd .ne. 0)
+    nr = mrx_number(cor, mag .ne. 0, cnd .ne. 0)
   end subroutine
 
   subroutine mrx_get_ny_c(nr, ny) bind(C)

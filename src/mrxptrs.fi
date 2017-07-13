@@ -1,44 +1,64 @@
 select case (nr)
 case(1)
-  fa  => MRX_COEFF_1AD
+  fa  => mrx_coeff_ad
   fc  => NULL()
-  fbl => MRX_COEFF_1AD_BL
-  fbr => MRX_COEFF_1AD_BR
-case(5)
-  fa  => MRX_COEFF_5ADT
-  fc  => NULL()
-  fbl => MRX_COEFF_5ADT_BL
-  fbr => MRX_COEFF_5ADT_BR
-case(3)
-  fa  => MRX_COEFF_3MD
-  fc  => NULL()
-  fbl => MRX_COEFF_3MD_BL
-  fbr => MRX_COEFF_3MD_BR
-case(7)
-  fa  => MRX_COEFF_7MDT
-  fc  => NULL()
-  fbl => MRX_COEFF_7MDT_BL
-  fbr => MRX_COEFF_7MDT_BR
-case(2)
-  fa  => MRX_COEFF_2AC
-  fc  => MRX_COEFF_2AC_CTR
-  fbl => MRX_COEFF_2AC_BL
-  fbr => MRX_COEFF_2AC_BR
-case(6)
-  fa  => MRX_COEFF_6ACT
-  fc  => NULL()
-  fbl => MRX_COEFF_6ACT_BL
-  fbr => MRX_COEFF_6ACT_BR
+  fbl => mrx_coeff_ad_bl
+  fbr => mrx_coeff_ad_br
 case(4)
-  fa  => MRX_COEFF_4MC
-  fc  => MRX_COEFF_4MC_CTR
-  fbl => MRX_COEFF_4MC_BL
-  fbr => MRX_COEFF_4MC_BR
-case(8)
-  fa  => MRX_COEFF_8MCT
+  fa  => mrx_coeff_ac
+  fc  => mrx_coeff_ac_c
+  fbl => mrx_coeff_ac_bl
+  fbr => mrx_coeff_ac_br
+case(2)
+  fa  => mrx_coeff_aw
+  fc  => mrx_coeff_aw_c
+  fbl => mrx_coeff_aw_bl
+  fbr => mrx_coeff_aw_br
+case(5)
+  fa  => mrx_coeff_md
   fc  => NULL()
-  fbl => MRX_COEFF_8MCT_BL
-  fbr => MRX_COEFF_8MCT_BR
+  fbl => mrx_coeff_md_bl
+  fbr => mrx_coeff_md_br
+case(8)
+  fa  => mrx_coeff_mc
+  fc  => mrx_coeff_mc_c
+  fbl => mrx_coeff_mc_bl
+  fbr => mrx_coeff_mc_br
+case(6)
+  fa  => mrx_coeff_mw
+  fc  => mrx_coeff_mw_c
+  fbl => mrx_coeff_mw_bl
+  fbr => mrx_coeff_mw_br
+case(9)
+  fa  => mrx_coeff_adt
+  fc  => NULL()
+  fbl => mrx_coeff_adt_bl
+  fbr => mrx_coeff_adt_br
+case(12)
+  fa  => mrx_coeff_act
+  fc  => NULL()
+  fbl => mrx_coeff_act_bl
+  fbr => mrx_coeff_act_br
+case(10)
+  fa  => mrx_coeff_awt
+  fc  => NULL()
+  fbl => mrx_coeff_awt_bl
+  fbr => mrx_coeff_awt_br
+case(13)
+  fa  => mrx_coeff_mdt
+  fc  => NULL()
+  fbl => mrx_coeff_mdt_bl
+  fbr => mrx_coeff_mdt_br
+case(16)
+  fa  => mrx_coeff_mct
+  fc  => NULL()
+  fbl => mrx_coeff_mct_bl
+  fbr => mrx_coeff_mct_br
+case(14)
+  fa  => mrx_coeff_mwt
+  fc  => NULL()
+  fbl => mrx_coeff_mwt_bl
+  fbr => mrx_coeff_mwt_br
 case default
   error stop
 end select

@@ -117,7 +117,7 @@ contains
         a(c_Trad)   = ( (3 * cgs_c) / (4 * cgs_stef) * y(c_Prad)) ** 0.25d0
         a(c_heat)   = alpha * omega * y(c_Pgas)
 
-        if ( cfg_temperature_method == EQUATION_EQUILIBR ) then
+        if ( cfg_temperature_method == EQUATION_DIFFUSION ) then
           a(c_heat) = a(c_heat) + alpha * omega * y(c_prad)
         end if
 
@@ -129,7 +129,7 @@ contains
         if ( a(c_compW) < 0 )   a(c_compW) = 0
 
         select case (cfg_temperature_method)
-        case (EQUATION_EQUILIBR)
+        case (EQUATION_DIFFUSION)
             a(c_Tgas)   = a(c_Trad)
         case (EQUATION_COMPTON)
             a(c_Tgas) = a(c_Trad) * (1 + a(c_compW))

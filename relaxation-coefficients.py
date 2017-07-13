@@ -87,7 +87,7 @@ real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
 {B}\n{MB}\nend subroutine\n\n"""
 
-fsub_constr = """pure subroutine {name}_CTR (z,Y,F,C,MC)
+fsub_constr = """pure subroutine {name}_c (z,Y,F,C,MC)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -110,12 +110,15 @@ for f in fswall: f.write("select case (nr)\n")
 
 #------------------------------------------------------------------------------#
 
-choices = [ (bil,mag,cnd)               \
-            for bil in [False,True]     \
+choices = [ (bil,bilf,mag,cnd)          \
+            for cnd in [False,True]     \
             for mag in [False,True]     \
-            for cnd in [False,True]     ]
+            for bil in [False,True]     \
+            for bilf in [True,False]    ]
 
-for balance, magnetic, conduction in choices:
+for balance, bilfull, magnetic, conduction in choices:
+
+    if bilfull and not balance: continue
 
     # współrzędna, po której liczymy
     z       = Symbol('z')
@@ -234,7 +237,8 @@ for balance, magnetic, conduction in choices:
     if balance:
         sdyf = kabs * (T_gas + T_rad) * (T_gas**2 + T_rad**2)
         ssct = ksct * 4 * k * T_rad**4 / ( m_el * c**2 )
-        radcool = 4 * sigma * rho * (T_gas - T_rad) * (sdyf + ssct)
+        radcool = 4 * sigma * rho * (T_gas - T_rad) * \
+            ((sdyf if bilfull else 0) + ssct)
         if conduction:
             equations.append(radcool - Derivative(F_rad,z))
             boundL.append(T_gas - T_rad)
@@ -277,25 +281,23 @@ for balance, magnetic, conduction in choices:
     #--------------------------------------------------------------------------#
 
     basename = '{magn}{comp}{cond}'.format(
-        magn = 'M' if magnetic else 'A',
-        comp = 'C' if balance else  'D',
-        cond = 'T' if conduction else '',
+        magn = 'm' if magnetic else 'a',
+        comp = ('c' if bilfull else 'w') if balance else  'd',
+        cond = 't' if conduction else '',
     )
     model_nr = 1 \
         + (1 if balance else 0) \
-        + (2 if magnetic else 0) \
-        + (4 if conduction else 0)
+        + (2 if bilfull else 0) \
+        + (4 if magnetic else 0) \
+        + (8 if conduction else 0)
 
-    routine_name = "MRX_COEFF_{nr}{bn}".format(nr = model_nr, bn = basename)
+    routine_name = "mrx_coeff_{}".format(basename)
     #--------------------------------------------------------------------------#
 
-    fcoeffsrc.write("\n!{s}!\n! {A}\n! {B}\n! {C}\n!{s}!\n\n".format(
-        s = "-"*78,
-        A = ("heating-cooling balance" if balance else "thermal diffusion"),
-        B = ("magnetic heating" if magnetic else "alpha prescription"),
-        C = ("radiation + thermal conduction" if conduction \
-            else "radiative energy transport"),
-    ))
+    fcoeffsrc.write("! {}\n".format("heating-cooling balance ({})".format("full equation" if bilfull else "compton term only") if balance else "thermal diffusion"))
+    fcoeffsrc.write("! {}\n".format("magnetic heating" if magnetic else "alpha prescription"))
+    fcoeffsrc.write("! {}\n".format("radiation + thermal conduction" if conduction \
+        else "radiative energy transport"))
     #--------------------------------------------------------------------------#
 
     A = Matrix(zeros((na,)))
@@ -344,7 +346,7 @@ for balance, magnetic, conduction in choices:
                 MBL[ib,iy] = discretize(b.diff(y))
 
         fcoeffsrc.write(fsub_bound.format(
-            name = routine_name, lr = 'BL',
+            name = routine_name, lr = 'bl',
             B = fprinter.doprint(BL, 'B'),
             MB = fprinter.doprint(MBL, 'MB'),
         ))
@@ -361,7 +363,7 @@ for balance, magnetic, conduction in choices:
                 MBR[ib,iy] = discretize(b.diff(y))
 
         fcoeffsrc.write(fsub_bound.format(
-            name = routine_name, lr = 'BR',
+            name = routine_name, lr = 'br',
             B = fprinter.doprint(BR, 'B'),
             MB = fprinter.doprint(MBR, 'MB'),
         ))
@@ -376,11 +378,11 @@ for balance, magnetic, conduction in choices:
 
     fswptrs.write ('  fa  => {}\n'.format(routine_name))
     fswptrs.write ('  fc  => {}\n'      \
-        .format(routine_name+'_CTR' if nc > 0 else 'NULL()'))
+        .format(routine_name+'_c' if nc > 0 else 'NULL()'))
     fswptrs.write ('  fbl => {}\n'      \
-        .format(routine_name+'_BL' if nbl > 0 else 'NULL()'))
+        .format(routine_name+'_bl' if nbl > 0 else 'NULL()'))
     fswptrs.write ('  fbr => {}\n'      \
-        .format(routine_name+'_BR' if nbr > 0 else 'NULL()'))
+        .format(routine_name+'_br' if nbr > 0 else 'NULL()'))
 
     fswynum.write ('  ny = {}\n'.format(ny))
 

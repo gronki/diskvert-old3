@@ -21,7 +21,7 @@ module rk4settings
   !   czy umozliwic wylaczenie MRI?
   logical :: cfg_allow_mri_shutdown = .false.
 
-  character, parameter :: EQUATION_COMPTON = 'W', EQUATION_MULTIBIL = 'M', &
+  character, parameter :: EQUATION_MULTIBIL = 'M', &
       EQUATION_COMPTON_2 = 'X'
 
 contains
@@ -67,7 +67,7 @@ contains
     character(c_char), value :: m
     select case (m)
     case ('E')
-      cfg_temperature_method = EQUATION_EQUILIBR
+      cfg_temperature_method = EQUATION_DIFFUSION
     case ('B')
       cfg_temperature_method = EQUATION_BALANCE
     case ('C')

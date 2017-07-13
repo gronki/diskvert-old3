@@ -18,7 +18,7 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0
-  integer, dimension(3) :: niter = [ 36, 8, 96 ]
+  integer, dimension(3) :: niter = [ 36, 8, 52 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:)
   logical, dimension(:), allocatable :: errmask
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, y_pmag, y_Trad
@@ -52,7 +52,7 @@ program dv_mag_relax
   call mrx_init(mbh, mdot, radius, alpha)
 
   ! get the model number
-  model = mrx_number( .FALSE., .TRUE., .FALSE. )
+  model = mrx_number( 'D', .TRUE., .FALSE. )
   ny = mrx_ny(model)
   call mrx_sel_hash(model, C_)
 
@@ -115,7 +115,7 @@ program dv_mag_relax
     nitert = nitert + 1
     if (cfg_write_all_iters) call saveiter(nitert)
 
-    if (err < 1e-3 .and. err0 / err > 100) then
+    if (err < 1e-6 .and. err0 / err > 10) then
       write (uerr, '("convergence reached with error = ",ES9.2)') err
       exit relx_opacity_es
     end if
@@ -150,7 +150,7 @@ program dv_mag_relax
       nitert = nitert + 1
       if (cfg_write_all_iters) call saveiter(nitert)
 
-      if (err < 1e-3 .and. err0 / err > 100) then
+      if (err < 1e-6 .and. err0 / err > 10) then
         write (uerr, '("convergence reached with error = ",ES9.2)') err
         exit relx_opacity_full
       end if
@@ -164,15 +164,15 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
 
-  if ( cfg_temperature_method == EQUATION_BALANCE ) then
+  if ( cfg_temperature_method /= EQUATION_DIFFUSION ) then
 
     write (uerr,*) '--- corona is on'
 
     err0 = 0
 
-    call mrx_transfer(model, mrx_number( .TRUE., .TRUE., .FALSE. ), x, Y)
+    call mrx_transfer(model, mrx_number(cfg_temperature_method, .TRUE., .FALSE.), x, Y)
 
-    ny = mrx_ny(model)
+    call mrx_sel_ny(model,ny)
     call mrx_sel_hash(model,c_)
 
     deallocate(dY,M,errmask)
@@ -186,12 +186,12 @@ program dv_mag_relax
 
     call deriv(x, y_frad, d_frad)
 
-    ! forall (i = 1:ngrid)
-    !   y_temp(i) = d_frad(i) * (cgs_mel * cgs_c**2) &
-    !         & / (16 * cgs_boltz * (cgs_kapes*y_rho(i)) &
-    !         & * (cgs_stef*y_trad(i)**4) )
-    !   y_temp(i) = sqrt(y_temp(i)**2 + y_trad(i)**2)
-    ! end forall
+    forall (i = 1:ngrid)
+      y_temp(i) = d_frad(i) * (cgs_mel * cgs_c**2) &
+            & / (16 * cgs_boltz * (cgs_kapes*y_rho(i)) &
+            & * (cgs_stef*y_trad(i)**4) )
+      y_temp(i) = sqrt(y_temp(i)**2 + y_trad(i)**2)
+    end forall
 
     nitert = nitert + 1
     if (cfg_write_all_iters) call saveiter(nitert)
@@ -219,7 +219,7 @@ program dv_mag_relax
       nitert = nitert + 1
       if (cfg_write_all_iters) call saveiter(nitert)
 
-      if (err < 1e-3 .and. err0 / err > 100) then
+      if (err < 1e-6 .and. err0 / err > 10) then
         write (uerr, '("convergence reached with error = ",ES9.2)') err
         exit relx_corona
       end if

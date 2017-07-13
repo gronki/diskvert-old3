@@ -1,11 +1,7 @@
-
-!------------------------------------------------------------------------------!
 ! thermal diffusion
 ! alpha prescription
 ! radiative energy transport
-!------------------------------------------------------------------------------!
-
-pure subroutine MRX_COEFF_1AD (z,Y,D,F,A,MY,MD)
+pure subroutine mrx_coeff_ad (z,Y,D,F,A,MY,MD)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -47,7 +43,7 @@ MD(2,3) = 0
 MD(3,3) = -1
 end subroutine
 
-pure subroutine MRX_COEFF_1AD_BL (z,Y,F,B,MB)
+pure subroutine mrx_coeff_ad_bl (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -61,7 +57,7 @@ MB(1,2) = 0
 MB(1,3) = 1
 end subroutine
 
-pure subroutine MRX_COEFF_1AD_BR (z,Y,F,B,MB)
+pure subroutine mrx_coeff_ad_br (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -80,14 +76,10 @@ MB(2,3) = 1
 end subroutine
 
 
-
-!------------------------------------------------------------------------------!
-! thermal diffusion
+! heating-cooling balance (full equation)
 ! alpha prescription
-! radiation + thermal conduction
-!------------------------------------------------------------------------------!
-
-pure subroutine MRX_COEFF_5ADT (z,Y,D,F,A,MY,MD)
+! radiative energy transport
+pure subroutine mrx_coeff_ac (z,Y,D,F,A,MY,MD)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -102,49 +94,71 @@ real(dp), dimension(:,:), intent(out) :: MY, MD
 A(1) = (-cgs_boltz*cgs_c*(D(2)*Y(1) + Y(2)*D(1)) - cgs_c*cgs_mhydr*miu* &
    &   omega**2*z*Y(1) + cgs_mhydr*miu*Y(3)*(F(1,1) + F(1,2))*Y(1))/( &
    &   cgs_c*cgs_mhydr*miu)
-A(2) = -16*cgs_stef*Y(2)**3*D(2) - 3*Y(3)*(F(1,1) + F(1,2))*Y(1)
+A(2) = -16*cgs_stef*Y(4)**3*D(4) - 3*Y(3)*(F(1,1) + F(1,2))*Y(1)
 A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) - 4.0d0/3.0d0* &
-   &   alpha*cgs_stef*omega*Y(2)**4/cgs_c + D(3) + D(4)
-A(4) = -F(1,3)*D(2) - Y(4)
+   &   alpha*cgs_stef*omega*Y(4)**4/cgs_c + D(3)
 MY(1,1) = (cgs_boltz*cgs_c*D(2) + cgs_c*cgs_mhydr*miu*omega**2*z - &
    &   cgs_mhydr*miu*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y( &
    &   1)))/(cgs_c*cgs_mhydr*miu)
 MY(2,1) = 3*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y(1))
 MY(3,1) = alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
-MY(4,1) = F(2,3)*D(2)
 MY(1,2) = (cgs_boltz*cgs_c*D(1) - cgs_mhydr*miu*Y(3)*(F(3,1) + F(3,2))*Y &
    &   (1))/(cgs_c*cgs_mhydr*miu)
-MY(2,2) = 3*(16*cgs_stef*Y(2)**2*D(2) + Y(3)*(F(3,1) + F(3,2))*Y(1))
-MY(3,2) = (1.0d0/3.0d0)*alpha*omega*(3*cgs_boltz*Y(1)/(cgs_mhydr*miu) + &
-   &   16*cgs_stef*Y(2)**3/cgs_c)
-MY(4,2) = F(3,3)*D(2)
+MY(2,2) = 3*Y(3)*(F(3,1) + F(3,2))*Y(1)
+MY(3,2) = alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
 MY(1,3) = -(F(1,1) + F(1,2))*Y(1)/cgs_c
 MY(2,3) = 3*(F(1,1) + F(1,2))*Y(1)
 MY(3,3) = 0
-MY(4,3) = 0
 MY(1,4) = 0
-MY(2,4) = 0
-MY(3,4) = 0
-MY(4,4) = 1
+MY(2,4) = 48*cgs_stef*Y(4)**2*D(4)
+MY(3,4) = (16.0d0/3.0d0)*alpha*cgs_stef*omega*Y(4)**3/cgs_c
 MD(1,1) = cgs_boltz*Y(2)/(cgs_mhydr*miu)
 MD(2,1) = 0
 MD(3,1) = 0
-MD(4,1) = 0
 MD(1,2) = cgs_boltz*Y(1)/(cgs_mhydr*miu)
-MD(2,2) = 16*cgs_stef*Y(2)**3
+MD(2,2) = 0
 MD(3,2) = 0
-MD(4,2) = F(1,3)
 MD(1,3) = 0
 MD(2,3) = 0
 MD(3,3) = -1
-MD(4,3) = 0
 MD(1,4) = 0
-MD(2,4) = 0
-MD(3,4) = -1
-MD(4,4) = 0
+MD(2,4) = 16*cgs_stef*Y(4)**3
+MD(3,4) = 0
 end subroutine
 
-pure subroutine MRX_COEFF_5ADT_BL (z,Y,F,B,MB)
+pure subroutine mrx_coeff_ac_c (z,Y,F,C,MC)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:,:), intent(in) :: F
+real(dp), dimension(:), intent(out) :: C
+real(dp), dimension(:,:), intent(out) :: MC
+C(1) = (1.0d0/3.0d0)*(-alpha*cgs_c*cgs_mel*omega*(3*cgs_boltz*cgs_c*Y(2) &
+   &   *Y(1) + 4*cgs_mhydr*cgs_stef*miu*Y(4)**4) + 12*cgs_mhydr*cgs_stef &
+   &   *miu*(Y(2) - Y(4))*(4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c**2*cgs_mel &
+   &   *F(1,1)*(Y(2)**2 + Y(4)**2)*(Y(2) + Y(4)))*Y(1))/(cgs_c**2* &
+   &   cgs_mel*cgs_mhydr*miu)
+MC(1,1) = (alpha*cgs_boltz*cgs_c**2*cgs_mel*omega*Y(2) - 4*cgs_mhydr* &
+   &   cgs_stef*miu*((Y(2) - Y(4))*(4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c** &
+   &   2*cgs_mel*F(1,1)*(Y(2)**2 + Y(4)**2)*(Y(2) + Y(4))) + (Y(2) - Y(4 &
+   &   ))*(4*cgs_boltz*F(2,2)*Y(4)**4 + cgs_c**2*cgs_mel*F(2,1)*(Y(2)**2 &
+   &   + Y(4)**2)*(Y(2) + Y(4)))*Y(1)))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
+MC(1,2) = (alpha*cgs_boltz*cgs_c**2*cgs_mel*omega*Y(1) - 4*cgs_mhydr* &
+   &   cgs_stef*miu*((4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c**2*cgs_mel*F(1, &
+   &   1)*(Y(2)**2 + Y(4)**2)*(Y(2) + Y(4)))*Y(1) + (Y(2) - Y(4))*(4* &
+   &   cgs_boltz*F(3,2)*Y(4)**4 + cgs_c**2*cgs_mel*(2*F(1,1)*(Y(2) + Y(4 &
+   &   ))*Y(2) + F(1,1)*(Y(2)**2 + Y(4)**2) + F(3,1)*(Y(2)**2 + Y(4)**2) &
+   &   *(Y(2) + Y(4))))*Y(1)))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
+MC(1,3) = 0
+MC(1,4) = (4.0d0/3.0d0)*cgs_stef*(4*alpha*cgs_c*cgs_mel*omega*Y(4)**3 + &
+   &   3*((4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c**2*cgs_mel*F(1,1)*(Y(2)**2 &
+   &   + Y(4)**2)*(Y(2) + Y(4)))*Y(1) - (Y(2) - Y(4))*(16*cgs_boltz*F(1, &
+   &   2)*Y(4)**3 + cgs_c**2*cgs_mel*(F(1,1)*(Y(2)**2 + Y(4)**2) + 2*F(1 &
+   &   ,1)*Y(4)*(Y(2) + Y(4))))*Y(1)))/(cgs_c**2*cgs_mel)
+end subroutine
+
+pure subroutine mrx_coeff_ac_bl (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -153,18 +167,13 @@ real(dp), dimension(:,:), intent(in) :: F
 real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
 B(1) = -Y(3)
-B(2) = -Y(4)
 MB(1,1) = 0
-MB(2,1) = 0
 MB(1,2) = 0
-MB(2,2) = 0
 MB(1,3) = 1
-MB(2,3) = 0
 MB(1,4) = 0
-MB(2,4) = 1
 end subroutine
 
-pure subroutine MRX_COEFF_5ADT_BR (z,Y,F,B,MB)
+pure subroutine mrx_coeff_ac_br (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -172,27 +181,133 @@ real(dp), dimension(:), intent(in) :: Y
 real(dp), dimension(:,:), intent(in) :: F
 real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
-B(1) = facc - Y(3) - Y(4)
-B(2) = 2*cgs_stef*Y(2)**4 - Y(3)
+B(1) = facc - Y(3)
+B(2) = 2*cgs_stef*Y(4)**4 - Y(3)
 MB(1,1) = 0
 MB(2,1) = 0
 MB(1,2) = 0
-MB(2,2) = -8*cgs_stef*Y(2)**3
+MB(2,2) = 0
 MB(1,3) = 1
 MB(2,3) = 1
-MB(1,4) = 1
-MB(2,4) = 0
+MB(1,4) = 0
+MB(2,4) = -8*cgs_stef*Y(4)**3
 end subroutine
 
 
+! heating-cooling balance (compton term only)
+! alpha prescription
+! radiative energy transport
+pure subroutine mrx_coeff_aw (z,Y,D,F,A,MY,MD)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+! first column: values, second column: 1ord derivatives
+real(dp), dimension(:), intent(in) :: Y,D
+! each row is one function: its value and derivatives to rho and T
+real(dp), dimension(:,:), intent(in) :: F
+! right-hand-side of the equation
+real(dp), dimension(:), intent(out) :: A
+! jacobians with respect to Y and dY/dz
+real(dp), dimension(:,:), intent(out) :: MY, MD
+A(1) = (-cgs_boltz*cgs_c*(D(2)*Y(1) + Y(2)*D(1)) - cgs_c*cgs_mhydr*miu* &
+   &   omega**2*z*Y(1) + cgs_mhydr*miu*Y(3)*(F(1,1) + F(1,2))*Y(1))/( &
+   &   cgs_c*cgs_mhydr*miu)
+A(2) = -16*cgs_stef*Y(4)**3*D(4) - 3*Y(3)*(F(1,1) + F(1,2))*Y(1)
+A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) - 4.0d0/3.0d0* &
+   &   alpha*cgs_stef*omega*Y(4)**4/cgs_c + D(3)
+MY(1,1) = (cgs_boltz*cgs_c*D(2) + cgs_c*cgs_mhydr*miu*omega**2*z - &
+   &   cgs_mhydr*miu*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y( &
+   &   1)))/(cgs_c*cgs_mhydr*miu)
+MY(2,1) = 3*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y(1))
+MY(3,1) = alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
+MY(1,2) = (cgs_boltz*cgs_c*D(1) - cgs_mhydr*miu*Y(3)*(F(3,1) + F(3,2))*Y &
+   &   (1))/(cgs_c*cgs_mhydr*miu)
+MY(2,2) = 3*Y(3)*(F(3,1) + F(3,2))*Y(1)
+MY(3,2) = alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
+MY(1,3) = -(F(1,1) + F(1,2))*Y(1)/cgs_c
+MY(2,3) = 3*(F(1,1) + F(1,2))*Y(1)
+MY(3,3) = 0
+MY(1,4) = 0
+MY(2,4) = 48*cgs_stef*Y(4)**2*D(4)
+MY(3,4) = (16.0d0/3.0d0)*alpha*cgs_stef*omega*Y(4)**3/cgs_c
+MD(1,1) = cgs_boltz*Y(2)/(cgs_mhydr*miu)
+MD(2,1) = 0
+MD(3,1) = 0
+MD(1,2) = cgs_boltz*Y(1)/(cgs_mhydr*miu)
+MD(2,2) = 0
+MD(3,2) = 0
+MD(1,3) = 0
+MD(2,3) = 0
+MD(3,3) = -1
+MD(1,4) = 0
+MD(2,4) = 16*cgs_stef*Y(4)**3
+MD(3,4) = 0
+end subroutine
 
-!------------------------------------------------------------------------------!
+pure subroutine mrx_coeff_aw_c (z,Y,F,C,MC)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:,:), intent(in) :: F
+real(dp), dimension(:), intent(out) :: C
+real(dp), dimension(:,:), intent(out) :: MC
+C(1) = (1.0d0/3.0d0)*(-alpha*cgs_c*cgs_mel*omega*(3*cgs_boltz*cgs_c*Y(2) &
+   &   *Y(1) + 4*cgs_mhydr*cgs_stef*miu*Y(4)**4) + 48*cgs_boltz* &
+   &   cgs_mhydr*cgs_stef*miu*F(1,2)*Y(4)**4*(Y(2) - Y(4))*Y(1))/(cgs_c &
+   &   **2*cgs_mel*cgs_mhydr*miu)
+MC(1,1) = cgs_boltz*(alpha*cgs_c**2*cgs_mel*omega*Y(2) - 16*cgs_mhydr* &
+   &   cgs_stef*miu*(F(1,2)*Y(4)**4*(Y(2) - Y(4)) + F(2,2)*Y(4)**4*(Y(2 &
+   &   ) - Y(4))*Y(1)))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
+MC(1,2) = cgs_boltz*(alpha*cgs_c**2*cgs_mel*omega*Y(1) - 16*cgs_mhydr* &
+   &   cgs_stef*miu*(F(1,2)*Y(4)**4*Y(1) + F(3,2)*Y(4)**4*(Y(2) - Y(4))* &
+   &   Y(1)))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
+MC(1,3) = 0
+MC(1,4) = (16.0d0/3.0d0)*cgs_stef*(alpha*cgs_c*cgs_mel*omega*Y(4)**3 + 3 &
+   &   *cgs_boltz*(-4*F(1,2)*Y(4)**3*(Y(2) - Y(4))*Y(1) + F(1,2)*Y(4)**4 &
+   &   *Y(1)))/(cgs_c**2*cgs_mel)
+end subroutine
+
+pure subroutine mrx_coeff_aw_bl (z,Y,F,B,MB)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:,:), intent(in) :: F
+real(dp), dimension(:), intent(out) :: B
+real(dp), dimension(:,:), intent(out) :: MB
+B(1) = -Y(3)
+MB(1,1) = 0
+MB(1,2) = 0
+MB(1,3) = 1
+MB(1,4) = 0
+end subroutine
+
+pure subroutine mrx_coeff_aw_br (z,Y,F,B,MB)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:,:), intent(in) :: F
+real(dp), dimension(:), intent(out) :: B
+real(dp), dimension(:,:), intent(out) :: MB
+B(1) = facc - Y(3)
+B(2) = 2*cgs_stef*Y(4)**4 - Y(3)
+MB(1,1) = 0
+MB(2,1) = 0
+MB(1,2) = 0
+MB(2,2) = 0
+MB(1,3) = 1
+MB(2,3) = 1
+MB(1,4) = 0
+MB(2,4) = -8*cgs_stef*Y(4)**3
+end subroutine
+
+
 ! thermal diffusion
 ! magnetic heating
 ! radiative energy transport
-!------------------------------------------------------------------------------!
-
-pure subroutine MRX_COEFF_3MD (z,Y,D,F,A,MY,MD)
+pure subroutine mrx_coeff_md (z,Y,D,F,A,MY,MD)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -253,7 +368,7 @@ MD(3,4) = 0
 MD(4,4) = omega*z*zeta
 end subroutine
 
-pure subroutine MRX_COEFF_3MD_BL (z,Y,F,B,MB)
+pure subroutine mrx_coeff_md_bl (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -275,7 +390,7 @@ MB(1,4) = 0
 MB(2,4) = omega*(-alpha + 2*zeta)
 end subroutine
 
-pure subroutine MRX_COEFF_3MD_BR (z,Y,F,B,MB)
+pure subroutine mrx_coeff_md_br (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -296,14 +411,10 @@ MB(2,4) = 0
 end subroutine
 
 
-
-!------------------------------------------------------------------------------!
-! thermal diffusion
+! heating-cooling balance (full equation)
 ! magnetic heating
-! radiation + thermal conduction
-!------------------------------------------------------------------------------!
-
-pure subroutine MRX_COEFF_7MDT (z,Y,D,F,A,MY,MD)
+! radiative energy transport
+pure subroutine mrx_coeff_mc (z,Y,D,F,A,MY,MD)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -316,74 +427,95 @@ real(dp), dimension(:), intent(out) :: A
 ! jacobians with respect to Y and dY/dz
 real(dp), dimension(:,:), intent(out) :: MY, MD
 A(1) = (-cgs_boltz*cgs_c*(D(2)*Y(1) + Y(2)*D(1)) - cgs_c*cgs_mhydr*miu*( &
-   &   omega**2*z*Y(1) + D(4)) + cgs_mhydr*miu*Y(3)*(F(1,1) + F(1,2))*Y( &
+   &   omega**2*z*Y(1) + D(5)) + cgs_mhydr*miu*Y(3)*(F(1,1) + F(1,2))*Y( &
    &   1))/(cgs_c*cgs_mhydr*miu)
-A(2) = -16*cgs_stef*Y(2)**3*D(2) - 3*Y(3)*(F(1,1) + F(1,2))*Y(1)
-A(3) = alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) + alpha*omega*Y(4 &
-   &   ) + (4.0d0/3.0d0)*alpha*cgs_stef*omega*Y(2)**4/cgs_c - 2*omega* &
-   &   zeta*Y(4) + D(3) + D(5)
+A(2) = -16*cgs_stef*Y(4)**3*D(4) - 3*Y(3)*(F(1,1) + F(1,2))*Y(1)
+A(3) = alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) + alpha*omega*Y(5 &
+   &   ) + (4.0d0/3.0d0)*alpha*cgs_stef*omega*Y(4)**4/cgs_c - 2*omega* &
+   &   zeta*Y(5) + D(3)
 A(4) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-   &   + 3*alpha*Y(4) + 4*alpha*cgs_stef*Y(2)**4/cgs_c - 3*z*zeta*D(4) - &
-   &   6*zeta*Y(4))
-A(5) = -F(1,3)*D(2) - Y(5)
+   &   + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(4)**4/cgs_c - 3*z*zeta*D(5) - &
+   &   6*zeta*Y(5))
 MY(1,1) = (cgs_boltz*cgs_c*D(2) + cgs_c*cgs_mhydr*miu*omega**2*z - &
    &   cgs_mhydr*miu*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y( &
    &   1)))/(cgs_c*cgs_mhydr*miu)
 MY(2,1) = 3*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y(1))
 MY(3,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
 MY(4,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
-MY(5,1) = F(2,3)*D(2)
 MY(1,2) = (cgs_boltz*cgs_c*D(1) - cgs_mhydr*miu*Y(3)*(F(3,1) + F(3,2))*Y &
    &   (1))/(cgs_c*cgs_mhydr*miu)
-MY(2,2) = 3*(16*cgs_stef*Y(2)**2*D(2) + Y(3)*(F(3,1) + F(3,2))*Y(1))
-MY(3,2) = -1.0d0/3.0d0*alpha*omega*(3*cgs_boltz*Y(1)/(cgs_mhydr*miu) + &
-   &   16*cgs_stef*Y(2)**3/cgs_c)
-MY(4,2) = -1.0d0/3.0d0*alpha*omega*(3*cgs_boltz*Y(1)/(cgs_mhydr*miu) + &
-   &   16*cgs_stef*Y(2)**3/cgs_c)
-MY(5,2) = F(3,3)*D(2)
+MY(2,2) = 3*Y(3)*(F(3,1) + F(3,2))*Y(1)
+MY(3,2) = -alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
+MY(4,2) = -alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
 MY(1,3) = -(F(1,1) + F(1,2))*Y(1)/cgs_c
 MY(2,3) = 3*(F(1,1) + F(1,2))*Y(1)
 MY(3,3) = 0
 MY(4,3) = 0
-MY(5,3) = 0
 MY(1,4) = 0
-MY(2,4) = 0
-MY(3,4) = omega*(-alpha + 2*zeta)
-MY(4,4) = omega*(-alpha + 2*zeta)
-MY(5,4) = 0
+MY(2,4) = 48*cgs_stef*Y(4)**2*D(4)
+MY(3,4) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(4)**3/cgs_c
+MY(4,4) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(4)**3/cgs_c
 MY(1,5) = 0
 MY(2,5) = 0
-MY(3,5) = 0
-MY(4,5) = 0
-MY(5,5) = 1
+MY(3,5) = omega*(-alpha + 2*zeta)
+MY(4,5) = omega*(-alpha + 2*zeta)
 MD(1,1) = cgs_boltz*Y(2)/(cgs_mhydr*miu)
 MD(2,1) = 0
 MD(3,1) = 0
 MD(4,1) = 0
-MD(5,1) = 0
 MD(1,2) = cgs_boltz*Y(1)/(cgs_mhydr*miu)
-MD(2,2) = 16*cgs_stef*Y(2)**3
+MD(2,2) = 0
 MD(3,2) = 0
 MD(4,2) = 0
-MD(5,2) = F(1,3)
 MD(1,3) = 0
 MD(2,3) = 0
 MD(3,3) = -1
 MD(4,3) = 0
-MD(5,3) = 0
-MD(1,4) = 1
-MD(2,4) = 0
+MD(1,4) = 0
+MD(2,4) = 16*cgs_stef*Y(4)**3
 MD(3,4) = 0
-MD(4,4) = omega*z*zeta
-MD(5,4) = 0
-MD(1,5) = 0
+MD(4,4) = 0
+MD(1,5) = 1
 MD(2,5) = 0
-MD(3,5) = -1
-MD(4,5) = 0
-MD(5,5) = 0
+MD(3,5) = 0
+MD(4,5) = omega*z*zeta
 end subroutine
 
-pure subroutine MRX_COEFF_7MDT_BL (z,Y,F,B,MB)
+pure subroutine mrx_coeff_mc_c (z,Y,F,C,MC)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:,:), intent(in) :: F
+real(dp), dimension(:), intent(out) :: C
+real(dp), dimension(:,:), intent(out) :: MC
+C(1) = (1.0d0/3.0d0)*(alpha*cgs_c*cgs_mel*omega*(3*cgs_boltz*cgs_c*Y(2)* &
+   &   Y(1) + 3*cgs_c*cgs_mhydr*miu*Y(5) + 4*cgs_mhydr*cgs_stef*miu*Y(4) &
+   &   **4) - 6*cgs_c**2*cgs_mel*cgs_mhydr*miu*omega*zeta*Y(5) + 12* &
+   &   cgs_mhydr*cgs_stef*miu*(Y(2) - Y(4))*(4*cgs_boltz*F(1,2)*Y(4)**4 &
+   &   + cgs_c**2*cgs_mel*F(1,1)*(Y(2)**2 + Y(4)**2)*(Y(2) + Y(4)))*Y(1 &
+   &   ))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
+MC(1,1) = -(alpha*cgs_boltz*cgs_c**2*cgs_mel*omega*Y(2) + 4*cgs_mhydr* &
+   &   cgs_stef*miu*((Y(2) - Y(4))*(4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c** &
+   &   2*cgs_mel*F(1,1)*(Y(2)**2 + Y(4)**2)*(Y(2) + Y(4))) + (Y(2) - Y(4 &
+   &   ))*(4*cgs_boltz*F(2,2)*Y(4)**4 + cgs_c**2*cgs_mel*F(2,1)*(Y(2)**2 &
+   &   + Y(4)**2)*(Y(2) + Y(4)))*Y(1)))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
+MC(1,2) = -(alpha*cgs_boltz*cgs_c**2*cgs_mel*omega*Y(1) + 4*cgs_mhydr* &
+   &   cgs_stef*miu*((4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c**2*cgs_mel*F(1, &
+   &   1)*(Y(2)**2 + Y(4)**2)*(Y(2) + Y(4)))*Y(1) + (Y(2) - Y(4))*(4* &
+   &   cgs_boltz*F(3,2)*Y(4)**4 + cgs_c**2*cgs_mel*(2*F(1,1)*(Y(2) + Y(4 &
+   &   ))*Y(2) + F(1,1)*(Y(2)**2 + Y(4)**2) + F(3,1)*(Y(2)**2 + Y(4)**2) &
+   &   *(Y(2) + Y(4))))*Y(1)))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
+MC(1,3) = 0
+MC(1,4) = (4.0d0/3.0d0)*cgs_stef*(-4*alpha*cgs_c*cgs_mel*omega*Y(4)**3 + &
+   &   3*((4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c**2*cgs_mel*F(1,1)*(Y(2)**2 &
+   &   + Y(4)**2)*(Y(2) + Y(4)))*Y(1) - (Y(2) - Y(4))*(16*cgs_boltz*F(1, &
+   &   2)*Y(4)**3 + cgs_c**2*cgs_mel*(F(1,1)*(Y(2)**2 + Y(4)**2) + 2*F(1 &
+   &   ,1)*Y(4)*(Y(2) + Y(4))))*Y(1)))/(cgs_c**2*cgs_mel)
+MC(1,5) = omega*(-alpha + 2*zeta)
+end subroutine
+
+pure subroutine mrx_coeff_mc_bl (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -393,27 +525,20 @@ real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
 B(1) = -Y(3)
 B(2) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-   &   + 3*alpha*Y(4) + 4*alpha*cgs_stef*Y(2)**4/cgs_c - 6*zeta*Y(4))
-B(3) = -Y(5)
+   &   + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(4)**4/cgs_c - 6*zeta*Y(5))
 MB(1,1) = 0
 MB(2,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
-MB(3,1) = 0
 MB(1,2) = 0
-MB(2,2) = -1.0d0/3.0d0*alpha*omega*(3*cgs_boltz*Y(1)/(cgs_mhydr*miu) + &
-   &   16*cgs_stef*Y(2)**3/cgs_c)
-MB(3,2) = 0
+MB(2,2) = -alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
 MB(1,3) = 1
 MB(2,3) = 0
-MB(3,3) = 0
 MB(1,4) = 0
-MB(2,4) = omega*(-alpha + 2*zeta)
-MB(3,4) = 0
+MB(2,4) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(4)**3/cgs_c
 MB(1,5) = 0
-MB(2,5) = 0
-MB(3,5) = 1
+MB(2,5) = omega*(-alpha + 2*zeta)
 end subroutine
 
-pure subroutine MRX_COEFF_7MDT_BR (z,Y,F,B,MB)
+pure subroutine mrx_coeff_mc_br (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -421,29 +546,167 @@ real(dp), dimension(:), intent(in) :: Y
 real(dp), dimension(:,:), intent(in) :: F
 real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
-B(1) = facc - 2*omega*z*zeta*Y(4) - Y(3) - Y(5)
-B(2) = 2*cgs_stef*Y(2)**4 - Y(3)
+B(1) = facc - 2*omega*z*zeta*Y(5) - Y(3)
+B(2) = 2*cgs_stef*Y(4)**4 - Y(3)
 MB(1,1) = 0
 MB(2,1) = 0
 MB(1,2) = 0
-MB(2,2) = -8*cgs_stef*Y(2)**3
+MB(2,2) = 0
 MB(1,3) = 1
 MB(2,3) = 1
-MB(1,4) = 2*omega*z*zeta
-MB(2,4) = 0
-MB(1,5) = 1
+MB(1,4) = 0
+MB(2,4) = -8*cgs_stef*Y(4)**3
+MB(1,5) = 2*omega*z*zeta
 MB(2,5) = 0
 end subroutine
 
 
-
-!------------------------------------------------------------------------------!
-! heating-cooling balance
-! alpha prescription
+! heating-cooling balance (compton term only)
+! magnetic heating
 ! radiative energy transport
-!------------------------------------------------------------------------------!
+pure subroutine mrx_coeff_mw (z,Y,D,F,A,MY,MD)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+! first column: values, second column: 1ord derivatives
+real(dp), dimension(:), intent(in) :: Y,D
+! each row is one function: its value and derivatives to rho and T
+real(dp), dimension(:,:), intent(in) :: F
+! right-hand-side of the equation
+real(dp), dimension(:), intent(out) :: A
+! jacobians with respect to Y and dY/dz
+real(dp), dimension(:,:), intent(out) :: MY, MD
+A(1) = (-cgs_boltz*cgs_c*(D(2)*Y(1) + Y(2)*D(1)) - cgs_c*cgs_mhydr*miu*( &
+   &   omega**2*z*Y(1) + D(5)) + cgs_mhydr*miu*Y(3)*(F(1,1) + F(1,2))*Y( &
+   &   1))/(cgs_c*cgs_mhydr*miu)
+A(2) = -16*cgs_stef*Y(4)**3*D(4) - 3*Y(3)*(F(1,1) + F(1,2))*Y(1)
+A(3) = alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) + alpha*omega*Y(5 &
+   &   ) + (4.0d0/3.0d0)*alpha*cgs_stef*omega*Y(4)**4/cgs_c - 2*omega* &
+   &   zeta*Y(5) + D(3)
+A(4) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
+   &   + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(4)**4/cgs_c - 3*z*zeta*D(5) - &
+   &   6*zeta*Y(5))
+MY(1,1) = (cgs_boltz*cgs_c*D(2) + cgs_c*cgs_mhydr*miu*omega**2*z - &
+   &   cgs_mhydr*miu*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y( &
+   &   1)))/(cgs_c*cgs_mhydr*miu)
+MY(2,1) = 3*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y(1))
+MY(3,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
+MY(4,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
+MY(1,2) = (cgs_boltz*cgs_c*D(1) - cgs_mhydr*miu*Y(3)*(F(3,1) + F(3,2))*Y &
+   &   (1))/(cgs_c*cgs_mhydr*miu)
+MY(2,2) = 3*Y(3)*(F(3,1) + F(3,2))*Y(1)
+MY(3,2) = -alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
+MY(4,2) = -alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
+MY(1,3) = -(F(1,1) + F(1,2))*Y(1)/cgs_c
+MY(2,3) = 3*(F(1,1) + F(1,2))*Y(1)
+MY(3,3) = 0
+MY(4,3) = 0
+MY(1,4) = 0
+MY(2,4) = 48*cgs_stef*Y(4)**2*D(4)
+MY(3,4) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(4)**3/cgs_c
+MY(4,4) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(4)**3/cgs_c
+MY(1,5) = 0
+MY(2,5) = 0
+MY(3,5) = omega*(-alpha + 2*zeta)
+MY(4,5) = omega*(-alpha + 2*zeta)
+MD(1,1) = cgs_boltz*Y(2)/(cgs_mhydr*miu)
+MD(2,1) = 0
+MD(3,1) = 0
+MD(4,1) = 0
+MD(1,2) = cgs_boltz*Y(1)/(cgs_mhydr*miu)
+MD(2,2) = 0
+MD(3,2) = 0
+MD(4,2) = 0
+MD(1,3) = 0
+MD(2,3) = 0
+MD(3,3) = -1
+MD(4,3) = 0
+MD(1,4) = 0
+MD(2,4) = 16*cgs_stef*Y(4)**3
+MD(3,4) = 0
+MD(4,4) = 0
+MD(1,5) = 1
+MD(2,5) = 0
+MD(3,5) = 0
+MD(4,5) = omega*z*zeta
+end subroutine
 
-pure subroutine MRX_COEFF_2AC (z,Y,D,F,A,MY,MD)
+pure subroutine mrx_coeff_mw_c (z,Y,F,C,MC)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:,:), intent(in) :: F
+real(dp), dimension(:), intent(out) :: C
+real(dp), dimension(:,:), intent(out) :: MC
+C(1) = alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) + alpha*omega*Y(5 &
+   &   ) + (4.0d0/3.0d0)*alpha*cgs_stef*omega*Y(4)**4/cgs_c + 16* &
+   &   cgs_boltz*cgs_stef*F(1,2)*Y(4)**4*Y(2)*Y(1)/(cgs_c**2*cgs_mel) - &
+   &   16*cgs_boltz*cgs_stef*F(1,2)*Y(4)**5*Y(1)/(cgs_c**2*cgs_mel) - 2* &
+   &   omega*zeta*Y(5)
+MC(1,1) = -cgs_boltz*(alpha*cgs_c**2*cgs_mel*omega*Y(2) + 16*cgs_mhydr* &
+   &   cgs_stef*miu*(F(1,2)*Y(4)**4*(Y(2) - Y(4)) + F(2,2)*Y(4)**4*(Y(2 &
+   &   ) - Y(4))*Y(1)))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
+MC(1,2) = -cgs_boltz*(alpha*cgs_c**2*cgs_mel*omega*Y(1) + 16*cgs_mhydr* &
+   &   cgs_stef*miu*(F(1,2)*Y(4)**4*Y(1) + F(3,2)*Y(4)**4*(Y(2) - Y(4))* &
+   &   Y(1)))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
+MC(1,3) = 0
+MC(1,4) = (16.0d0/3.0d0)*cgs_stef*(-alpha*cgs_c*cgs_mel*omega*Y(4)**3 + &
+   &   3*cgs_boltz*(-4*F(1,2)*Y(4)**3*(Y(2) - Y(4))*Y(1) + F(1,2)*Y(4)** &
+   &   4*Y(1)))/(cgs_c**2*cgs_mel)
+MC(1,5) = omega*(-alpha + 2*zeta)
+end subroutine
+
+pure subroutine mrx_coeff_mw_bl (z,Y,F,B,MB)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:,:), intent(in) :: F
+real(dp), dimension(:), intent(out) :: B
+real(dp), dimension(:,:), intent(out) :: MB
+B(1) = -Y(3)
+B(2) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
+   &   + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(4)**4/cgs_c - 6*zeta*Y(5))
+MB(1,1) = 0
+MB(2,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
+MB(1,2) = 0
+MB(2,2) = -alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
+MB(1,3) = 1
+MB(2,3) = 0
+MB(1,4) = 0
+MB(2,4) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(4)**3/cgs_c
+MB(1,5) = 0
+MB(2,5) = omega*(-alpha + 2*zeta)
+end subroutine
+
+pure subroutine mrx_coeff_mw_br (z,Y,F,B,MB)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:,:), intent(in) :: F
+real(dp), dimension(:), intent(out) :: B
+real(dp), dimension(:,:), intent(out) :: MB
+B(1) = facc - 2*omega*z*zeta*Y(5) - Y(3)
+B(2) = 2*cgs_stef*Y(4)**4 - Y(3)
+MB(1,1) = 0
+MB(2,1) = 0
+MB(1,2) = 0
+MB(2,2) = 0
+MB(1,3) = 1
+MB(2,3) = 1
+MB(1,4) = 0
+MB(2,4) = -8*cgs_stef*Y(4)**3
+MB(1,5) = 2*omega*z*zeta
+MB(2,5) = 0
+end subroutine
+
+
+! thermal diffusion
+! alpha prescription
+! radiation + thermal conduction
+pure subroutine mrx_coeff_adt (z,Y,D,F,A,MY,MD)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -458,71 +721,49 @@ real(dp), dimension(:,:), intent(out) :: MY, MD
 A(1) = (-cgs_boltz*cgs_c*(D(2)*Y(1) + Y(2)*D(1)) - cgs_c*cgs_mhydr*miu* &
    &   omega**2*z*Y(1) + cgs_mhydr*miu*Y(3)*(F(1,1) + F(1,2))*Y(1))/( &
    &   cgs_c*cgs_mhydr*miu)
-A(2) = -16*cgs_stef*Y(4)**3*D(4) - 3*Y(3)*(F(1,1) + F(1,2))*Y(1)
+A(2) = -16*cgs_stef*Y(2)**3*D(2) - 3*Y(3)*(F(1,1) + F(1,2))*Y(1)
 A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) - 4.0d0/3.0d0* &
-   &   alpha*cgs_stef*omega*Y(4)**4/cgs_c + D(3)
+   &   alpha*cgs_stef*omega*Y(2)**4/cgs_c + D(3) + D(4)
+A(4) = -F(1,3)*D(2) - Y(4)
 MY(1,1) = (cgs_boltz*cgs_c*D(2) + cgs_c*cgs_mhydr*miu*omega**2*z - &
    &   cgs_mhydr*miu*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y( &
    &   1)))/(cgs_c*cgs_mhydr*miu)
 MY(2,1) = 3*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y(1))
 MY(3,1) = alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
+MY(4,1) = F(2,3)*D(2)
 MY(1,2) = (cgs_boltz*cgs_c*D(1) - cgs_mhydr*miu*Y(3)*(F(3,1) + F(3,2))*Y &
    &   (1))/(cgs_c*cgs_mhydr*miu)
-MY(2,2) = 3*Y(3)*(F(3,1) + F(3,2))*Y(1)
-MY(3,2) = alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
+MY(2,2) = 3*(16*cgs_stef*Y(2)**2*D(2) + Y(3)*(F(3,1) + F(3,2))*Y(1))
+MY(3,2) = (1.0d0/3.0d0)*alpha*omega*(3*cgs_boltz*Y(1)/(cgs_mhydr*miu) + &
+   &   16*cgs_stef*Y(2)**3/cgs_c)
+MY(4,2) = F(3,3)*D(2)
 MY(1,3) = -(F(1,1) + F(1,2))*Y(1)/cgs_c
 MY(2,3) = 3*(F(1,1) + F(1,2))*Y(1)
 MY(3,3) = 0
+MY(4,3) = 0
 MY(1,4) = 0
-MY(2,4) = 48*cgs_stef*Y(4)**2*D(4)
-MY(3,4) = (16.0d0/3.0d0)*alpha*cgs_stef*omega*Y(4)**3/cgs_c
+MY(2,4) = 0
+MY(3,4) = 0
+MY(4,4) = 1
 MD(1,1) = cgs_boltz*Y(2)/(cgs_mhydr*miu)
 MD(2,1) = 0
 MD(3,1) = 0
+MD(4,1) = 0
 MD(1,2) = cgs_boltz*Y(1)/(cgs_mhydr*miu)
-MD(2,2) = 0
+MD(2,2) = 16*cgs_stef*Y(2)**3
 MD(3,2) = 0
+MD(4,2) = F(1,3)
 MD(1,3) = 0
 MD(2,3) = 0
 MD(3,3) = -1
+MD(4,3) = 0
 MD(1,4) = 0
-MD(2,4) = 16*cgs_stef*Y(4)**3
-MD(3,4) = 0
+MD(2,4) = 0
+MD(3,4) = -1
+MD(4,4) = 0
 end subroutine
 
-pure subroutine MRX_COEFF_2AC_CTR (z,Y,F,C,MC)
-use iso_fortran_env, only: dp => real64
-implicit none
-real(dp), intent(in) :: z
-real(dp), dimension(:), intent(in) :: Y
-real(dp), dimension(:,:), intent(in) :: F
-real(dp), dimension(:), intent(out) :: C
-real(dp), dimension(:,:), intent(out) :: MC
-C(1) = (1.0d0/3.0d0)*(-alpha*cgs_c*cgs_mel*omega*(3*cgs_boltz*cgs_c*Y(2) &
-   &   *Y(1) + 4*cgs_mhydr*cgs_stef*miu*Y(4)**4) + 12*cgs_mhydr*cgs_stef &
-   &   *miu*(Y(2) - Y(4))*(4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c**2*cgs_mel &
-   &   *F(1,1)*(Y(2)**2 + Y(4)**2)*(Y(2) + Y(4)))*Y(1))/(cgs_c**2* &
-   &   cgs_mel*cgs_mhydr*miu)
-MC(1,1) = (alpha*cgs_boltz*cgs_c**2*cgs_mel*omega*Y(2) - 4*cgs_mhydr* &
-   &   cgs_stef*miu*((Y(2) - Y(4))*(4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c** &
-   &   2*cgs_mel*F(1,1)*(Y(2)**2 + Y(4)**2)*(Y(2) + Y(4))) + (Y(2) - Y(4 &
-   &   ))*(4*cgs_boltz*F(2,2)*Y(4)**4 + cgs_c**2*cgs_mel*F(2,1)*(Y(2)**2 &
-   &   + Y(4)**2)*(Y(2) + Y(4)))*Y(1)))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
-MC(1,2) = (alpha*cgs_boltz*cgs_c**2*cgs_mel*omega*Y(1) - 4*cgs_mhydr* &
-   &   cgs_stef*miu*((4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c**2*cgs_mel*F(1, &
-   &   1)*(Y(2)**2 + Y(4)**2)*(Y(2) + Y(4)))*Y(1) + (Y(2) - Y(4))*(4* &
-   &   cgs_boltz*F(3,2)*Y(4)**4 + cgs_c**2*cgs_mel*(2*F(1,1)*(Y(2) + Y(4 &
-   &   ))*Y(2) + F(1,1)*(Y(2)**2 + Y(4)**2) + F(3,1)*(Y(2)**2 + Y(4)**2) &
-   &   *(Y(2) + Y(4))))*Y(1)))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
-MC(1,3) = 0
-MC(1,4) = (4.0d0/3.0d0)*cgs_stef*(4*alpha*cgs_c*cgs_mel*omega*Y(4)**3 + &
-   &   3*((4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c**2*cgs_mel*F(1,1)*(Y(2)**2 &
-   &   + Y(4)**2)*(Y(2) + Y(4)))*Y(1) - (Y(2) - Y(4))*(16*cgs_boltz*F(1, &
-   &   2)*Y(4)**3 + cgs_c**2*cgs_mel*(F(1,1)*(Y(2)**2 + Y(4)**2) + 2*F(1 &
-   &   ,1)*Y(4)*(Y(2) + Y(4))))*Y(1)))/(cgs_c**2*cgs_mel)
-end subroutine
-
-pure subroutine MRX_COEFF_2AC_BL (z,Y,F,B,MB)
+pure subroutine mrx_coeff_adt_bl (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -531,13 +772,18 @@ real(dp), dimension(:,:), intent(in) :: F
 real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
 B(1) = -Y(3)
+B(2) = -Y(4)
 MB(1,1) = 0
+MB(2,1) = 0
 MB(1,2) = 0
+MB(2,2) = 0
 MB(1,3) = 1
+MB(2,3) = 0
 MB(1,4) = 0
+MB(2,4) = 1
 end subroutine
 
-pure subroutine MRX_COEFF_2AC_BR (z,Y,F,B,MB)
+pure subroutine mrx_coeff_adt_br (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -545,27 +791,23 @@ real(dp), dimension(:), intent(in) :: Y
 real(dp), dimension(:,:), intent(in) :: F
 real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
-B(1) = facc - Y(3)
-B(2) = 2*cgs_stef*Y(4)**4 - Y(3)
+B(1) = facc - Y(3) - Y(4)
+B(2) = 2*cgs_stef*Y(2)**4 - Y(3)
 MB(1,1) = 0
 MB(2,1) = 0
 MB(1,2) = 0
-MB(2,2) = 0
+MB(2,2) = -8*cgs_stef*Y(2)**3
 MB(1,3) = 1
 MB(2,3) = 1
-MB(1,4) = 0
-MB(2,4) = -8*cgs_stef*Y(4)**3
+MB(1,4) = 1
+MB(2,4) = 0
 end subroutine
 
 
-
-!------------------------------------------------------------------------------!
-! heating-cooling balance
+! heating-cooling balance (full equation)
 ! alpha prescription
 ! radiation + thermal conduction
-!------------------------------------------------------------------------------!
-
-pure subroutine MRX_COEFF_6ACT (z,Y,D,F,A,MY,MD)
+pure subroutine mrx_coeff_act (z,Y,D,F,A,MY,MD)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -652,7 +894,7 @@ MD(4,5) = 0
 MD(5,5) = 0
 end subroutine
 
-pure subroutine MRX_COEFF_6ACT_BL (z,Y,F,B,MB)
+pure subroutine mrx_coeff_act_bl (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -680,7 +922,7 @@ MB(2,5) = 0
 MB(3,5) = 1
 end subroutine
 
-pure subroutine MRX_COEFF_6ACT_BR (z,Y,F,B,MB)
+pure subroutine mrx_coeff_act_br (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -703,14 +945,143 @@ MB(2,5) = 0
 end subroutine
 
 
+! heating-cooling balance (compton term only)
+! alpha prescription
+! radiation + thermal conduction
+pure subroutine mrx_coeff_awt (z,Y,D,F,A,MY,MD)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+! first column: values, second column: 1ord derivatives
+real(dp), dimension(:), intent(in) :: Y,D
+! each row is one function: its value and derivatives to rho and T
+real(dp), dimension(:,:), intent(in) :: F
+! right-hand-side of the equation
+real(dp), dimension(:), intent(out) :: A
+! jacobians with respect to Y and dY/dz
+real(dp), dimension(:,:), intent(out) :: MY, MD
+A(1) = (-cgs_boltz*cgs_c*(D(2)*Y(1) + Y(2)*D(1)) - cgs_c*cgs_mhydr*miu* &
+   &   omega**2*z*Y(1) + cgs_mhydr*miu*Y(3)*(F(1,1) + F(1,2))*Y(1))/( &
+   &   cgs_c*cgs_mhydr*miu)
+A(2) = -16*cgs_stef*Y(4)**3*D(4) - 3*Y(3)*(F(1,1) + F(1,2))*Y(1)
+A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) - 4.0d0/3.0d0* &
+   &   alpha*cgs_stef*omega*Y(4)**4/cgs_c + D(3) + D(5)
+A(4) = (-16*cgs_boltz*cgs_stef*F(1,2)*Y(4)**4*(Y(2) - Y(4))*Y(1) + cgs_c &
+   &   **2*cgs_mel*D(3))/(cgs_c**2*cgs_mel)
+A(5) = -F(1,3)*D(2) - Y(5)
+MY(1,1) = (cgs_boltz*cgs_c*D(2) + cgs_c*cgs_mhydr*miu*omega**2*z - &
+   &   cgs_mhydr*miu*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y( &
+   &   1)))/(cgs_c*cgs_mhydr*miu)
+MY(2,1) = 3*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y(1))
+MY(3,1) = alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
+MY(4,1) = 16*cgs_boltz*cgs_stef*(F(1,2)*Y(4)**4*(Y(2) - Y(4)) + F(2,2)*Y &
+   &   (4)**4*(Y(2) - Y(4))*Y(1))/(cgs_c**2*cgs_mel)
+MY(5,1) = F(2,3)*D(2)
+MY(1,2) = (cgs_boltz*cgs_c*D(1) - cgs_mhydr*miu*Y(3)*(F(3,1) + F(3,2))*Y &
+   &   (1))/(cgs_c*cgs_mhydr*miu)
+MY(2,2) = 3*Y(3)*(F(3,1) + F(3,2))*Y(1)
+MY(3,2) = alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
+MY(4,2) = 16*cgs_boltz*cgs_stef*(F(1,2)*Y(4)**4*Y(1) + F(3,2)*Y(4)**4*(Y &
+   &   (2) - Y(4))*Y(1))/(cgs_c**2*cgs_mel)
+MY(5,2) = F(3,3)*D(2)
+MY(1,3) = -(F(1,1) + F(1,2))*Y(1)/cgs_c
+MY(2,3) = 3*(F(1,1) + F(1,2))*Y(1)
+MY(3,3) = 0
+MY(4,3) = 0
+MY(5,3) = 0
+MY(1,4) = 0
+MY(2,4) = 48*cgs_stef*Y(4)**2*D(4)
+MY(3,4) = (16.0d0/3.0d0)*alpha*cgs_stef*omega*Y(4)**3/cgs_c
+MY(4,4) = 16*cgs_boltz*cgs_stef*(4*F(1,2)*Y(4)**3*(Y(2) - Y(4))*Y(1) - F &
+   &   (1,2)*Y(4)**4*Y(1))/(cgs_c**2*cgs_mel)
+MY(5,4) = 0
+MY(1,5) = 0
+MY(2,5) = 0
+MY(3,5) = 0
+MY(4,5) = 0
+MY(5,5) = 1
+MD(1,1) = cgs_boltz*Y(2)/(cgs_mhydr*miu)
+MD(2,1) = 0
+MD(3,1) = 0
+MD(4,1) = 0
+MD(5,1) = 0
+MD(1,2) = cgs_boltz*Y(1)/(cgs_mhydr*miu)
+MD(2,2) = 0
+MD(3,2) = 0
+MD(4,2) = 0
+MD(5,2) = F(1,3)
+MD(1,3) = 0
+MD(2,3) = 0
+MD(3,3) = -1
+MD(4,3) = -1
+MD(5,3) = 0
+MD(1,4) = 0
+MD(2,4) = 16*cgs_stef*Y(4)**3
+MD(3,4) = 0
+MD(4,4) = 0
+MD(5,4) = 0
+MD(1,5) = 0
+MD(2,5) = 0
+MD(3,5) = -1
+MD(4,5) = 0
+MD(5,5) = 0
+end subroutine
 
-!------------------------------------------------------------------------------!
-! heating-cooling balance
+pure subroutine mrx_coeff_awt_bl (z,Y,F,B,MB)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:,:), intent(in) :: F
+real(dp), dimension(:), intent(out) :: B
+real(dp), dimension(:,:), intent(out) :: MB
+B(1) = -Y(3)
+B(2) = -Y(2) + Y(4)
+B(3) = -Y(5)
+MB(1,1) = 0
+MB(2,1) = 0
+MB(3,1) = 0
+MB(1,2) = 0
+MB(2,2) = 1
+MB(3,2) = 0
+MB(1,3) = 1
+MB(2,3) = 0
+MB(3,3) = 0
+MB(1,4) = 0
+MB(2,4) = -1
+MB(3,4) = 0
+MB(1,5) = 0
+MB(2,5) = 0
+MB(3,5) = 1
+end subroutine
+
+pure subroutine mrx_coeff_awt_br (z,Y,F,B,MB)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:,:), intent(in) :: F
+real(dp), dimension(:), intent(out) :: B
+real(dp), dimension(:,:), intent(out) :: MB
+B(1) = facc - Y(3) - Y(5)
+B(2) = 2*cgs_stef*Y(4)**4 - Y(3)
+MB(1,1) = 0
+MB(2,1) = 0
+MB(1,2) = 0
+MB(2,2) = 0
+MB(1,3) = 1
+MB(2,3) = 1
+MB(1,4) = 0
+MB(2,4) = -8*cgs_stef*Y(4)**3
+MB(1,5) = 1
+MB(2,5) = 0
+end subroutine
+
+
+! thermal diffusion
 ! magnetic heating
-! radiative energy transport
-!------------------------------------------------------------------------------!
-
-pure subroutine MRX_COEFF_4MC (z,Y,D,F,A,MY,MD)
+! radiation + thermal conduction
+pure subroutine mrx_coeff_mdt (z,Y,D,F,A,MY,MD)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -723,95 +1094,74 @@ real(dp), dimension(:), intent(out) :: A
 ! jacobians with respect to Y and dY/dz
 real(dp), dimension(:,:), intent(out) :: MY, MD
 A(1) = (-cgs_boltz*cgs_c*(D(2)*Y(1) + Y(2)*D(1)) - cgs_c*cgs_mhydr*miu*( &
-   &   omega**2*z*Y(1) + D(5)) + cgs_mhydr*miu*Y(3)*(F(1,1) + F(1,2))*Y( &
+   &   omega**2*z*Y(1) + D(4)) + cgs_mhydr*miu*Y(3)*(F(1,1) + F(1,2))*Y( &
    &   1))/(cgs_c*cgs_mhydr*miu)
-A(2) = -16*cgs_stef*Y(4)**3*D(4) - 3*Y(3)*(F(1,1) + F(1,2))*Y(1)
-A(3) = alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) + alpha*omega*Y(5 &
-   &   ) + (4.0d0/3.0d0)*alpha*cgs_stef*omega*Y(4)**4/cgs_c - 2*omega* &
-   &   zeta*Y(5) + D(3)
+A(2) = -16*cgs_stef*Y(2)**3*D(2) - 3*Y(3)*(F(1,1) + F(1,2))*Y(1)
+A(3) = alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) + alpha*omega*Y(4 &
+   &   ) + (4.0d0/3.0d0)*alpha*cgs_stef*omega*Y(2)**4/cgs_c - 2*omega* &
+   &   zeta*Y(4) + D(3) + D(5)
 A(4) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-   &   + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(4)**4/cgs_c - 3*z*zeta*D(5) - &
-   &   6*zeta*Y(5))
+   &   + 3*alpha*Y(4) + 4*alpha*cgs_stef*Y(2)**4/cgs_c - 3*z*zeta*D(4) - &
+   &   6*zeta*Y(4))
+A(5) = -F(1,3)*D(2) - Y(5)
 MY(1,1) = (cgs_boltz*cgs_c*D(2) + cgs_c*cgs_mhydr*miu*omega**2*z - &
    &   cgs_mhydr*miu*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y( &
    &   1)))/(cgs_c*cgs_mhydr*miu)
 MY(2,1) = 3*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y(1))
 MY(3,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
 MY(4,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
+MY(5,1) = F(2,3)*D(2)
 MY(1,2) = (cgs_boltz*cgs_c*D(1) - cgs_mhydr*miu*Y(3)*(F(3,1) + F(3,2))*Y &
    &   (1))/(cgs_c*cgs_mhydr*miu)
-MY(2,2) = 3*Y(3)*(F(3,1) + F(3,2))*Y(1)
-MY(3,2) = -alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
-MY(4,2) = -alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
+MY(2,2) = 3*(16*cgs_stef*Y(2)**2*D(2) + Y(3)*(F(3,1) + F(3,2))*Y(1))
+MY(3,2) = -1.0d0/3.0d0*alpha*omega*(3*cgs_boltz*Y(1)/(cgs_mhydr*miu) + &
+   &   16*cgs_stef*Y(2)**3/cgs_c)
+MY(4,2) = -1.0d0/3.0d0*alpha*omega*(3*cgs_boltz*Y(1)/(cgs_mhydr*miu) + &
+   &   16*cgs_stef*Y(2)**3/cgs_c)
+MY(5,2) = F(3,3)*D(2)
 MY(1,3) = -(F(1,1) + F(1,2))*Y(1)/cgs_c
 MY(2,3) = 3*(F(1,1) + F(1,2))*Y(1)
 MY(3,3) = 0
 MY(4,3) = 0
+MY(5,3) = 0
 MY(1,4) = 0
-MY(2,4) = 48*cgs_stef*Y(4)**2*D(4)
-MY(3,4) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(4)**3/cgs_c
-MY(4,4) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(4)**3/cgs_c
+MY(2,4) = 0
+MY(3,4) = omega*(-alpha + 2*zeta)
+MY(4,4) = omega*(-alpha + 2*zeta)
+MY(5,4) = 0
 MY(1,5) = 0
 MY(2,5) = 0
-MY(3,5) = omega*(-alpha + 2*zeta)
-MY(4,5) = omega*(-alpha + 2*zeta)
+MY(3,5) = 0
+MY(4,5) = 0
+MY(5,5) = 1
 MD(1,1) = cgs_boltz*Y(2)/(cgs_mhydr*miu)
 MD(2,1) = 0
 MD(3,1) = 0
 MD(4,1) = 0
+MD(5,1) = 0
 MD(1,2) = cgs_boltz*Y(1)/(cgs_mhydr*miu)
-MD(2,2) = 0
+MD(2,2) = 16*cgs_stef*Y(2)**3
 MD(3,2) = 0
 MD(4,2) = 0
+MD(5,2) = F(1,3)
 MD(1,3) = 0
 MD(2,3) = 0
 MD(3,3) = -1
 MD(4,3) = 0
-MD(1,4) = 0
-MD(2,4) = 16*cgs_stef*Y(4)**3
+MD(5,3) = 0
+MD(1,4) = 1
+MD(2,4) = 0
 MD(3,4) = 0
-MD(4,4) = 0
-MD(1,5) = 1
+MD(4,4) = omega*z*zeta
+MD(5,4) = 0
+MD(1,5) = 0
 MD(2,5) = 0
-MD(3,5) = 0
-MD(4,5) = omega*z*zeta
+MD(3,5) = -1
+MD(4,5) = 0
+MD(5,5) = 0
 end subroutine
 
-pure subroutine MRX_COEFF_4MC_CTR (z,Y,F,C,MC)
-use iso_fortran_env, only: dp => real64
-implicit none
-real(dp), intent(in) :: z
-real(dp), dimension(:), intent(in) :: Y
-real(dp), dimension(:,:), intent(in) :: F
-real(dp), dimension(:), intent(out) :: C
-real(dp), dimension(:,:), intent(out) :: MC
-C(1) = (1.0d0/3.0d0)*(alpha*cgs_c*cgs_mel*omega*(3*cgs_boltz*cgs_c*Y(2)* &
-   &   Y(1) + 3*cgs_c*cgs_mhydr*miu*Y(5) + 4*cgs_mhydr*cgs_stef*miu*Y(4) &
-   &   **4) - 6*cgs_c**2*cgs_mel*cgs_mhydr*miu*omega*zeta*Y(5) + 12* &
-   &   cgs_mhydr*cgs_stef*miu*(Y(2) - Y(4))*(4*cgs_boltz*F(1,2)*Y(4)**4 &
-   &   + cgs_c**2*cgs_mel*F(1,1)*(Y(2)**2 + Y(4)**2)*(Y(2) + Y(4)))*Y(1 &
-   &   ))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
-MC(1,1) = -(alpha*cgs_boltz*cgs_c**2*cgs_mel*omega*Y(2) + 4*cgs_mhydr* &
-   &   cgs_stef*miu*((Y(2) - Y(4))*(4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c** &
-   &   2*cgs_mel*F(1,1)*(Y(2)**2 + Y(4)**2)*(Y(2) + Y(4))) + (Y(2) - Y(4 &
-   &   ))*(4*cgs_boltz*F(2,2)*Y(4)**4 + cgs_c**2*cgs_mel*F(2,1)*(Y(2)**2 &
-   &   + Y(4)**2)*(Y(2) + Y(4)))*Y(1)))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
-MC(1,2) = -(alpha*cgs_boltz*cgs_c**2*cgs_mel*omega*Y(1) + 4*cgs_mhydr* &
-   &   cgs_stef*miu*((4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c**2*cgs_mel*F(1, &
-   &   1)*(Y(2)**2 + Y(4)**2)*(Y(2) + Y(4)))*Y(1) + (Y(2) - Y(4))*(4* &
-   &   cgs_boltz*F(3,2)*Y(4)**4 + cgs_c**2*cgs_mel*(2*F(1,1)*(Y(2) + Y(4 &
-   &   ))*Y(2) + F(1,1)*(Y(2)**2 + Y(4)**2) + F(3,1)*(Y(2)**2 + Y(4)**2) &
-   &   *(Y(2) + Y(4))))*Y(1)))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
-MC(1,3) = 0
-MC(1,4) = (4.0d0/3.0d0)*cgs_stef*(-4*alpha*cgs_c*cgs_mel*omega*Y(4)**3 + &
-   &   3*((4*cgs_boltz*F(1,2)*Y(4)**4 + cgs_c**2*cgs_mel*F(1,1)*(Y(2)**2 &
-   &   + Y(4)**2)*(Y(2) + Y(4)))*Y(1) - (Y(2) - Y(4))*(16*cgs_boltz*F(1, &
-   &   2)*Y(4)**3 + cgs_c**2*cgs_mel*(F(1,1)*(Y(2)**2 + Y(4)**2) + 2*F(1 &
-   &   ,1)*Y(4)*(Y(2) + Y(4))))*Y(1)))/(cgs_c**2*cgs_mel)
-MC(1,5) = omega*(-alpha + 2*zeta)
-end subroutine
-
-pure subroutine MRX_COEFF_4MC_BL (z,Y,F,B,MB)
+pure subroutine mrx_coeff_mdt_bl (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -821,20 +1171,27 @@ real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
 B(1) = -Y(3)
 B(2) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-   &   + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(4)**4/cgs_c - 6*zeta*Y(5))
+   &   + 3*alpha*Y(4) + 4*alpha*cgs_stef*Y(2)**4/cgs_c - 6*zeta*Y(4))
+B(3) = -Y(5)
 MB(1,1) = 0
 MB(2,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
+MB(3,1) = 0
 MB(1,2) = 0
-MB(2,2) = -alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
+MB(2,2) = -1.0d0/3.0d0*alpha*omega*(3*cgs_boltz*Y(1)/(cgs_mhydr*miu) + &
+   &   16*cgs_stef*Y(2)**3/cgs_c)
+MB(3,2) = 0
 MB(1,3) = 1
 MB(2,3) = 0
+MB(3,3) = 0
 MB(1,4) = 0
-MB(2,4) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(4)**3/cgs_c
+MB(2,4) = omega*(-alpha + 2*zeta)
+MB(3,4) = 0
 MB(1,5) = 0
-MB(2,5) = omega*(-alpha + 2*zeta)
+MB(2,5) = 0
+MB(3,5) = 1
 end subroutine
 
-pure subroutine MRX_COEFF_4MC_BR (z,Y,F,B,MB)
+pure subroutine mrx_coeff_mdt_br (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -842,29 +1199,25 @@ real(dp), dimension(:), intent(in) :: Y
 real(dp), dimension(:,:), intent(in) :: F
 real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
-B(1) = facc - 2*omega*z*zeta*Y(5) - Y(3)
-B(2) = 2*cgs_stef*Y(4)**4 - Y(3)
+B(1) = facc - 2*omega*z*zeta*Y(4) - Y(3) - Y(5)
+B(2) = 2*cgs_stef*Y(2)**4 - Y(3)
 MB(1,1) = 0
 MB(2,1) = 0
 MB(1,2) = 0
-MB(2,2) = 0
+MB(2,2) = -8*cgs_stef*Y(2)**3
 MB(1,3) = 1
 MB(2,3) = 1
-MB(1,4) = 0
-MB(2,4) = -8*cgs_stef*Y(4)**3
-MB(1,5) = 2*omega*z*zeta
+MB(1,4) = 2*omega*z*zeta
+MB(2,4) = 0
+MB(1,5) = 1
 MB(2,5) = 0
 end subroutine
 
 
-
-!------------------------------------------------------------------------------!
-! heating-cooling balance
+! heating-cooling balance (full equation)
 ! magnetic heating
 ! radiation + thermal conduction
-!------------------------------------------------------------------------------!
-
-pure subroutine MRX_COEFF_8MCT (z,Y,D,F,A,MY,MD)
+pure subroutine mrx_coeff_mct (z,Y,D,F,A,MY,MD)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -977,7 +1330,7 @@ MD(5,6) = 0
 MD(6,6) = 0
 end subroutine
 
-pure subroutine MRX_COEFF_8MCT_BL (z,Y,F,B,MB)
+pure subroutine mrx_coeff_mct_bl (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -1016,7 +1369,179 @@ MB(3,6) = 0
 MB(4,6) = 1
 end subroutine
 
-pure subroutine MRX_COEFF_8MCT_BR (z,Y,F,B,MB)
+pure subroutine mrx_coeff_mct_br (z,Y,F,B,MB)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:,:), intent(in) :: F
+real(dp), dimension(:), intent(out) :: B
+real(dp), dimension(:,:), intent(out) :: MB
+B(1) = facc - 2*omega*z*zeta*Y(5) - Y(3) - Y(6)
+B(2) = 2*cgs_stef*Y(4)**4 - Y(3)
+MB(1,1) = 0
+MB(2,1) = 0
+MB(1,2) = 0
+MB(2,2) = 0
+MB(1,3) = 1
+MB(2,3) = 1
+MB(1,4) = 0
+MB(2,4) = -8*cgs_stef*Y(4)**3
+MB(1,5) = 2*omega*z*zeta
+MB(2,5) = 0
+MB(1,6) = 1
+MB(2,6) = 0
+end subroutine
+
+
+! heating-cooling balance (compton term only)
+! magnetic heating
+! radiation + thermal conduction
+pure subroutine mrx_coeff_mwt (z,Y,D,F,A,MY,MD)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+! first column: values, second column: 1ord derivatives
+real(dp), dimension(:), intent(in) :: Y,D
+! each row is one function: its value and derivatives to rho and T
+real(dp), dimension(:,:), intent(in) :: F
+! right-hand-side of the equation
+real(dp), dimension(:), intent(out) :: A
+! jacobians with respect to Y and dY/dz
+real(dp), dimension(:,:), intent(out) :: MY, MD
+A(1) = (-cgs_boltz*cgs_c*(D(2)*Y(1) + Y(2)*D(1)) - cgs_c*cgs_mhydr*miu*( &
+   &   omega**2*z*Y(1) + D(5)) + cgs_mhydr*miu*Y(3)*(F(1,1) + F(1,2))*Y( &
+   &   1))/(cgs_c*cgs_mhydr*miu)
+A(2) = -16*cgs_stef*Y(4)**3*D(4) - 3*Y(3)*(F(1,1) + F(1,2))*Y(1)
+A(3) = alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) + alpha*omega*Y(5 &
+   &   ) + (4.0d0/3.0d0)*alpha*cgs_stef*omega*Y(4)**4/cgs_c - 2*omega* &
+   &   zeta*Y(5) + D(3) + D(6)
+A(4) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
+   &   + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(4)**4/cgs_c - 3*z*zeta*D(5) - &
+   &   6*zeta*Y(5))
+A(5) = (-16*cgs_boltz*cgs_stef*F(1,2)*Y(4)**4*(Y(2) - Y(4))*Y(1) + cgs_c &
+   &   **2*cgs_mel*D(3))/(cgs_c**2*cgs_mel)
+A(6) = -F(1,3)*D(2) - Y(6)
+MY(1,1) = (cgs_boltz*cgs_c*D(2) + cgs_c*cgs_mhydr*miu*omega**2*z - &
+   &   cgs_mhydr*miu*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y( &
+   &   1)))/(cgs_c*cgs_mhydr*miu)
+MY(2,1) = 3*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y(1))
+MY(3,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
+MY(4,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
+MY(5,1) = 16*cgs_boltz*cgs_stef*(F(1,2)*Y(4)**4*(Y(2) - Y(4)) + F(2,2)*Y &
+   &   (4)**4*(Y(2) - Y(4))*Y(1))/(cgs_c**2*cgs_mel)
+MY(6,1) = F(2,3)*D(2)
+MY(1,2) = (cgs_boltz*cgs_c*D(1) - cgs_mhydr*miu*Y(3)*(F(3,1) + F(3,2))*Y &
+   &   (1))/(cgs_c*cgs_mhydr*miu)
+MY(2,2) = 3*Y(3)*(F(3,1) + F(3,2))*Y(1)
+MY(3,2) = -alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
+MY(4,2) = -alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
+MY(5,2) = 16*cgs_boltz*cgs_stef*(F(1,2)*Y(4)**4*Y(1) + F(3,2)*Y(4)**4*(Y &
+   &   (2) - Y(4))*Y(1))/(cgs_c**2*cgs_mel)
+MY(6,2) = F(3,3)*D(2)
+MY(1,3) = -(F(1,1) + F(1,2))*Y(1)/cgs_c
+MY(2,3) = 3*(F(1,1) + F(1,2))*Y(1)
+MY(3,3) = 0
+MY(4,3) = 0
+MY(5,3) = 0
+MY(6,3) = 0
+MY(1,4) = 0
+MY(2,4) = 48*cgs_stef*Y(4)**2*D(4)
+MY(3,4) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(4)**3/cgs_c
+MY(4,4) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(4)**3/cgs_c
+MY(5,4) = 16*cgs_boltz*cgs_stef*(4*F(1,2)*Y(4)**3*(Y(2) - Y(4))*Y(1) - F &
+   &   (1,2)*Y(4)**4*Y(1))/(cgs_c**2*cgs_mel)
+MY(6,4) = 0
+MY(1,5) = 0
+MY(2,5) = 0
+MY(3,5) = omega*(-alpha + 2*zeta)
+MY(4,5) = omega*(-alpha + 2*zeta)
+MY(5,5) = 0
+MY(6,5) = 0
+MY(1,6) = 0
+MY(2,6) = 0
+MY(3,6) = 0
+MY(4,6) = 0
+MY(5,6) = 0
+MY(6,6) = 1
+MD(1,1) = cgs_boltz*Y(2)/(cgs_mhydr*miu)
+MD(2,1) = 0
+MD(3,1) = 0
+MD(4,1) = 0
+MD(5,1) = 0
+MD(6,1) = 0
+MD(1,2) = cgs_boltz*Y(1)/(cgs_mhydr*miu)
+MD(2,2) = 0
+MD(3,2) = 0
+MD(4,2) = 0
+MD(5,2) = 0
+MD(6,2) = F(1,3)
+MD(1,3) = 0
+MD(2,3) = 0
+MD(3,3) = -1
+MD(4,3) = 0
+MD(5,3) = -1
+MD(6,3) = 0
+MD(1,4) = 0
+MD(2,4) = 16*cgs_stef*Y(4)**3
+MD(3,4) = 0
+MD(4,4) = 0
+MD(5,4) = 0
+MD(6,4) = 0
+MD(1,5) = 1
+MD(2,5) = 0
+MD(3,5) = 0
+MD(4,5) = omega*z*zeta
+MD(5,5) = 0
+MD(6,5) = 0
+MD(1,6) = 0
+MD(2,6) = 0
+MD(3,6) = -1
+MD(4,6) = 0
+MD(5,6) = 0
+MD(6,6) = 0
+end subroutine
+
+pure subroutine mrx_coeff_mwt_bl (z,Y,F,B,MB)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:,:), intent(in) :: F
+real(dp), dimension(:), intent(out) :: B
+real(dp), dimension(:,:), intent(out) :: MB
+B(1) = -Y(3)
+B(2) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
+   &   + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(4)**4/cgs_c - 6*zeta*Y(5))
+B(3) = -Y(2) + Y(4)
+B(4) = -Y(6)
+MB(1,1) = 0
+MB(2,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
+MB(3,1) = 0
+MB(4,1) = 0
+MB(1,2) = 0
+MB(2,2) = -alpha*cgs_boltz*omega*Y(1)/(cgs_mhydr*miu)
+MB(3,2) = 1
+MB(4,2) = 0
+MB(1,3) = 1
+MB(2,3) = 0
+MB(3,3) = 0
+MB(4,3) = 0
+MB(1,4) = 0
+MB(2,4) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(4)**3/cgs_c
+MB(3,4) = -1
+MB(4,4) = 0
+MB(1,5) = 0
+MB(2,5) = omega*(-alpha + 2*zeta)
+MB(3,5) = 0
+MB(4,5) = 0
+MB(1,6) = 0
+MB(2,6) = 0
+MB(3,6) = 0
+MB(4,6) = 1
+end subroutine
+
+pure subroutine mrx_coeff_mwt_br (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z

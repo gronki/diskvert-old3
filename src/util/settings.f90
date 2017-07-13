@@ -70,9 +70,11 @@ contains
         end if
 
       case ("-equilibrium","-dyfu")
-        cfg_temperature_method = EQUATION_EQUILIBR
+        cfg_temperature_method = EQUATION_DIFFUSION
       case ("-balance","-corona")
         cfg_temperature_method = EQUATION_BALANCE
+      case ("-compton")
+        cfg_temperature_method = EQUATION_COMPTON
       end select
 
     end do iterate_arguments
@@ -97,6 +99,10 @@ contains
       error stop "Key mdot (accretion rate) is REQUIRED!"
     end if
     read (buf,*) mdot
+
+    ! if ( mincf_exists(cfg,'output') ) then
+    !   call mincf_get(cfg, 'output', outfn)
+    ! end if
   end subroutine
 
 !--------------------------------------------------------------------------!
