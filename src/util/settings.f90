@@ -100,9 +100,9 @@ contains
     end if
     read (buf,*) mdot
 
-    ! if ( mincf_exists(cfg,'output') ) then
-    !   call mincf_get(cfg, 'output', outfn)
-    ! end if
+    if ( mincf_exists(cfg,'output') ) then
+      call mincf_get(cfg, 'output', outfn)
+    end if
   end subroutine
 
 !--------------------------------------------------------------------------!
