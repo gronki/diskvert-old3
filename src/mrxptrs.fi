@@ -1,64 +1,76 @@
 select case (nr)
 case(1)
-  fa  => mrx_coeff_ad
-  fc  => NULL()
-  fbl => mrx_coeff_ad_bl
-  fbr => mrx_coeff_ad_br
-case(4)
-  fa  => mrx_coeff_ac
-  fc  => mrx_coeff_ac_c
-  fbl => mrx_coeff_ac_bl
-  fbr => mrx_coeff_ac_br
+  feq0 => NULL()
+  feq1 => mrx_coeff_ad_eq1
+  fbl  => mrx_coeff_ad_bl
+  fbr  => mrx_coeff_ad_br
+  fout => mrx_coeff_ad_out
 case(2)
-  fa  => mrx_coeff_aw
-  fc  => mrx_coeff_aw_c
-  fbl => mrx_coeff_aw_bl
-  fbr => mrx_coeff_aw_br
+  feq0 => mrx_coeff_aw_eq0
+  feq1 => mrx_coeff_aw_eq1
+  fbl  => mrx_coeff_aw_bl
+  fbr  => mrx_coeff_aw_br
+  fout => mrx_coeff_aw_out
+case(4)
+  feq0 => mrx_coeff_ac_eq0
+  feq1 => mrx_coeff_ac_eq1
+  fbl  => mrx_coeff_ac_bl
+  fbr  => mrx_coeff_ac_br
+  fout => mrx_coeff_ac_out
 case(5)
-  fa  => mrx_coeff_md
-  fc  => NULL()
-  fbl => mrx_coeff_md_bl
-  fbr => mrx_coeff_md_br
-case(8)
-  fa  => mrx_coeff_mc
-  fc  => mrx_coeff_mc_c
-  fbl => mrx_coeff_mc_bl
-  fbr => mrx_coeff_mc_br
+  feq0 => NULL()
+  feq1 => mrx_coeff_md_eq1
+  fbl  => mrx_coeff_md_bl
+  fbr  => mrx_coeff_md_br
+  fout => mrx_coeff_md_out
 case(6)
-  fa  => mrx_coeff_mw
-  fc  => mrx_coeff_mw_c
-  fbl => mrx_coeff_mw_bl
-  fbr => mrx_coeff_mw_br
+  feq0 => mrx_coeff_mw_eq0
+  feq1 => mrx_coeff_mw_eq1
+  fbl  => mrx_coeff_mw_bl
+  fbr  => mrx_coeff_mw_br
+  fout => mrx_coeff_mw_out
+case(8)
+  feq0 => mrx_coeff_mc_eq0
+  feq1 => mrx_coeff_mc_eq1
+  fbl  => mrx_coeff_mc_bl
+  fbr  => mrx_coeff_mc_br
+  fout => mrx_coeff_mc_out
 case(9)
-  fa  => mrx_coeff_adt
-  fc  => NULL()
-  fbl => mrx_coeff_adt_bl
-  fbr => mrx_coeff_adt_br
-case(12)
-  fa  => mrx_coeff_act
-  fc  => NULL()
-  fbl => mrx_coeff_act_bl
-  fbr => mrx_coeff_act_br
+  feq0 => NULL()
+  feq1 => mrx_coeff_adt_eq1
+  fbl  => mrx_coeff_adt_bl
+  fbr  => mrx_coeff_adt_br
+  fout => mrx_coeff_adt_out
 case(10)
-  fa  => mrx_coeff_awt
-  fc  => NULL()
-  fbl => mrx_coeff_awt_bl
-  fbr => mrx_coeff_awt_br
+  feq0 => NULL()
+  feq1 => mrx_coeff_awt_eq1
+  fbl  => mrx_coeff_awt_bl
+  fbr  => mrx_coeff_awt_br
+  fout => mrx_coeff_awt_out
+case(12)
+  feq0 => NULL()
+  feq1 => mrx_coeff_act_eq1
+  fbl  => mrx_coeff_act_bl
+  fbr  => mrx_coeff_act_br
+  fout => mrx_coeff_act_out
 case(13)
-  fa  => mrx_coeff_mdt
-  fc  => NULL()
-  fbl => mrx_coeff_mdt_bl
-  fbr => mrx_coeff_mdt_br
-case(16)
-  fa  => mrx_coeff_mct
-  fc  => NULL()
-  fbl => mrx_coeff_mct_bl
-  fbr => mrx_coeff_mct_br
+  feq0 => NULL()
+  feq1 => mrx_coeff_mdt_eq1
+  fbl  => mrx_coeff_mdt_bl
+  fbr  => mrx_coeff_mdt_br
+  fout => mrx_coeff_mdt_out
 case(14)
-  fa  => mrx_coeff_mwt
-  fc  => NULL()
-  fbl => mrx_coeff_mwt_bl
-  fbr => mrx_coeff_mwt_br
+  feq0 => NULL()
+  feq1 => mrx_coeff_mwt_eq1
+  fbl  => mrx_coeff_mwt_bl
+  fbr  => mrx_coeff_mwt_br
+  fout => mrx_coeff_mwt_out
+case(16)
+  feq0 => NULL()
+  feq1 => mrx_coeff_mct_eq1
+  fbl  => mrx_coeff_mct_bl
+  fbr  => mrx_coeff_mct_br
+  fout => mrx_coeff_mct_out
 case default
   error stop
 end select

@@ -1,76 +1,76 @@
 select case (nr)
 case(1)
-  ny  = 3
-  na  = 3
-  nc  = 0
-  nbl = 1
-  nbr = 2
-case(4)
-  ny  = 4
-  na  = 3
-  nc  = 1
-  nbl = 1
-  nbr = 2
+  ny   = 3
+  neq0 = 0
+  neq1 = 3
+  nbl  = 1
+  nbr  = 2
 case(2)
-  ny  = 4
-  na  = 3
-  nc  = 1
-  nbl = 1
-  nbr = 2
+  ny   = 4
+  neq0 = 1
+  neq1 = 3
+  nbl  = 1
+  nbr  = 2
+case(4)
+  ny   = 4
+  neq0 = 1
+  neq1 = 3
+  nbl  = 1
+  nbr  = 2
 case(5)
-  ny  = 4
-  na  = 4
-  nc  = 0
-  nbl = 2
-  nbr = 2
-case(8)
-  ny  = 5
-  na  = 4
-  nc  = 1
-  nbl = 2
-  nbr = 2
+  ny   = 4
+  neq0 = 0
+  neq1 = 4
+  nbl  = 2
+  nbr  = 2
 case(6)
-  ny  = 5
-  na  = 4
-  nc  = 1
-  nbl = 2
-  nbr = 2
+  ny   = 5
+  neq0 = 1
+  neq1 = 4
+  nbl  = 2
+  nbr  = 2
+case(8)
+  ny   = 5
+  neq0 = 1
+  neq1 = 4
+  nbl  = 2
+  nbr  = 2
 case(9)
-  ny  = 4
-  na  = 4
-  nc  = 0
-  nbl = 2
-  nbr = 2
-case(12)
-  ny  = 5
-  na  = 5
-  nc  = 0
-  nbl = 3
-  nbr = 2
+  ny   = 4
+  neq0 = 0
+  neq1 = 4
+  nbl  = 2
+  nbr  = 2
 case(10)
-  ny  = 5
-  na  = 5
-  nc  = 0
-  nbl = 3
-  nbr = 2
+  ny   = 5
+  neq0 = 0
+  neq1 = 5
+  nbl  = 3
+  nbr  = 2
+case(12)
+  ny   = 5
+  neq0 = 0
+  neq1 = 5
+  nbl  = 3
+  nbr  = 2
 case(13)
-  ny  = 5
-  na  = 5
-  nc  = 0
-  nbl = 3
-  nbr = 2
-case(16)
-  ny  = 6
-  na  = 6
-  nc  = 0
-  nbl = 4
-  nbr = 2
+  ny   = 5
+  neq0 = 0
+  neq1 = 5
+  nbl  = 3
+  nbr  = 2
 case(14)
-  ny  = 6
-  na  = 6
-  nc  = 0
-  nbl = 4
-  nbr = 2
+  ny   = 6
+  neq0 = 0
+  neq1 = 6
+  nbl  = 4
+  nbr  = 2
+case(16)
+  ny   = 6
+  neq0 = 0
+  neq1 = 6
+  nbl  = 4
+  nbr  = 2
 case default
   error stop
 end select

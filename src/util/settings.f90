@@ -114,6 +114,8 @@ contains
     write (u, fmparf) "Z", abuZ
     write (u, fmpare) "kappa_abs_0", kapabs0(abuX,abuZ)
     write (u, fmpare) "kappa_es", kapes0(abuX,abuZ)
+    write (u, fmpare) "mbh", mbh
+    write (u, fmpare) "mdot", mdot
     write (u, fmparl) "use_opacity_ff", use_opacity_ff
     write (u, fmparl) "use_opacity_bf", use_opacity_bf
     write (u, fmparl) "use_opacity_bb", .FALSE.

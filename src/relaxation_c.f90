@@ -21,7 +21,7 @@ contains
     integer(c_int), intent(out) :: ny
     integer :: na, nc, nbl, nbr
 
-    call mrx_sel_dims(nr, ny, na, nc, nbl, nbr)
+    call mrx_sel_dims(nr, ny, nc, na, nbl, nbr)
 
   end subroutine
 
@@ -55,9 +55,11 @@ contains
     real(c_double), intent(in), dimension(nx) :: X
     real(c_double), intent(in), dimension(nx*ny) :: Y
     real(c_double), intent(out), dimension(nx*ny) :: dY
+    integer, dimension(nx*ny) :: ipiv
     real(r64) :: M(nx*ny,nx*ny)
 
-    call mrx_advance(nr,x,Y,M,dY,errno)
+    call mrx_matrix(nr, x, Y, M, dY)
+    call dgesv(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
 
   end subroutine
 

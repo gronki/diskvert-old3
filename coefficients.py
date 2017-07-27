@@ -4,19 +4,23 @@
 from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq, symbols, Integer, Rational, Matrix, MatrixSymbol, Wild, simplify
 from numpy import ndarray, zeros, linspace, logspace, meshgrid
 from sys import stdin, stdout, stderr
+from StringIO import StringIO
 
 #------------------------------------------------------------------------------#
 
-alpha   = Symbol('alpha', real = True, positive = True)
-eta     = Symbol('eta', real = True, positive = True)
-omega   = Symbol('omega', real = True, positive = True)
-F_acc   = Symbol('F_acc', real = True, positive = True)
-mu      = Symbol('mu', real = True, positive = True)
-m_el     = Symbol('m_el', real = True, positive = True)
-m_H      = Symbol('m_H', real = True, positive = True)
-c        = Symbol('c', real = True, positive = True)
-sigma    = Symbol('sigma', real = True, positive = True)
-k        = Symbol('k_B', real = True, positive = True)
+# Real Positive Symbol
+RPS = lambda x: Symbol(x, real = True, positive = True)
+
+alpha = RPS('alpha')
+eta   = RPS('eta')
+omega = RPS('omega')
+F_acc = RPS('F_acc')
+mu    = RPS('mu')
+m_el  = RPS('m_el')
+m_H   = RPS('m_H')
+c     = RPS('c')
+sigma = RPS('sigma')
+kboltz     = RPS('k_B')
 
 global_variables = {
     omega:  'omega',
@@ -25,16 +29,22 @@ global_variables = {
     m_H:    'cgs_mhydr',
     c:      'cgs_c',
     sigma:  'cgs_stef',
-    k:      'cgs_boltz',
+    kboltz: 'cgs_boltz',
     mu:     'miu',
     alpha:  'alpha',
     eta:    'zeta',
 }
 
+global_expressions = [
+    (kboltz / ( m_el * c**2 ), RPS('cgs_k_over_mec2')),
+    (kboltz / ( m_el * c ), RPS('cgs_k_over_mec')),
+    (kboltz / m_H, RPS('cgs_k_over_mh')),
+]
+
 #------------------------------------------------------------------------------#
 
 from sympy.printing.fcode import FCodePrinter
-from sympy.printing.precedence import precedence, PRECEDENCE
+from sympy.printing.precedence import precedence, precedence
 
 class F90CodePrinter(FCodePrinter):
     def __init__(self, settings = {}):
@@ -61,15 +71,15 @@ fprinter = F90CodePrinter({'source_format':'free', 'standard':2008})
 
 #------------------------------------------------------------------------------#
 
-fcoeffsrc = open('src/coefficients.fi','w')
+fcoeff = open('src/mrxcoeff.fi','w')
 
-fsub_coeff = """pure subroutine {name} (z,Y,D,F,A,MY,MD)
+fsub_coeff = """pure subroutine {name}_eq1 (z,Y,D,F,A,MY,MD)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
 ! first column: values, second column: 1ord derivatives
 real(dp), dimension(:), intent(in) :: Y,D
-! each row is one function: its value and derivatives to rho and T
+! each row is one Function: its value and derivatives to rho and T
 real(dp), dimension(:,:), intent(in) :: F
 ! right-hand-side of the equation
 real(dp), dimension(:), intent(out) :: A
@@ -87,7 +97,7 @@ real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
 {B}\n{MB}\nend subroutine\n\n"""
 
-fsub_constr = """pure subroutine {name}_c (z,Y,F,C,MC)
+fsub_constr = """pure subroutine {name}_eq0 (z,Y,F,C,MC)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -97,14 +107,21 @@ real(dp), dimension(:), intent(out) :: C
 real(dp), dimension(:,:), intent(out) :: MC
 {B}\n{MB}\nend subroutine\n\n"""
 
+fsub_yout = """pure subroutine {name}_out (z,Y,F,YY)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:,:), intent(in) :: F
+real(dp), dimension(:), intent(out) :: YY
+{YY}\nend subroutine\n\n"""
+
 #------------------------------------------------------------------------------#
 
 fswptrs = open('src/mrxptrs.fi','w')
-fswname = open('src/mrxname.fi','w')
 fswdims = open('src/mrxdims.fi','w')
 fswhash = open('src/mrxhash.fi','w')
-fswynum = open('src/mrxynum.fi','w')
-fswall = [fswptrs, fswdims, fswhash, fswname, fswynum]
+fswall = [fswptrs, fswdims, fswhash]
 
 for f in fswall: f.write("select case (nr)\n")
 
@@ -114,18 +131,18 @@ choices = [ (bil,bilf,mag,cnd)          \
             for cnd in [False,True]     \
             for mag in [False,True]     \
             for bil in [False,True]     \
-            for bilf in [True,False]    ]
+            for bilf in [False,True]    ]
 
 for balance, bilfull, magnetic, conduction in choices:
 
     if bilfull and not balance: continue
 
-    # współrzędna, po której liczymy
+    # współrzędneq1, po której liczymy
     z       = Symbol('z')
 
     # niewiadome
     rho     = Function('rho')(z)
-    T_gas   = Function('T_gas' if balance else 'T')(z)
+    T_gas   = Function('T')(z)
     F_rad   = Function('F_rad')(z)
 
     T_rad   = Function('T_rad')(z) if balance else T_gas
@@ -135,13 +152,15 @@ for balance, bilfull, magnetic, conduction in choices:
     #--------------------------------------------------------------------------#
 
     # niewiadome w postaci listy
-    yvar = [ rho, T_gas, F_rad ]
+    yvar = [ rho, T_gas ]
     if balance: yvar.append(T_rad)
-    if magnetic: yvar.append(P_mag)
+    yvar.append(F_rad)
     if conduction: yvar.append(F_cond)
+    if magnetic: yvar.append(P_mag)
 
-    yvar_all = [rho, T_gas, T_rad, F_rad, P_mag, F_cond]
-    yval_hash = [ yvar.index(y) if y in yvar else -1 for y in yvar_all ]
+    yvar_all = [ rho, T_gas, T_rad, F_rad, P_mag, F_cond ]
+    yvar_lbl = ['rho', 'temp', 'trad', 'frad', 'pmag', 'fcnd']
+    yval_hash = [ yvar.index(y)+1 if y in yvar else 0 for y in yvar_all ]
 
     #--------------------------------------------------------------------------#
 
@@ -154,13 +173,13 @@ for balance, bilfull, magnetic, conduction in choices:
 
     fval = MatrixSymbol('F', 3, len(fvec))
 
-    def function_derivatives(eq):
-        functions_extra = []
+    def Function_derivatives(eq):
+        Functions_extra = []
         for ifun,f in zip(range(len(fvec)),fvec):
-            nargs = len(f.args)
+            neq1rgs = len(f.args)
             ff = f.func
-            w = [ Wild('w{}'.format(i)) for i in range(nargs) ]
-            for i in range(nargs):
+            w = [ Wild('w{}'.format(i)) for i in range(neq1rgs) ]
+            for i in range(neq1rgs):
                 replace_what = Derivative(ff(*w),w[i])
                 eq = eq.replace( replace_what, fval[i+1,ifun] )
             eq = eq.replace( ff(*w), fval[0,ifun] )
@@ -173,34 +192,39 @@ for balance, bilfull, magnetic, conduction in choices:
     # predkosc wznoszenia pola
     vrise = Lambda(z, eta * omega * z)
     # cisnienie gazu
-    P_gas = k * rho * T_gas / ( mu * m_H )
+    P_gas = kboltz * rho * T_gas / ( mu * m_H )
     # cisnienie promieniowania
     P_rad = 4 * sigma / (3 * c) * T_rad**4
+    # plasma beta
+    beta = P_gas / P_mag
+    # radiative beta
+    betarad = P_gas / P_rad
     # cisnienie calkowite
     P_tot = P_gas + P_rad + P_mag
     # strumien Poyntinga
     F_mag = 2 * P_mag * vrise(z)
+    # strumien calkowity
+    F_tot = F_rad + F_mag + F_cond
 
     #--------------------------------------------------------------------------#
 
-    equations = []
-    constraints = []
+    eq1ord = []
+    eq0ord = []
     boundL = []
     boundR = []
 
     #--------------------------------------------------------------------------#
     # Hydrostatic equilibrium
     #
-    equations.append(P_gas.diff(z)      \
+    eq1ord.append(P_gas.diff(z)      \
             - kappa * rho / c * F_rad   \
             + Derivative(P_mag,z)       \
             + omega**2 * rho * z)
-    # equations.append(P_tot.diff(z) + omega**2 * rho * z)
 
     #--------------------------------------------------------------------------#
     # Dyfuzja promieniowania
     #
-    equations.append(
+    eq1ord.append(
         3 * kappa * rho * F_rad + 16 * sigma * T_rad**3 * Derivative(T_rad,z)
     )
 
@@ -212,58 +236,62 @@ for balance, bilfull, magnetic, conduction in choices:
     else:
         heat = alpha * omega * P_tot
 
-    equations.append(
-        heat - Derivative(F_rad,z) - Derivative(F_cond,z)
+    eq1ord.append(
+        Derivative(F_rad,z) + Derivative(F_cond,z) - heat
     )
 
-    boundL.append( F_rad )
-    boundR.append( F_rad + F_mag + F_cond - F_acc )
-    boundR.append( F_rad - 2 * sigma * T_rad**4 )
+    boundL.append(F_rad)
+    boundR.append(F_tot - F_acc)
+    boundR.append(F_rad - 2 * sigma * T_rad**4)
+
 
     #--------------------------------------------------------------------------#
     # Magnetic field evolution
     #
     if magnetic:
-        equations.append(
+        eq1ord.append(
             2 * P_mag * vrise(z).diff(z) \
             + vrise(z) * Derivative(P_mag,z) \
             - alpha * omega * P_tot
         )
-        boundL.append( 2 * P_mag * vrise(z).diff(z) - alpha * omega * P_tot )
+        boundL.append(2 * P_mag * vrise(z).diff(z) - alpha * omega * P_tot)
 
     #--------------------------------------------------------------------------#
     # Funkcja zrodlowa
     #
     if balance:
-        sdyf = kabs * (T_gas + T_rad) * (T_gas**2 + T_rad**2)
-        ssct = ksct * 4 * k * T_rad**4 / ( m_el * c**2 )
-        radcool = 4 * sigma * rho * (T_gas - T_rad) * \
-            ((sdyf if bilfull else 0) + ssct)
+        # epsi = kabs / (ksct + kabs)
+        # tausct = (1 - epsi) / epsi**0.5
+        sdyf = (T_gas + T_rad) * (T_gas**2 + T_rad**2)
+        ssct = 4 * kboltz * T_rad**4 / ( m_el * c**2 )
+        radcool = 4 * sigma * rho * (T_gas - T_rad) \
+            * (kabs * (sdyf if bilfull else 4 * T_rad**3) + ksct * ssct)
+
         if conduction:
-            equations.append(radcool - Derivative(F_rad,z))
+            eq1ord.append(radcool - Derivative(F_rad,z))
             boundL.append(T_gas - T_rad)
         else:
-            constraints.append(heat - radcool)
+            eq0ord.append(heat - radcool)
 
     #--------------------------------------------------------------------------#
     # Dyfuzja ciepla przez przewodnictwo
     #
     if conduction:
-        equations.append(
+        eq1ord.append(
             F_cond + kcnd * Derivative(T_gas,z)
         )
         boundL.append(F_cond)
 
     #--------------------------------------------------------------------------#
 
-    na = len(equations)
-    nc = len(constraints)
+    neq1 = len(eq1ord)
+    neq0 = len(eq0ord)
     ny = len(yvar)
     nbl = len(boundL)
     nbr = len(boundR)
 
-    assert na + nc == ny
-    assert na == nbl + nbr
+    assert neq1 + neq0 == ny
+    assert neq1 == nbl + nbr
 
     Y = MatrixSymbol('Y', ny, 1)
     D = MatrixSymbol('D', ny, 1)
@@ -276,41 +304,48 @@ for balance, bilfull, magnetic, conduction in choices:
             eq = eq.subs(Derivative(y,z),D[iy]).subs(y,Y[iy])
         for k,v in global_variables.items():
             eq = eq.subs(k,Symbol(v, real = True, positive = k.is_positive))
-        return simplify(function_derivatives(eq))
+        for k,v in global_expressions:
+            eq = eq.subs(k,v)
+        return simplify(Function_derivatives(eq))
 
     #--------------------------------------------------------------------------#
 
-    basename = '{magn}{comp}{cond}'.format(
+    model_name = '{magn}{comp}{cond}'.format(
         magn = 'm' if magnetic else 'a',
-        comp = ('c' if bilfull else 'w') if balance else  'd',
+        comp = ('c' if bilfull else 'w') if balance else 'd',
         cond = 't' if conduction else '',
     )
+
     model_nr = 1 \
         + (1 if balance else 0) \
         + (2 if bilfull else 0) \
         + (4 if magnetic else 0) \
         + (8 if conduction else 0)
+    print "{:4d} -> {}".format(model_nr,model_name.upper())
 
-    routine_name = "mrx_coeff_{}".format(basename)
+    routine_name = "mrx_coeff_{}".format(model_name)
+
     #--------------------------------------------------------------------------#
 
-    fcoeffsrc.write("! {}\n".format("heating-cooling balance ({})".format("full equation" if bilfull else "compton term only") if balance else "thermal diffusion"))
-    fcoeffsrc.write("! {}\n".format("magnetic heating" if magnetic else "alpha prescription"))
-    fcoeffsrc.write("! {}\n".format("radiation + thermal conduction" if conduction \
-        else "radiative energy transport"))
+    fcoeff.write('!' + 78 * '-' + '!\n')
+    fcoeff.write("! {}\n".format("heating-cooling balance ({})".format("full equation" if bilfull else "compton term only") if balance else "thermal diffusion"))
+    fcoeff.write("! {}\n".format("magnetic heating" if magnetic else "alpha prescription"))
+    fcoeff.write("! {}\n".format("radiation + thermal conduction" if conduction \
+        else "no thermal conduction"))
+
     #--------------------------------------------------------------------------#
 
-    A = Matrix(zeros((na,)))
-    MY = Matrix(zeros((na,ny)))
-    MD = Matrix(zeros((na,ny)))
+    A = Matrix(zeros((neq1,)))
+    MY = Matrix(zeros((neq1,ny)))
+    MD = Matrix(zeros((neq1,ny)))
 
-    for ieq,eq in zip(range(na),equations):
+    for ieq,eq in zip(range(neq1),eq1ord):
         A[ieq] = discretize(-eq)
         for iy,y in zip(range(ny),yvar):
             MY[ieq,iy] = discretize(eq.diff(y))
             MD[ieq,iy] = discretize(eq.diff(Derivative(y,z)))
 
-    fcoeffsrc.write(fsub_coeff.format(
+    fcoeff.write(fsub_coeff.format(
         name = routine_name,
         A = fprinter.doprint(A, 'A'),
         MY = fprinter.doprint(MY, 'MY'),
@@ -319,16 +354,16 @@ for balance, bilfull, magnetic, conduction in choices:
 
     #--------------------------------------------------------------------------#
 
-    if nc > 0:
-        C = Matrix(zeros((nc,)))
-        MC = Matrix(zeros((nc,ny)))
+    if neq0 > 0:
+        C = Matrix(zeros((neq0,)))
+        MC = Matrix(zeros((neq0,ny)))
 
-        for ict,ct in zip(range(nc),constraints):
+        for ict,ct in zip(range(neq0),eq0ord):
             C[ict] = discretize(-ct)
             for iy,y in zip(range(ny),yvar):
                 MC[ict,iy] = discretize(ct.diff(y))
 
-        fcoeffsrc.write(fsub_constr.format(
+        fcoeff.write(fsub_constr.format(
             name = routine_name,
             B = fprinter.doprint(C, 'C'),
             MB = fprinter.doprint(MC, 'MC'),
@@ -345,7 +380,7 @@ for balance, bilfull, magnetic, conduction in choices:
             for iy,y in zip(range(ny),yvar):
                 MBL[ib,iy] = discretize(b.diff(y))
 
-        fcoeffsrc.write(fsub_bound.format(
+        fcoeff.write(fsub_bound.format(
             name = routine_name, lr = 'bl',
             B = fprinter.doprint(BL, 'B'),
             MB = fprinter.doprint(MBL, 'MB'),
@@ -362,37 +397,58 @@ for balance, bilfull, magnetic, conduction in choices:
             for iy,y in zip(range(ny),yvar):
                 MBR[ib,iy] = discretize(b.diff(y))
 
-        fcoeffsrc.write(fsub_bound.format(
+        fcoeff.write(fsub_bound.format(
             name = routine_name, lr = 'br',
             B = fprinter.doprint(BR, 'B'),
             MB = fprinter.doprint(MBR, 'MB'),
         ))
 
-    fcoeffsrc.write("\n")
+    #--------------------------------------------------------------------------#
+
+    yout = [
+        ('rho',  rho    ),
+        ('trad', T_rad  ),
+        ('temp', T_gas  ),
+        ('heat', heat   ),
+        ('frad', F_rad  ),
+        ('fmag', F_mag  ),
+        ('fcnd', F_cond ),
+        ('ftot', F_tot  ),
+        ('ksct', ksct   ),
+        ('kabs', kabs   ),
+        ('kcnd', kcnd   ),
+        ('pgas', P_gas  ),
+        ('prad', P_rad  ),
+        ('pmag', P_mag  ),
+        ('ptot', P_tot  ),
+        ('beta', beta if magnetic else 0),
+    ]
+
+    fcoeff.write(fsub_yout.format(
+        name = routine_name,
+        YY = fprinter.doprint(Matrix([ discretize(y) for k,y in yout ]), 'YY'),
+    ))
 
     #--------------------------------------------------------------------------#
 
     for f in fswall: f.write('case({})\n'.format(model_nr))
 
-    fswname.write ('  name = \"{}\"\n'.format(basename))
-
-    fswptrs.write ('  fa  => {}\n'.format(routine_name))
-    fswptrs.write ('  fc  => {}\n'      \
-        .format(routine_name+'_c' if nc > 0 else 'NULL()'))
-    fswptrs.write ('  fbl => {}\n'      \
+    fswptrs.write ('  feq0 => {}\n'      \
+        .format(routine_name+'_eq0' if neq0 > 0 else 'NULL()'))
+    fswptrs.write ('  feq1 => {}\n'.format(routine_name + '_eq1'))
+    fswptrs.write ('  fbl  => {}\n'      \
         .format(routine_name+'_bl' if nbl > 0 else 'NULL()'))
-    fswptrs.write ('  fbr => {}\n'      \
+    fswptrs.write ('  fbr  => {}\n'      \
         .format(routine_name+'_br' if nbr > 0 else 'NULL()'))
+    fswptrs.write ('  fout => {}\n'.format(routine_name + '_out'))
 
-    fswynum.write ('  ny = {}\n'.format(ny))
+    fswdims.write ('  ny   = {}\n'.format(ny))
+    fswdims.write ('  neq0 = {}\n'.format(neq0))
+    fswdims.write ('  neq1 = {}\n'.format(neq1))
+    fswdims.write ('  nbl  = {}\n'.format(nbl))
+    fswdims.write ('  nbr  = {}\n'.format(nbr))
 
-    fswdims.write ('  ny  = {}\n'.format(ny))
-    fswdims.write ('  na  = {}\n'.format(na))
-    fswdims.write ('  nc  = {}\n'.format(nc))
-    fswdims.write ('  nbl = {}\n'.format(nbl))
-    fswdims.write ('  nbr = {}\n'.format(nbr))
-
-    fswhash.write ('  ihash = [{}]\n'.format(",".join([ str(i+1) \
+    fswhash.write ('  ihash(:) = [{}]\n'.format(", ".join([ str(i) \
             for i in yval_hash ])))
 
 #------------------------------------------------------------------------------#
@@ -400,5 +456,3 @@ for balance, bilfull, magnetic, conduction in choices:
 for f in fswall:
     f.write("case default\n  error stop\nend select\n")
     f.close()
-
-fcoeffsrc.close()

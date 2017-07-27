@@ -11,7 +11,16 @@ radius 10
 alpha 0.01
 
 # predkosc wznoszenia pola (dla modelu magnetycznego)
+# beta = 2 * zeta / alpha - 1
+
 # zeta 0.905  # beta = 180
-# zeta 0.505  # beta = 100
-  zeta 0.255  # beta = 50
+# zeta 0.805  # beta = 160
+# zeta 0.755  # beta = 150
+# zeta 0.605  # beta = 120
+ zeta 0.505  # beta = 100
+# zeta 0.455  # beta = 90
+# zeta 0.405  # beta = 80
+# zeta 0.305  # beta = 60
+# zeta 0.255  # beta = 50
 # zeta 0.105  # beta = 20
+# zeta 0.055  # beta = 10

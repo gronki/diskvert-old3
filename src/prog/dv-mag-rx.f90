@@ -18,12 +18,14 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0
-  integer, dimension(3) :: niter = [ 36, 8, 52 ]
+  integer, dimension(3) :: niter = [ 24, 8, 48 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:)
+  integer, dimension(:), allocatable :: ipiv
   logical, dimension(:), allocatable :: errmask
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, y_pmag, y_Trad
   real(dp), allocatable, dimension(:) :: tau, d_frad
-  real(dp) :: rhoc, Tc, Hdisk, err, err0
+  real(dp) :: rhoc, Tc, Hdisk, err, err0, ramp
+  character(*), parameter :: fmiter = '(I5,2X,ES9.2,2X,F5.1,"%")'
   logical :: user_ff, user_bf
   integer, dimension(6) :: c_
   integer, parameter :: upar = 92
@@ -53,11 +55,11 @@ program dv_mag_relax
 
   ! get the model number
   model = mrx_number( 'D', .TRUE., .FALSE. )
-  ny = mrx_ny(model)
+  call mrx_sel_nvar(model, ny)
   call mrx_sel_hash(model, C_)
 
   allocate( x(ngrid), x0(ngrid), Y(ny*ngrid), dY(ny*ngrid),  M(ny*ngrid,ny*ngrid), tau(ngrid), d_frad(ngrid) )
-  allocate(errmask(ny*ngrid))
+  allocate(errmask(ny*ngrid), ipiv(ny*ngrid))
 
   !----------------------------------------------------------------------------!
 
@@ -103,14 +105,16 @@ program dv_mag_relax
 
   relx_opacity_es : do iter = 1,niter(1)
 
-    call mrx_advance(model, x, Y, M, dY, errno)
+    call mrx_matrix(model, x, Y, M, dY)
+    call dgesv(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
 
     forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
         & .and. ieee_is_normal(dY(i))
     err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-    write(uerr,'(I5,ES9.2)') nitert+1, err
+    ramp = ramp4(iter, niter(1), 5d-2, 0d0)
+    write(uerr,fmiter) nitert+1, err, 100*ramp
 
-    Y(:) = Y + dY * ramp3(iter,niter(1))
+    Y(:) = Y + dY * ramp
 
     nitert = nitert + 1
     if (cfg_write_all_iters) call saveiter(nitert)
@@ -138,14 +142,16 @@ program dv_mag_relax
 
     relx_opacity_full : do iter = 1,niter(2)
 
-      call mrx_advance(model, x, Y, M, dY, errno)
+      call mrx_matrix(model, x, Y, M, dY)
+      call dgesv(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
 
       forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
           & .and. ieee_is_normal(dY(i))
       err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-      write(uerr,'(I5,ES9.2)') nitert+1, err
+      ramp = ramp4(iter, niter(2), 2d-1, 1d0)
+      write(uerr,fmiter) nitert+1, err, 100*ramp
 
-      Y(:) = Y + dY * ramp2(iter,niter(2),0.5d0)
+      Y(:) = Y + dY * ramp
 
       nitert = nitert + 1
       if (cfg_write_all_iters) call saveiter(nitert)
@@ -164,7 +170,7 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
 
-  if ( cfg_temperature_method /= EQUATION_DIFFUSION ) then
+  if ( cfg_temperature_method .ne. EQUATION_DIFFUSION ) then
 
     write (uerr,*) '--- corona is on'
 
@@ -172,11 +178,12 @@ program dv_mag_relax
 
     call mrx_transfer(model, mrx_number(cfg_temperature_method, .TRUE., .FALSE.), x, Y)
 
-    call mrx_sel_ny(model,ny)
-    call mrx_sel_hash(model,c_)
+    call mrx_sel_nvar(model, ny)
+    call mrx_sel_hash(model, c_)
 
-    deallocate(dY,M,errmask)
-    allocate(dY(ny*ngrid), M(ny*ngrid,ny*ngrid),errmask(ny*ngrid))
+    deallocate(dY, M, errmask, ipiv)
+    allocate(dY(ny*ngrid), M(ny*ngrid,ny*ngrid))
+    allocate(errmask(ny*ngrid), ipiv(ny*ngrid))
 
     y_rho   => Y(C_(1)::ny)
     y_temp  => Y(C_(2)::ny)
@@ -198,18 +205,21 @@ program dv_mag_relax
 
     relx_corona : do iter = 1,niter(3)
 
-      call mrx_advance(model, x, Y, M, dY, errno)
+      call mrx_matrix(model, x, Y, M, dY)
+      call dgesv(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
 
       if (errno .ne. 0) exit relx_corona
 
       forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
           & .and. ieee_is_normal(dY(i))
       err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-      write(uerr,'(I5,ES9.2)') nitert+1, err
+      ramp = ramp4(iter, niter(3), 1d-3, 0d0)
+
+      write(uerr,fmiter) nitert+1, err, 100*ramp
 
       if (ieee_is_nan(err)) exit relx_corona
 
-      Y(:) = Y + dY * ramp3(iter, niter(3))
+      Y(:) = Y + dY * ramp
 
       where (y_trad < teff * 0.80) y_trad = teff * 0.80
       where (y_temp < teff * 0.80) y_temp = teff * 0.80
@@ -275,7 +285,7 @@ program dv_mag_relax
 
   close(upar)
 
-  deallocate(x,x0,Y,M,dY,tau,d_frad,errmask)
+  deallocate(x,x0,Y,M,dY,tau,d_frad,errmask,ipiv)
 
 contains
 
@@ -300,7 +310,7 @@ contains
     do i = 1,ngrid
       pgas =  cgs_k_over_mh / miu * y_rho(i) * y_temp(i)
       prad = cgs_a / 3 * y_trad(i)**4
-      write (u,'(I6,15ES14.5E3)') i, x(i), x(i) / zscale, tau(i), &
+      write (u,'(I6,*(ES14.5E3))') i, x(i), x(i) / zscale, tau(i), &
       y_rho(i), y_temp(i), y_trad(i), y_frad(i),  &
       fksct(y_rho(i), y_temp(i)), fkabs(y_rho(i), y_temp(i)), &
       fkcnd(y_rho(i), y_temp(i)), &

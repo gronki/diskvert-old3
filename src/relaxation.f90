@@ -10,7 +10,22 @@ module relaxation
   implicit none
 
   abstract interface
-    pure subroutine fcoeff_t(z, Y, D, F, A, MY, MD)
+    pure subroutine funout_t(z, Y, F, YY)
+      import r64
+      real(r64), intent(in) :: z
+      real(r64), intent(in), dimension(:) :: Y
+      real(r64), intent(in), dimension(:,:) :: F
+      real(r64), intent(out), dimension(:) :: YY
+    end subroutine
+    pure subroutine fun0_t(z, Y, F, A, M)
+      import r64
+      real(r64), intent(in) :: z
+      real(r64), intent(in), dimension(:) :: Y
+      real(r64), intent(in), dimension(:,:) :: F
+      real(r64), intent(out), dimension(:) :: A
+      real(r64), intent(out), dimension(:,:) :: M
+    end subroutine
+    pure subroutine fun1_t(z, Y, D, F, A, MY, MD)
       import r64
       real(r64), intent(in) :: z
       real(r64), intent(in), dimension(:) :: Y,D
@@ -18,21 +33,25 @@ module relaxation
       real(r64), intent(out), dimension(:) :: A
       real(r64), intent(out), dimension(:,:) :: MY,MD
     end subroutine
-    pure subroutine fbound_t(z, Y, F, B, M)
+    pure subroutine fun2_t(z, Y, D, D2, F, A, MY, MD, MD2)
       import r64
       real(r64), intent(in) :: z
-      real(r64), intent(in), dimension(:) :: Y
+      real(r64), intent(in), dimension(:) :: Y,D,D2
       real(r64), intent(in), dimension(:,:) :: F
-      real(r64), intent(out), dimension(:) :: B
-      real(r64), intent(out), dimension(:,:) :: M
+      real(r64), intent(out), dimension(:) :: A
+      real(r64), intent(out), dimension(:,:) :: MY,MD,MD2
     end subroutine
   end interface
 
   real(r64) :: alpha = 0, zeta = 0
   real(r64) :: omega, radius, facc, teff, zscale
 
-  integer, parameter :: c_rho = 1, c_Tgas = 2, c_Trad = 3, &
-  & c_Frad = 4, c_Pmag = 5, c_Fcond = 6
+  ! integer, parameter :: c_rho = 1, c_Tgas = 2, c_Trad = 3, &
+  ! & c_Frad = 4, c_Pmag = 5, c_Fcond = 6, c_taues = 7
+
+  character(4), dimension(*), parameter :: labels = ['rho ', 'trad', 'tgas', &
+      'heat', 'frad', 'fmag', 'fcnd', 'ftot', 'ksct', 'kabs', 'kcnd', &
+      'pgas', 'prad', 'pmag', 'ptot', 'beta']
 
 contains
 
@@ -68,43 +87,33 @@ contains
 
     if (magnetic)   nr = nr + 4
     if (conduction) nr = nr + 8
-    
+
   end function
 
-  pure subroutine mrx_sel_name (nr, name)
+  elemental subroutine mrx_sel_dims (nr, ny, neq0, neq1, nbl, nbr)
     integer, intent(in) :: nr
-    character(*), intent(out) :: name
-    include 'mrxname.fi'
-  end subroutine
-
-  elemental subroutine mrx_sel_dims (nr, ny, na, nc, nbl, nbr)
-    integer, intent(in) :: nr
-    integer, intent(out) :: ny, na, nbl, nbr, nc
+    integer, intent(out) :: ny, neq1, nbl, nbr, neq0
     include 'mrxdims.fi'
   end subroutine
 
-  elemental function mrx_ny(nr) result(ny)
-    integer, intent(in) :: nr
-    integer :: ny
-    include 'mrxynum.fi'
-  end function
-
-  elemental subroutine mrx_sel_ny(nr,ny)
+  elemental subroutine mrx_sel_nvar (nr, ny)
     integer, intent(in) :: nr
     integer, intent(out) :: ny
-    include 'mrxynum.fi'
+    integer :: neq1, nbl, nbr, neq0
+    call mrx_sel_dims (nr, ny, neq0, neq1, nbl, nbr)
   end subroutine
 
-  subroutine mrx_sel_ptrs (nr, fa, fc, fbl, fbr)
+  subroutine mrx_sel_funcs (nr, feq0, feq1, fbl, fbr, fout)
     integer, intent(in) :: nr
-    procedure(fcoeff_t), pointer, intent(out) :: fa
-    procedure(fbound_t), pointer, intent(out) :: fbl, fbr, fc
+    procedure(fun1_t), pointer, intent(out) :: feq1
+    procedure(funout_t), pointer, intent(out) :: fout
+    procedure(fun0_t), pointer, intent(out) :: fbl, fbr, feq0
     include 'mrxptrs.fi'
   end subroutine
 
   pure subroutine mrx_sel_hash (nr, ihash)
     integer, intent(in) :: nr
-    integer, dimension(6), intent(out) :: ihash
+    integer, dimension(:), intent(out) :: ihash
     include 'mrxhash.fi'
   end subroutine
 
@@ -122,19 +131,20 @@ contains
 
     real(r64), dimension(:,:), allocatable :: MY, MD
     real(r64), dimension(:), allocatable :: YM,DY
-    integer :: i, nx,nbl,nbr,ny,na,nc
-    procedure(fcoeff_t), pointer :: fa
-    procedure(fbound_t), pointer :: fbl, fbr, fc
+    integer :: i, nx,nbl,nbr,ny,neq1,neq0
+    procedure(fun1_t), pointer :: feq1
+    procedure(fun0_t), pointer :: fbl, fbr, feq0
+    procedure(funout_t), pointer :: fout
     ! nieprzezroczystosci: (pochodna,rodzaj)
     ! kolejnosc: abs, sct, cond
     real(r64), dimension(3,3) :: FV
     integer, dimension(6) :: c_
 
     nx = size(x)
-    call mrx_sel_dims(nr,ny,na,nc,nbl,nbr)
-    allocate( ym(ny), dy(ny), MY(na,ny), MD(na,ny) )
+    call mrx_sel_dims(nr,ny,neq0,neq1,nbl,nbr)
+    allocate( ym(ny), dy(ny), MY(neq1,ny), MD(neq1,ny) )
 
-    call mrx_sel_ptrs(nr,fa,fc,fbl,fbr)
+    call mrx_sel_funcs(nr,feq0,feq1,fbl,fbr,fout)
     call mrx_sel_hash(nr,c_)
 
     M = 0
@@ -155,8 +165,8 @@ contains
 
     if ( nbr > 0 ) then
       associate ( xbr => x(nx), YBR => Y((nx-1)*ny+1:nx*ny), &
-                & BR  => A(nbl+(nx-1)*ny+1+nc:nx*ny),           &
-                & MBR => M(nbl+(nx-1)*ny+1+nc:nx*ny, (nx-1)*ny+1:nx*ny))
+                & BR  => A(nbl+(nx-1)*ny+1+neq0:nx*ny),           &
+                & MBR => M(nbl+(nx-1)*ny+1+neq0:nx*ny, (nx-1)*ny+1:nx*ny))
 
         call kappabs(YBR(c_(1)), YBR(c_(2)), FV(1,1), FV(2,1), FV(3,1))
         call kappsct(YBR(c_(1)), YBR(c_(2)), FV(1,2), FV(2,2), FV(3,2))
@@ -167,18 +177,18 @@ contains
       end associate
     end if
 
-    if ( nc > 0 ) then
+    if ( neq0 > 0 ) then
       fillc: do i = 1,nx
 
         associate ( xc => x(i), YC => Y((i-1)*ny+1:i*ny),    &
-                  &  C => A(nbl+(i-1)*ny+1:nbl+(i-1)*ny+nc), &
-                  & MC => M(nbl+(i-1)*ny+1:nbl+(i-1)*ny+nc, (i-1)*ny+1:i*ny))
+                  &  C => A(nbl+(i-1)*ny+1:nbl+(i-1)*ny+neq0), &
+                  & MC => M(nbl+(i-1)*ny+1:nbl+(i-1)*ny+neq0, (i-1)*ny+1:i*ny))
 
           call kappabs(YC(c_(1)), YC(c_(2)), FV(1,1), FV(2,1), FV(3,1))
           call kappsct(YC(c_(1)), YC(c_(2)), FV(1,2), FV(2,2), FV(3,2))
           call kappcnd(YC(c_(1)), YC(c_(2)), FV(1,3), FV(2,3), FV(3,3))
 
-          call FC(xc, YC, FV, C, MC)
+          call feq0(xc, YC, FV, C, MC)
 
         end associate
       end do fillc
@@ -187,9 +197,9 @@ contains
     filla: do i = 1, nx-1
 
       associate ( dx => x(i+1) - x(i), xm => (x(i+1) + x(i)) / 2, &
-              &   Ai => A(nbl+(i-1)*ny+1+nc:nbl+i*ny),                 &
-              &   M1 => M(nbl+(i-1)*ny+1+nc:nbl+i*ny, (i-1)*ny+1:i*ny),  &
-              &   M2 => M(nbl+(i-1)*ny+1+nc:nbl+i*ny, i*ny+1:(i+1)*ny),  &
+              &   Ai => A(nbl+(i-1)*ny+1+neq0:nbl+i*ny),                 &
+              &   M1 => M(nbl+(i-1)*ny+1+neq0:nbl+i*ny, (i-1)*ny+1:i*ny),  &
+              &   M2 => M(nbl+(i-1)*ny+1+neq0:nbl+i*ny, i*ny+1:(i+1)*ny),  &
               &   Y1 => Y((i-1)*ny+1:i*ny), Y2 => Y(i*ny+1:(i+1)*ny))
 
         YM(:) = (Y2 + Y1) / 2
@@ -199,7 +209,7 @@ contains
         call kappsct(YM(c_(1)), YM(c_(2)), FV(1,2), FV(2,2), FV(3,2))
         call kappcnd(YM(c_(1)), YM(c_(2)), FV(1,3), FV(2,3), FV(3,3))
 
-        call FA(xm, YM, DY, FV, Ai, MY, MD)
+        call feq1(xm, YM, DY, FV, Ai, MY, MD)
 
         M1(:,:) = MY / 2 - MD / dx
         M2(:,:) = MY / 2 + MD / dx
@@ -209,30 +219,6 @@ contains
     end do filla
 
     deallocate(MY, MD, YM, DY)
-
-  end subroutine
-
-  subroutine mrx_advance(nr, x, Y, M, dY, errno)
-
-    integer, intent(in) :: nr
-    real(r64), dimension(:), intent(in) :: x
-    real(r64), dimension(:), intent(in) :: Y
-    real(r64), dimension(:), intent(out), contiguous :: dY
-    real(r64), dimension(:,:), intent(out), contiguous  :: M
-    integer, intent(out) :: errno
-    integer, dimension(size(dY)) :: ipiv
-
-    call mrx_matrix(nr, x, Y, M, dY)
-    call dgesv(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
-
-    if ( errno > 0 ) then
-      write (uerr, '("Parameter ", I0, " had illegal value")') abs(errno)
-      write (uerr, '("zero on matrix diagonal: singular matrix")')
-    end if
-    if ( errno < 0 ) then
-      write (uerr, '("Parameter ", I0, " had illegal value")') abs(errno)
-      write (uerr, '("illegal parameter value")')
-    end if
 
   end subroutine
 
@@ -268,15 +254,20 @@ contains
     if (present(y0)) y = y0 + (1 - y0) * y
   end function
 
+  ! this is a very smooth, s-shaped ramp
+  ! slow convergence but good if we are away from the solution
+  elemental function ramp4(i,n,A,B) result(y)
+    integer, intent(in) :: i,n
+    real(r64), intent(in) :: A,B
+    real(r64) :: x,y
+    x = merge(real(i) / n, 1.0, i .le. n)
+    y = A + B*x*(-A + 1) + x**4*(A*B - 3*A - B + 3) &
+      + x**3*(-3*A*B + 8*A + 3*B - 8) + x**2*(3*A*B - 6*A - 3*B + 6)
+  end function
+
   !----------------------------------------------------------------------------!
 
   subroutine mrx_relax(nr, x, Y, niter, r, errno)
-
-    ! interface callback
-    !   subroutine callback
-    !     integer, intent(in)
-    !   end subroutine callback
-    ! end interface callback
 
     integer, intent(in) :: nr, niter
     real(r64), intent(in), dimension(:) :: x
@@ -289,11 +280,10 @@ contains
     integer, intent(out) :: errno
     integer :: i,it, ch(6), ny
     integer, dimension(size(Y)) :: ipiv
-    ! procedure(callback) :: cb
 
     errno = 0
     call mrx_sel_hash(nr,ch)
-    call mrx_sel_ny(nr,ny)
+    call mrx_sel_nvar(nr,ny)
     write(uerr,'(A5,1X,A9)') 'ITER', 'ERROR'
 
     relax: do it = 1, niter
@@ -329,44 +319,49 @@ contains
   end subroutine
 
   !----------------------------------------------------------------------------!
-  subroutine mrx_transfer(nr, newnr, z, Y)
+  subroutine mrx_transfer(nr_old, nr, z, Y)
     use slf_cgs, only: cgs_k_over_mh
-    integer, intent(in) :: newnr
-    integer, intent(inout) :: nr
+    integer, intent(in) :: nr
+    integer, intent(inout) :: nr_old
     real(r64), intent(in), dimension(:) :: z
-    real(r64), intent(inout), dimension(:), allocatable :: Y
-    real(r64), dimension(:), allocatable :: y_old
+    real(r64), intent(inout), dimension(:), allocatable, target :: Y
+    real(r64), dimension(:), allocatable, target :: y_old
+    real(r64), dimension(:,:), pointer :: yv, yv_old
     ! column order: rho, Tgas, Trad, Frad, Pmag, Fcond
     integer, dimension(6) :: c_, c_old_
     integer :: ny, ny_old
 
-    call mrx_sel_hash(nr,c_old_)
-    ny_old = mrx_ny(nr)
-    call mrx_sel_hash(newnr,c_)
-    ny = mrx_ny(newnr)
+    call mrx_sel_hash(nr_old, c_old_)
+    call mrx_sel_nvar(nr_old, ny_old)
+
+    call mrx_sel_hash(nr, c_)
+    call mrx_sel_nvar(nr, ny)
 
     call move_alloc(y, y_old)
     allocate(y(size(z)*ny))
 
+    yv(1:ny,1:size(z)) => y
+    yv_old(1:ny_old,1:size(z)) => y_old
+
     ! density, temperature and radiative flux are present in all models
-    Y(c_(1)::ny) = Y_old(c_old_(1)::ny_old)
-    Y(c_(3)::ny) = Y_old(c_old_(3)::ny_old)
-    Y(c_(4)::ny) = Y_old(c_old_(4)::ny_old)
+    yv(c_(1),:) = yv_old(c_old_(1),:)
+    yv(c_(2),:) = yv_old(c_old_(2),:)
+    yv(c_(4),:) = yv_old(c_old_(4),:)
 
     ! if radiative and gas temperature are different in the new model,
     ! then set it equal to "diffusive" temperature
     if ( c_(2) .ne. c_(3) ) then
-      Y(c_(2)::ny) = Y_old(c_old_(2)::ny_old)
+      yv(c_(3),:) = yv_old(c_old_(3),:)
     end if
 
     ! transfer magnetic pressure if present in new model
     if ( c_(5) .ne. 0 ) then
       ! if the old model also had it, just copy
       if ( c_old_(5) .ne. 0 ) then
-        Y(c_(5)::ny) = Y_old(c_old_(5)::ny_old)
+        yv(c_(5),:) = yv_old(c_old_(5),:)
       else
         ! if not, set magnetic beta to constant value of 100
-        Y(c_(5)::ny) = 0.01 * 2 * cgs_k_over_mh * Y(c_(1)::ny) * Y(c_(2)::ny)
+        yv(c_(5),:) = 0.01 * 2 * cgs_k_over_mh * yv(c_(1),:) * yv(c_(2),:)
       end if
     end if
 
@@ -374,18 +369,20 @@ contains
     if ( c_(6) .ne. 0 ) then
       ! if the old model also had it, just copy
       if ( c_old_(6) .ne. 0 ) then
-        Y(c_(6)::ny) = Y_old(c_old_(6)::ny_old)
+        yv(c_(6),:) = yv_old(c_old_(6),:)
       else
         ! if not, just set to zero
-        Y(c_(6)::ny) = 0
+        yv(c_(6),:) = 0
       end if
     end if
 
     deallocate(y_old)
-    nr = newnr
+    nr_old = nr
 
   end subroutine
 
-  include 'coefficients.fi'
+  !----------------------------------------------------------------------------!
+
+  include 'mrxcoeff.fi'
 
 end module relaxation

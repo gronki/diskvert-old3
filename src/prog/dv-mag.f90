@@ -26,9 +26,9 @@ program dv_mag
 
     call init_labels
 
-    ngrid = 98304
     htop = 120
-    max_iteration_error = 1e-9
+    ngrid = 0
+    max_iteration_error = 0
 
     call rdargvgl
     call rdargvrk4
@@ -37,7 +37,26 @@ program dv_mag
     call rdconf(cfg)
     call mincf_free(cfg)
 
+    if (ngrid .eq. 0) then
+      select case (cfg_temperature_method)
+      case ('C','E')
+        ngrid = ceiling(htop * 360)
+      case ('W','Q')
+        ngrid = ceiling(htop * 180)
+      case default
+        ngrid = ceiling(htop * 90)
+      end select
+    end if
+
+    if (max_iteration_error .eq. 0) then
+      max_iteration_error = 10**( -(120+htop)/30 )
+    end if
+
     open(upar, file = trim(outfn) // ".txt", action = "write")
+
+    write (upar, fmpari) 'ngrid', ngrid
+    write (upar, fmpare) 'precision', max_iteration_error
+
     call init_m1(mbh, mdot, radius, alpha, zeta)
 
     allocate( z(ngrid) )

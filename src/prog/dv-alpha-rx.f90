@@ -49,7 +49,7 @@ program dv_alpha_relax
 
   ! get the model number
   model = mrx_number( 'D', .FALSE., .FALSE. )
-  ny = mrx_ny(model)
+  call mrx_sel_nvar(model, ny)
   call mrx_sel_hash(model, C_)
 
   allocate( x(ngrid), x0(ngrid), Y(ny*ngrid), dY(ny*ngrid), M(ny*ngrid,ny*ngrid), tau(ngrid) )
@@ -131,7 +131,7 @@ contains
     do i = 1,ngrid
       pgas =  cgs_k_over_mh / miu * y_rho(i) * y_temp(i)
       prad = cgs_a / 3 * y_trad(i)**4
-      write (u,'(I6,11ES14.5E3)') i, x(i), x(i) / zscale, tau(i), &
+      write (u,'(I7,*(ES14.5E3))') i, x(i), x(i) / zscale, tau(i), &
       y_rho(i), y_temp(i), y_frad(i),   &
       fksct(y_rho(i), y_temp(i)), fkabs(y_rho(i), y_temp(i)), &
       fkcnd(y_rho(i), y_temp(i)), pgas, prad
