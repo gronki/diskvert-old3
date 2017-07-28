@@ -1,7 +1,7 @@
 from multiprocessing import cpu_count
 import numpy as np
 
-F = """output {fn}
+F = """#output {fn}
 mbh {mbh:.5e}
 mdot {mdot:.5e}
 radius {radius:.5e}

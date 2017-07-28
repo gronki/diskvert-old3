@@ -256,7 +256,7 @@ contains
     real(r64) :: epsi
     real(r64) :: alpha_eff
     real(r64) :: xxa,xxb
-    real(r64) :: rhotemp
+    real(r64) :: rhotemp, heatmax
     real(r64) :: kabs, kabs_rho, kabs_T
     integer :: i,n
 
@@ -311,20 +311,14 @@ contains
     call calc_compswitch(y(v_pgas),a(p_temp),a(p_compsw))
 
   case (EQUATION_COMPTON_2)
-    a(p_temp) = a(p_Trad) * sqrt(1 + a(p_compw)**2)
+    a(p_temp) = a(p_Trad) * sqrt(1 + a(p_compW)**2)
 
-    a(p_heat_max) = 4 * cgs_stef * rhotemp * (          &
-      fkabs(rhotemp / a(p_temp), a(p_temp))             &
-      * (a(p_trad) + a(p_temp))                         &
-      * (a(p_trad)**2 + a(p_temp)**2)                   &
-      + 4 * cgs_kapes * cgs_k_over_mec2 * a(p_trad)**4  &
-    )
-
-    a(p_compw) = a(p_heat) / (a(p_heat_max) - a(p_heat))
-    a(p_temp) = a(p_Trad) * (1 + a(p_compw))
+    heatmax = 16 * cgs_stef * rhotemp * a(p_trad)**3 &
+        * (fkabs(rhotemp / a(p_temp), a(p_temp)) &
+        + cgs_kapes * a(p_trad) * cgs_k_over_mec2)
+    a(p_temp) = a(p_Trad) * heatmax / (heatmax - a(p_heat))
 
     call calc_compswitch(y(v_pgas),a(p_temp),a(p_compsw))
-    ! a(p_temp) = a(p_Trad) * (1 + a(p_compsw)*a(p_compW))
 
   case (EQUATION_BALANCE)
     fcool_heat = a(p_heat)

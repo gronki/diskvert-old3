@@ -1,6 +1,7 @@
-*.tgz
 *.dat
-*.txt
-*.png
-*.log
 *.col
+*.txt
+*.par
+*.log
+*.lst
+*.png

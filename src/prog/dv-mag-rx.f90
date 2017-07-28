@@ -32,8 +32,8 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
 
-  ngrid = 720
-  htop = 48
+  ngrid = -1
+  htop = 120
 
   !----------------------------------------------------------------------------!
 
@@ -43,6 +43,8 @@ program dv_mag_relax
   call rdconfgl(cfg)
   call rdconf(cfg)
   call mincf_free(cfg)
+
+  if (ngrid .eq. -1) ngrid = ceiling(8*htop)
 
   open(upar, file = trim(outfn) // '.txt', action = 'write')
 
@@ -69,7 +71,7 @@ program dv_mag_relax
   !----------------------------------------------------------------------------!
 
   forall (i = 1:ngrid)
-    x(i) = space_linear(i,ngrid,htop) * Hdisk
+    x(i) = space_linear(i,ngrid,htop) * zscale
     x0(i) = space_linear(i,ngrid,htop) / htop
   end forall
 
@@ -111,7 +113,7 @@ program dv_mag_relax
     forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
         & .and. ieee_is_normal(dY(i))
     err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-    ramp = ramp4(iter, niter(1), 5d-2, 0d0)
+    ramp = ramp4(iter, niter(1), 5d-2, 0.25d0)
     write(uerr,fmiter) nitert+1, err, 100*ramp
 
     Y(:) = Y + dY * ramp
@@ -148,7 +150,7 @@ program dv_mag_relax
       forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
           & .and. ieee_is_normal(dY(i))
       err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-      ramp = ramp4(iter, niter(2), 2d-1, 1d0)
+      ramp = ramp4(iter, niter(2), 2d-1, 0.5d0)
       write(uerr,fmiter) nitert+1, err, 100*ramp
 
       Y(:) = Y + dY * ramp
@@ -213,7 +215,7 @@ program dv_mag_relax
       forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
           & .and. ieee_is_normal(dY(i))
       err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-      ramp = ramp4(iter, niter(3), 1d-3, 0d0)
+      ramp = ramp4(iter, niter(3), 1d-2, 0d1)
 
       write(uerr,fmiter) nitert+1, err, 100*ramp
 

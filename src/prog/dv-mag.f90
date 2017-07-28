@@ -40,16 +40,16 @@ program dv_mag
     if (ngrid .eq. 0) then
       select case (cfg_temperature_method)
       case ('C','E')
-        ngrid = ceiling(htop * 360)
+        ngrid = ceiling(htop * 400)
       case ('W','Q')
-        ngrid = ceiling(htop * 180)
+        ngrid = ceiling(htop * 240)
       case default
-        ngrid = ceiling(htop * 90)
+        ngrid = ceiling(htop * 120)
       end select
     end if
 
     if (max_iteration_error .eq. 0) then
-      max_iteration_error = 10**( -(120+htop)/30 )
+      max_iteration_error = 10**( -(120 + htop) / 30 )
     end if
 
     open(upar, file = trim(outfn) // ".txt", action = "write")
