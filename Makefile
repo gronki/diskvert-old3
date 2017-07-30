@@ -13,9 +13,9 @@ LDFLAGS = -L.
 LDLIBS = -lblas
 
 FC = gfortran
-FFLAGS = -g -Wall -pedantic -O2 -mieee-fp             \
-	 -Warray-temporaries -Wfunction-elimination   \
-	 -Wrealloc-lhs-all -Wno-unused-dummy-argument
+FFLAGS = -g -O2 -mtune=generic -mieee-fp  \
+	 -Wall -pedantic -Warray-temporaries -Wrealloc-lhs-all \
+	 -Wno-unused-dummy-argument
 
 OBJECTS_LAPACK = $(addsuffix .o,$(basename $(notdir \
 	$(wildcard src/lapack/*.[fF]))))
@@ -88,7 +88,7 @@ install-user: install
 
 include make_dependencies.inc
 
-relaxation.o    : lapack.a $(wildcard src/*.fi)
+relaxation.o    : lapack.a mrxcoeff.fi mrxdims.fi mrxhash.fi mrxptrs.fi
 settings.o      : libconfort.a
 
 #################  PLIKI BINARNE  #################
