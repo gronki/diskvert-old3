@@ -13,9 +13,9 @@ LDFLAGS = -L.
 LDLIBS = -lblas
 
 FC = gfortran
-FFLAGS = -g -Wall -pedantic -O3 -march=native -mieee-fp \
-	-Warray-temporaries -Wfunction-elimination \
-	-Wrealloc-lhs-all -Wno-unused-dummy-argument
+FFLAGS = -g -Wall -pedantic -O2 -mieee-fp             \
+	 -Warray-temporaries -Wfunction-elimination   \
+	 -Wrealloc-lhs-all -Wno-unused-dummy-argument
 
 OBJECTS_LAPACK = $(addsuffix .o,$(basename $(notdir \
 	$(wildcard src/lapack/*.[fF]))))
