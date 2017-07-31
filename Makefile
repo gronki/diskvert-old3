@@ -13,10 +13,8 @@ LDFLAGS = -L.
 LDLIBS = -lblas
 
 FC = gfortran
-FFLAGS = -O2 -m64 -mtune=generic
-FFLAGS += -g -mieee-fp
-FFLAGS += -Wall -pedantic
-FFLAGS += -Warray-temporaries -Wrealloc-lhs-all -Wno-unused-dummy-argument
+FFLAGS = -g -Wall -O2 -pedantic -mieee-fp \
+         -Warray-temporaries -Wrealloc-lhs-all -Wno-unused-dummy-argument
 
 OBJECTS_LAPACK = $(addsuffix .o,$(basename $(notdir \
 	$(wildcard src/lapack/*.[fF]))))
