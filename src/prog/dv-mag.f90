@@ -117,35 +117,35 @@ contains
         character(len=2048) :: buf
         integer :: i
 
-        call mincf_get(cfg, "zeta", buf)
-        if ( cfg % not_found() )  then
+        call mincf_get(cfg, "zeta", buf, errno)
+        if ( iand(errno, mincf_not_found) .ne. 0 )  then
             error stop "Zeta parameter between 0 and 1 " &
                 & // "(key: zeta) is REQUIRED!"
         end if
         read (buf,*) zeta
 
-        call mincf_get(cfg, "alpha", buf)
-        if ( cfg % not_found() )  then
+        call mincf_get(cfg, "alpha", buf, errno)
+        if ( iand(errno, mincf_not_found) .ne. 0 )  then
             error stop "Magnetic alpha-parameter (key: alpha) is REQUIRED!"
         end if
         read (buf,*) alpha
 
-        call mincf_get(cfg, "radius", buf)
-        if ( cfg % not_found() )  then
+        call mincf_get(cfg, "radius", buf, errno)
+        if ( iand(errno, mincf_not_found) .ne. 0 )  then
             error stop "Radius (key: radius) is REQUIRED!"
         end if
         read (buf,*) radius
 
         if ( cfg_single_run ) then
 
-            call mincf_get(cfg, "rho0", buf)
-            if ( cfg % not_found() )  then
+            call mincf_get(cfg, "rho0", buf, errno)
+            if ( iand(errno, mincf_not_found) .ne. 0 )  then
                 error stop "Midplane density (key: rho0) is REQUIRED!"
             end if
             read (buf,*) rho_0_user
 
-            call mincf_get(cfg, "temp0", buf)
-            if ( cfg % not_found() )  then
+            call mincf_get(cfg, "temp0", buf, errno)
+            if ( iand(errno, mincf_not_found) .ne. 0 )  then
                 error stop "Midplane temperature (key: temp0) is REQUIRED!"
             end if
             read (buf,*) temp_0_user

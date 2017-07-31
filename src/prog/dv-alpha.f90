@@ -76,14 +76,14 @@ contains
         type(config), intent(inout) :: cfg
         character(len=2048) :: buf
 
-        call mincf_get(cfg, "alpha", buf)
-        if ( cfg % not_found() )  then
+        call mincf_get(cfg, "alpha", buf, errno)
+        if ( iand(errno, mincf_not_found) .ne. 0 )  then
             error stop "Magnetic alpha-parameter (key: alpha) is REQUIRED!"
         end if
         read (buf,*) alpha
 
-        call mincf_get(cfg, "radius", buf)
-        if ( cfg % not_found() )  then
+        call mincf_get(cfg, "radius", buf, errno)
+        if ( iand(errno, mincf_not_found) .ne. 0 )  then
             error stop "Radius (key: radius) is REQUIRED!"
         end if
         read (buf,*) radius

@@ -176,13 +176,13 @@ contains
     character(len=2048) :: buf
 
     call mincf_get(cfg, "alpha", buf)
-    if ( mincf_failed(cfg) )  then
+    if ( iand(errno, mincf_not_found) .ne. 0 )  then
       error stop "Magnetic alpha-parameter (key: alpha) is REQUIRED!"
     end if
     read (buf,*) alpha
 
     call mincf_get(cfg, "radius", buf)
-    if ( mincf_failed(cfg) )  then
+    if ( iand(errno, mincf_not_found) .ne. 0 )  then
       error stop "Radius (key: radius) is REQUIRED!"
     end if
     read (buf,*) radius

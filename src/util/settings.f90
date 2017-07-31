@@ -86,16 +86,17 @@ contains
   subroutine rdconfgl(cfg)
     use confort
     type(config) :: cfg
+    integer :: errno
     character(128) :: buf
 
-    call mincf_get(cfg, 'mbh', buf)
-    if ( mincf_failed(cfg) ) then
+    call mincf_get(cfg, 'mbh', buf, errno)
+    if ( iand(errno, mincf_not_found) .ne. 0 ) then
       error stop "Key mbh (black hole mass) is REQUIRED!"
     end if
     read (buf,*) mbh
 
-    call mincf_get(cfg, 'mdot', buf)
-    if ( mincf_failed(cfg) ) then
+    call mincf_get(cfg, 'mdot', buf, errno)
+    if ( iand(errno, mincf_not_found) .ne. 0 ) then
       error stop "Key mdot (accretion rate) is REQUIRED!"
     end if
     read (buf,*) mdot

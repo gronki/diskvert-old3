@@ -10,23 +10,38 @@ pkgconfigdir = $(libdir)/pkgconfig
 
 INCLUDE = -Ilibconfort
 LDFLAGS = -L.
-LDLIBS = -lblas
 
+# gfortran is default, although ifort is also supported
 FC = gfortran
-FFLAGS = -g -Wall -O2 -pedantic -mieee-fp \
-         -Warray-temporaries -Wrealloc-lhs-all -Wno-unused-dummy-argument
+# default flags
+FFLAGS = -g -O2 -mieee-fp
+# apply some warning flags
+ifeq ($(FC),gfortran)
+FFLAGS += -std=f2008 -Wall -pedantic
+FFLAGS += -Warray-temporaries -Wrealloc-lhs-all -Wno-unused-dummy-argument
+endif
+ifeq ($(FC),ifort)
+FFLAGS += -std08 -warn all
+endif
 
-OBJECTS_LAPACK = $(addsuffix .o,$(basename $(notdir \
-	$(wildcard src/lapack/*.[fF]))))
-
-OBJECTS_MATH = $(addsuffix .o,$(basename $(notdir \
-	$(wildcard src/math/*.[fF]90))))
-OBJECTS_LIB =  $(addsuffix .o,$(basename $(notdir \
-	$(wildcard src/*.[fF]90))))
+# objects that go into the shared library
+OBJECTS =  $(addsuffix .o,$(basename $(notdir \
+			$(wildcard src/*.[fF]90))))
+OBJECTS += $(addsuffix .o,$(basename $(notdir \
+			$(wildcard src/math/*.[fF]90))))
+# objects that are needed for binary programs only
 OBJECTS_UTIL = $(addsuffix .o,$(basename $(notdir \
-	$(wildcard src/util/*.[fF]90))))
+			$(wildcard src/util/*.[fF]90))))
 
-VPATH = src:src/util:src/prog:src/math:src/lapack
+# if using intel compiler, use the MKL instead of standard LAPACK
+ifeq ($(FC),ifort)
+LDLIBS = -mkl
+else
+LDLIBS = -llapack
+endif
+
+# search for sources in these directories
+VPATH = src:src/util:src/prog:src/math
 
 PROGRAMS = $(basename $(notdir $(wildcard src/prog/*.[fF]90)))
 BINARIES = $(addprefix bin/,$(PROGRAMS))
@@ -87,17 +102,13 @@ install-user: install
 
 include make_dependencies.inc
 
-relaxation.o    : lapack.a mrxcoeff.fi mrxdims.fi mrxhash.fi mrxptrs.fi
+relaxation.o    : mrxcoeff.fi mrxdims.fi mrxhash.fi mrxptrs.fi
 settings.o      : libconfort.a
 
 #################  PLIKI BINARNE  #################
 
-libdiskvert.so: $(OBJECTS_MATH) $(OBJECTS_LIB) lapack.a
+libdiskvert.so: $(OBJECTS)
 	$(FC) $(LDFLAGS) -shared $^ $(LDLIBS) -o $@
-
-lapack.a: $(OBJECTS_LAPACK)
-	$(AR) rcs $@ $^
-.INTERMEDIATE: $(OBJECTS_LAPACK)
 
 libconfort.a:
 	$(MAKE) -C libconfort libconfort.a
