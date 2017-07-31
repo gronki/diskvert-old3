@@ -5,7 +5,7 @@ from sys import argv
 from diskvert import col2python
 
 d0,p0 = col2python('MCFK.dat')
-d1,p1 = col2python('MDFK.dat')
+d1,p1 = col2python('MDFX.dat')
 
 name = argv[1]
 
@@ -25,7 +25,6 @@ for f in frames:
     axes[1].set_ylim(1e-8,1)
 
     d,p = col2python('{n}.dat[{f}]'.format(f = f, n = name))
-    #axes[0].plot(d['h'], d['trad'], label = 'relax (rad)', color='#E80F0F')
     axes[0].plot(d['h'], d['temp'], label = 'relax', color='#363636')
     axes[1].plot(d['h'], d['rho'], label = 'relax', color='#363636')
 
