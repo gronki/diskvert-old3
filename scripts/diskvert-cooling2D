@@ -85,7 +85,8 @@ tlim_hi = args.logT_max
 kram_abs_0 = info.kappa_abs_0
 kappa_es = info.kappa_es
 
-print u'Stała w przybliżeniu Kramersa: %.3e' % kram_abs_0
+print u'Stała w przybliżeniu Kramersa: {:.3e}'.format(kram_abs_0)\
+        .encode('utf-8')
 
 def kappa(rho,temp):
     return kram_abs_0 * rho * temp**(-3.5)
