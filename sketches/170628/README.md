@@ -1,0 +1,1 @@
+Jakieśtam, rzekomo lepsze, przybliżenie scatteringu na elektronach, uwzględniające ultrarelatywistyczne zmniejszenie przekroju czynnego (przybliżenie formuły Kleina-Nishiny) oraz degenerację (nas nie dotyczy).
