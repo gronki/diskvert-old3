@@ -263,7 +263,7 @@ for balance, bilfull, magnetic, conduction in choices:
         sdyf = (T_gas + T_rad) * (T_gas**2 + T_rad**2)
         ssct = 4 * kboltz * T_rad**4 / ( m_el * c**2 )
         radcool = 4 * sigma * rho * (T_gas - T_rad) \
-            * (kabs * (sdyf if bilfull else 4 * T_rad**3) + ksct * ssct)
+            * (kabs * (sdyf if bilfull else 0) + ksct * ssct)
 
         if conduction:
             eq1ord.append(radcool - Derivative(F_rad,z))
