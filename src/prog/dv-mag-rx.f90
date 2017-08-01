@@ -244,6 +244,13 @@ program dv_mag_relax
 
   write (uerr,*) '--- DONE'
 
+  !----------------------------------------------------------------------------!
+
+  call mktaues(x,y_rho,y_temp,tau)
+  call deriv(x, y_frad, d_frad)
+
+  !----------------------------------------------------------------------------!
+
   open(33, file = trim(outfn) // '.dat', action = 'write')
   call saveresult(33)
   close(33)
@@ -254,7 +261,7 @@ program dv_mag_relax
   write (upar, fmparfc) "alpha", alpha, "Alpha parameter"
   write (upar, fmparfc) "zeta", zeta, "Zeta parameter"
   write (upar, fmpare) "radius", radius
-  write (upar, fmpare) "zscale", fzscale(mbh,mdot,radius)
+  write (upar, fmpare) "zscale", zscale
   write (upar, fmparec) "rho_0", rhoc, "Central density"
   write (upar, fmparec) "temp_0", Tc, "Central gas temperature"
   write (upar, fmparec) "Hdisk", Hdisk, "Disk height [cm]"
@@ -265,6 +272,28 @@ program dv_mag_relax
         & (cfg_temperature_method == EQUATION_BALANCE)
   write (upar, fmparl) "has_magnetic", .TRUE.
   write (upar, fmparl) "has_conduction", .FALSE.
+
+  !----------------------------------------------------------------------------!
+
+  if (cfg_temperature_method .ne. EQUATION_DIFFUSION) then
+    write (upar, fmhdr)  "Corona properties"
+    coronal_properties : block
+      use slf_interpol
+      real(dp) :: zcor, taucor, frad_disk
+      call findtempmin(x,y_temp,zcor)
+      write (upar,fmparec) "zcor", zcor, "height of temperature minimum [cm]"
+      write (upar,fmparfc) "hcor", zcor / zscale, "height of temperature minimum [cm]"
+      call interpol(x,tau,zcor,taucor)
+      write (upar,fmparf) "taucor", taucor
+      call interpol(x,y_frad,zcor,frad_disk)
+      write (upar,fmpare) "frad_disk", frad_disk
+      write (upar,fmpare) "frad_cor", y_frad(ngrid) - frad_disk
+      write (upar,fmparfc) "chicor", 1 - frad_disk / y_frad(ngrid), &
+      & "relative amount of radiative flux released in the corona"
+    end block coronal_properties
+  end if
+
+  !----------------------------------------------------------------------------!
 
   open(35, file = trim(outfn) // ".col", action = 'write')
   write(35, fmcol) 'i', 'i4'
@@ -298,6 +327,8 @@ contains
     character(256) :: fn
     write (fn,'(A,".",I0.3,".dat")') trim(outfn),iter
     open(33, file = trim(fn), action = 'write')
+    call mktaues(x,y_rho,y_temp,tau)
+    call deriv(x, y_frad, d_frad)
     call saveresult(33)
     close(33)
   end subroutine
@@ -306,8 +337,7 @@ contains
     integer, intent(in) :: u
     real(r64) :: pgas, prad
     integer :: i
-    call mktaues(x,y_rho,y_temp,tau)
-    call deriv(x, y_frad, d_frad)
+
 
     do i = 1,ngrid
       pgas =  cgs_k_over_mh / miu * y_rho(i) * y_temp(i)
@@ -318,6 +348,29 @@ contains
       fkcnd(y_rho(i), y_temp(i)), &
       pgas, prad, y_pmag(i), pgas / y_pmag(i), d_frad(i)
     end do
+  end subroutine
+
+  !----------------------------------------------------------------------------!
+  ! searches for temperature minimum in a given array
+  subroutine findtempmin(x,temp,xtmin)
+    real(dp), intent(in), dimension(:) :: x,temp
+    real(dp), intent(out) :: xtmin
+    real(dp), dimension(size(x)-1) :: dtemp,xm
+    integer :: i
+
+    do i = 1, size(x)-1
+      xm(i) = (x(i) + x(i+1)) / 2
+      dtemp(i) = temp(i+1) - temp(i)
+    end do
+
+    xtmin = 0
+    search_for_minimum : do i = 1,size(dtemp) - 1
+      if (dtemp(i) .le. 0 .and. dtemp(i+1) .ge. 0) then
+        xtmin = (dtemp(i+1)*xm(i) - dtemp(i)*xm(i+1)) / (dtemp(i+1) - dtemp(i))
+        exit search_for_minimum
+      end if
+    end do search_for_minimum
+
   end subroutine
 
   !----------------------------------------------------------------------------!

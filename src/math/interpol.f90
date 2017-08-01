@@ -23,8 +23,7 @@ contains
         do i=1,n
             if (i .gt. 1) then
                 if ( control * (x_in(i)-x_in(i-1)) .le. 0 ) then
-                    write (0,*) 'interpol: x-axis points should be either in ascending or descending order'
-                    return
+                    error stop 'interpol: x-axis points should be either in ascending or descending order'
                 endif
             endif
             if ( (abs(x_in(i)-x_out) .lt. abs(t)) .or. (i .eq. 1) ) then

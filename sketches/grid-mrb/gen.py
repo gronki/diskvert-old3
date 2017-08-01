@@ -1,16 +1,6 @@
 from multiprocessing import cpu_count
 import numpy as np
 
-F = """#output {fn}
-mbh {mbh:.5e}
-mdot {mdot:.5e}
-radius {radius:.5e}
-alpha {alpha:.5e}
-zeta {zeta:.5e}
-# beta = {beta:.5e}
-"""
-
-
 nmdot = 5
 nbeta = 18
 nrad = 36
@@ -33,4 +23,5 @@ for imdot,mdot in izip(np.logspace(-3,-1,nmdot)):
                 f.write(fmt.format('alpha',alpha))
                 f.write(fmt.format('zeta',zeta))
                 f.write(fmtc.format('beta',beta))
+
 print "generated {} files".format(nmdot*nbeta*nrad)
