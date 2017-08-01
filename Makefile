@@ -17,11 +17,11 @@ FC = gfortran
 FFLAGS = -g -O2 -mieee-fp
 # apply some warning flags
 ifeq ($(FC),gfortran)
-FFLAGS += -std=f2008 -Wall -pedantic
-FFLAGS += -Warray-temporaries -Wrealloc-lhs-all -Wno-unused-dummy-argument
+FFLAGS += -Wall -Wno-unused-dummy-argument -pedantic
+FFLAGS += -Warray-temporaries -Wrealloc-lhs-all
 endif
 ifeq ($(FC),ifort)
-FFLAGS += -std08 -warn all
+FFLAGS += -warn all
 endif
 
 # objects that go into the shared library
