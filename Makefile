@@ -1,4 +1,6 @@
-VERSION = 170704
+VERSION = 170802
+
+#------------------------------------------------------------------------------#
 
 prefix = /usr/local
 bindir = $(prefix)/bin
@@ -8,8 +10,12 @@ libdir = $(prefix)/lib
 fmoddir = $(libdir)/gfortran/modules
 pkgconfigdir = $(libdir)/pkgconfig
 
+#------------------------------------------------------------------------------#
+
 INCLUDE = -Ilibconfort
 LDFLAGS = -L.
+
+#------------------------------------------------------------------------------#
 
 # gfortran is default, although ifort is also supported
 FC = gfortran
@@ -24,31 +30,46 @@ ifeq ($(FC),ifort)
 FFLAGS += -warn all
 endif
 
+#------------------------------------------------------------------------------#
+
+# search for sources in these directories
+VPATH = src:src/util:src/prog:src/math
+
 # objects that go into the shared library
 OBJECTS =  $(addsuffix .o,$(basename $(notdir \
 			$(wildcard src/*.[fF]90))))
+# various math utilities
 OBJECTS += $(addsuffix .o,$(basename $(notdir \
 			$(wildcard src/math/*.[fF]90))))
 # objects that are needed for binary programs only
 OBJECTS_UTIL = $(addsuffix .o,$(basename $(notdir \
 			$(wildcard src/util/*.[fF]90))))
 
+#------------------------------------------------------------------------------#
+
 # if using intel compiler, use the MKL instead of standard LAPACK
 ifeq ($(FC),ifort)
-LDLIBS = -mkl
+LDLIBS += -mkl
 else
-LDLIBS = -llapack
+# openblas is much faster than standard BLAS and allows
+# parallel processing, just like ifort and MKL
+LDLIBS += -lopenblas
+# compile lapack from source. for unknown reasons, this works faster on PSK
+OBJECTS += $(addsuffix .o,$(basename $(notdir \
+			$(wildcard src/lapack/*.[fF]))))
+VPATH := $(VPATH):src/lapack
 endif
 
-# search for sources in these directories
-VPATH = src:src/util:src/prog:src/math
+#------------------------------------------------------------------------------#
 
 PROGRAMS = $(basename $(notdir $(wildcard src/prog/*.[fF]90)))
 BINARIES = $(addprefix bin/,$(PROGRAMS))
 
+#------------------------------------------------------------------------------#
+
 all: $(BINARIES) libdiskvert.so
 
-#################  INSTALACJA  #################
+#------------------------------------------------------------------------------#
 
 install: all
 	install -d $(libdir)
@@ -88,8 +109,7 @@ install: all
 install-user: prefix = $(HOME)/.local
 install-user: install
 
-
-#################  PLIKI OBIEKTOW  #################
+#------------------------------------------------------------------------------#
 
 %.o %.mod: %.F90
 	$(FC) $(INCLUDE) $(FFLAGS) $(CPPFLAGS) -c -fPIC $< -o $@
@@ -105,7 +125,7 @@ include make_dependencies.inc
 relaxation.o    : mrxcoeff.fi mrxdims.fi mrxhash.fi mrxptrs.fi
 settings.o      : libconfort.a
 
-#################  PLIKI BINARNE  #################
+#------------------------------------------------------------------------------#
 
 libdiskvert.so: $(OBJECTS)
 	$(FC) $(LDFLAGS) -shared $^ $(LDLIBS) -o $@
@@ -114,20 +134,20 @@ libconfort.a:
 	$(MAKE) -C libconfort libconfort.a
 	ln -sf libconfort/libconfort.a $@
 
+#------------------------------------------------------------------------------#
+
 bin:
 	mkdir -p $@
 
 $(BINARIES): bin/%: $(OBJECTS_UTIL) %.o libconfort.a | libdiskvert.so bin
 	$(FC) $(LDFLAGS) $^ -ldiskvert $(LDLIBS) -o $@
 
-#################  PAKOWANIE  #################
+#------------------------------------------------------------------------------#
 
 dist: distclean
 	tar czfv pydiskvert-$(VERSION).tar.gz 				\
 		$(shell git ls-files --exclude-standard)  	\
 		--transform "s/^/pydiskvert-$(VERSION)\//"
-
-#################  SPRZATANIE  #################
 
 clean:
 	$(RM) *.mod *.smod *.a *.o diskvert/*.pyc generate_coefficients/*.pyc
