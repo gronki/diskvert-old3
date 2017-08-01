@@ -1,12 +1,10 @@
-#!/usr/bin/env bash
-##PBS -N diskvert
-##PBS -q short
-##PBS -l walltime=1:0:0,mem=512MB
-##PBS -o out 
-##PBS -e err 
+#!/bin/bash
+#PBS -q short
+#PBS -l walltime=1:0:0,mem=512MB
+#PBS -o out 
+#PBS -e err 
 
-. /work/psk/gronki/environment.sh
+. environment.sh
 
 cd $PBS_O_WORKDIR
 bash job.sh $(head -n $PBS_ARRAYID jobs.txt | tail -1)
-
