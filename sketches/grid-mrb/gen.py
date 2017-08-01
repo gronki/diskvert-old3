@@ -5,6 +5,7 @@ nmdot = 5
 nbeta = 18
 nrad = 36
 alpha = 0.01
+alpha = 0.007
 
 izip = lambda x: zip(range(len(x)),x)
 

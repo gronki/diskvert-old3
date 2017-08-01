@@ -269,7 +269,7 @@ program dv_mag_relax
   write (upar, fmpari) "model", model
   write (upar, fmpari) "niter", nitert
   write (upar, fmparl) "has_corona", &
-        & (cfg_temperature_method == EQUATION_BALANCE)
+        & (cfg_temperature_method .ne. EQUATION_DIFFUSION)
   write (upar, fmparl) "has_magnetic", .TRUE.
   write (upar, fmparl) "has_conduction", .FALSE.
 
@@ -282,7 +282,7 @@ program dv_mag_relax
       real(dp) :: zcor, taucor, frad_disk
       call findtempmin(x,y_temp,zcor)
       write (upar,fmparec) "zcor", zcor, "height of temperature minimum [cm]"
-      write (upar,fmparfc) "hcor", zcor / zscale, "height of temperature minimum [cm]"
+      write (upar,fmparfc) "hcor", zcor / zscale, "height of temperature minimum [H]"
       call interpol(x,tau,zcor,taucor)
       write (upar,fmparf) "taucor", taucor
       call interpol(x,y_frad,zcor,frad_disk)
