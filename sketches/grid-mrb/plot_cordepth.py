@@ -10,7 +10,7 @@ ibet = 3
 def radial(im,ir,ib):
     d = np.zeros((3,len(ir)))
     for i in ir:
-        fn = 'M{0:03d}R{1:03d}B{2:03d}W.txt'.format(im,i,ib)
+        fn = 'M{0:02d}R{1:02d}B{2:02d}W.txt'.format(im,i,ib)
         p = pyminiconf.pyminiconf(open(fn,'r'))
         d[:,i-1] = [p.radius, p.taucor, p.chicor]
     return d

@@ -1,10 +1,14 @@
 #!/bin/bash
+#PBS -N diskvert
 #PBS -q short
-#PBS -l walltime=1:0:0,mem=512MB
-#PBS -o out 
-#PBS -e err 
+#PBS -l walltime=0:30:0
+#PBS -l mem=700MB
+#PBS -o stdout 
+#PBS -e stderr 
 
-. environment.sh
+export PATH="/work/psk/gronki/bin:$PATH"
+export LD_LIBRARY_PATH="/work/psk/gronki/lib:$LD_LIBRARY_PATH"
 
 cd $PBS_O_WORKDIR
-bash job.sh $(head -n $PBS_ARRAYID jobs.txt | tail -1)
+bash job.sh $(head -n $PBS_ARRAYID jobs.lst | tail -1)
+
