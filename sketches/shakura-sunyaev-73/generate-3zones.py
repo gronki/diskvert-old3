@@ -5,18 +5,13 @@ from sympy import symbols, Symbol, Rational, Number, log as sympy_log, \
     sqrt as sympy_sqrt, Function
 from diskvert.cgs import *
 
-opacities_as_symbols = True
-
 mbh, mdot, r, alpha = symbols('mbh mdot r alpha', real = True, positive = True)
 
 logY_all = list()
 eqstream = list()
 
-if opacities_as_symbols:
-    kappa_es, kappa_ff = symbols('cgs_kapes kappa_ff', real = True, positive = True)
-else:
-    kappa_es = cgs_kapes
-    kappa_ff = 6.13e22
+kappa_es, kappa_abs_0 = symbols('cgs_kapes kappa_abs_0',
+    real = True, positive = True)
 
 ff = Function('f')
 
@@ -34,7 +29,7 @@ for region in [1,2,3]:
     P1 = 4 * cgs_stef / (3 * cgs_c) * T**4
     P23 = 2 * cgs_boltz * rho * T / cgs_mhydr
     kap12 = kappa_es
-    kap3 = kappa_ff * rho * T**Rational(-7,2)
+    kap3 = kappa_abs_0 * rho * T**Rational(-7,2)
 
     # in regions 1,2 electron scattering opacity, else free-free
     kap = kap3 if region == 3 else kap12
@@ -95,15 +90,15 @@ for x in solveset(eq.replace(sympy_log(r), temp),temp):
     eqstream.append(Eq(r12, sympy_exp(x.subs(f,ff(r12)))))
 
 # przejscie 2->3
-eq = nsimplify(logY_all[1][0]) - Rational(7,2) * nsimplify(logY_all[1][1]) - sympy_log( kappa_es / kappa_ff )
+eq = nsimplify(logY_all[1][0]) - Rational(7,2) * nsimplify(logY_all[1][1]) - sympy_log( kappa_es / kappa_abs_0 )
 for x in solveset(eq.replace(sympy_log(r), temp),temp):
     eqstream.append(Eq(r23, sympy_exp(x.subs(f,ff(r23)))))
 
-with open('wzory_przyblizone.py','w') as f:
+with open('3zones.py','w') as f:
     for eq in eqstream:
         f.write("{} = {}\n".format(eq.lhs, eq.rhs.evalf(5)))
 
-with open('wzory_przyblizone.f90','w') as f:
+with open('3zones.f90','w') as f:
     for eq in eqstream:
         f.write(fcode(eq.rhs.evalf(5), eq.lhs, standard = 2008,
             source_format = 'free', contract = False, user_functions = {'f': 'f'}) + "\n")

@@ -21,7 +21,7 @@ def regenerate_coefficient_routine():
         source_format = 'free', standard = 2008)
 
     srcfn = 'coeff.f90'
-    libfn = 'coeff.so'
+    libfn = './coeff.so'
 
     with open(srcfn,'w') as f:
         f.write("subroutine coeffs(mbh,mdot,r,alpha,rho,T,H,A,M) bind(C)\n" \
@@ -33,7 +33,7 @@ def regenerate_coefficient_routine():
                 M = ffcode(MatrixSymbol('M',3,3), M.evalf(7)),
         ))
 
-    call("f95 -g -pipe -O3 -mieee-fp -shared -fPIC {s} -o {l}".format(
+    call("gfortran -g -O2 -mieee-fp -shared -fPIC {s} -o {l}".format(
         s = srcfn, l = libfn,
     ).split())
 

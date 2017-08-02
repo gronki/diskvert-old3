@@ -13,7 +13,7 @@ calc_r123 = calc_r123_old if model == 'old' else calc_r123_new
 calc_rTH = calc_rTH_old if model == 'old' else calc_rTH_new
 
 r12,r23 = calc_r123(mbh,mdot,alpha)
-r = np.logspace(np.log10(3.05),np.log10(10*r23),2**10)
+r = np.logspace(np.log10(3.05),np.log10(r23**1.5),2048)
 (rho1, rho2, rho3), (T1, T2, T3), (H1, H2, H3) \
     = calc_rTH(mbh,mdot,r,alpha)
 
@@ -26,13 +26,13 @@ Ti = np.array(Tg)
 Hi = np.array(Hg)
 
 def ramp_smooth(it, niter, ramp0 = 0):
-    t = np.clip(it / (niter - 1.0), 0, 1)
+    t = np.clip((it + 1.0) / niter, 0, 1)
     return ramp0 + (1 - ramp0) * (3 * t**2 - 2 * t**3)
 
 from coefficients import compcoeffs
 
 for it in range(16):
-    rmp = ramp_smooth(it,12,0.02)
+    rmp = ramp_smooth(it,16,0.05)
     for i in range(len(r)):
         A = np.ndarray(3, order = 'F')
         M = np.ndarray((3,3), order = 'F')
@@ -50,14 +50,14 @@ Ai1,Ai2,Ai3 = fun(mbh,mdot,r,alpha,rhoi,Ti,Hi)
 
 mplrc('font', family = 'serif', size = 10)
 
-fig, axes = plt.subplots(2, 4, figsize = (12, 6.75))
+fig, axes = plt.subplots(2, 4, figsize = (18, 9), dpi = 118)
 fig.subplots_adjust(
-    left    = 0.08,
-    bottom  = 0.10,
-    right   = 0.95,
-    top     = 0.93,
-    wspace  = 0.44,
-    hspace  = 0.41,
+    left    = 0.06,
+    bottom  = 0.09,
+    right   = 0.97,
+    top     = 0.92,
+    wspace  = 0.25,
+    hspace  = 0.25,
 )
 
 colors = [ '#D56323', '#47C930', '#3670B5' ]
@@ -129,5 +129,5 @@ betarad = lambda rho,T: (cgs_a / 3 * T**4) / (2 * cgs_boltz * rho * T / cgs_mhyd
 ax.plot(r, betarad(rhog,Tg), color = color_g)
 ax.plot(r, betarad(rhoi,Ti), color = color_i)
 
-plt.savefig('porown_{}.pdf'.format(model))
+plt.savefig('porown_{}.png'.format(model))
 plt.show()

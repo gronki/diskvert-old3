@@ -1,12 +1,12 @@
 from diskvert.cgs import *
 import numpy as np
 
-mbh = 1e8
+mbh = 1e9
 mdot = 0.1
-alpha = 0.3
+alpha = 0.01
 
-kappa_ff = 6.13e22
-kappa = lambda rho,T: cgs_kapes + kappa_ff * rho * T**(-3.5)
+kappa_abs_0 = 6.13e22
+kappa = lambda rho,T: cgs_kapes + kappa_abs_0 * rho * T**(-3.5)
 P = lambda rho,T: 2 * cgs_boltz * rho * T / cgs_mhydr + cgs_a / 3 * T**4
 
 def fun(mbh,mdot,r,alpha,rho,T,H):
@@ -44,11 +44,11 @@ def calc_rTH_old(mbh,mdot,r,alpha):
 
 def calc_r123_new(mbh,mdot,alpha):
     r12 = 164.17*alpha**0.095238*cgs_kapes**0.85714*mbh**0.095238*mdot**0.7619*1**0.7619
-    r23 = 5.0556e+19*cgs_kapes**1.3333*kappa_ff**(-0.66667)*mdot**0.66667*1**0.66667
+    r23 = 5.0556e+19*cgs_kapes**1.3333*kappa_abs_0**(-0.66667)*mdot**0.66667*1**0.66667
     f = lambda r: 1 - sqrt(3/r) if r > 3 else 0
     for i in range(4):
         r12 = 164.17*alpha**0.095238*cgs_kapes**0.85714*mbh**0.095238*mdot**0.7619*f(r12)**0.7619
-        r23 = 5.0556e+19*cgs_kapes**1.3333*kappa_ff**(-0.66667)*mdot**0.66667*f(r23)**0.66667
+        r23 = 5.0556e+19*cgs_kapes**1.3333*kappa_abs_0**(-0.66667)*mdot**0.66667*f(r23)**0.66667
     return r12, r23
 
 def calc_rTH_new(mbh,mdot,r,alpha):
@@ -60,8 +60,8 @@ def calc_rTH_new(mbh,mdot,r,alpha):
     rho2 = 21.921*alpha**(-0.7)*cgs_kapes**(-0.3)*mbh**(-0.7)*mdot**0.4*r**(-1.65)*f(r)**0.4
     T2 = 6.7232e+8*alpha**(-0.2)*cgs_kapes**0.2*mbh**(-0.2)*mdot**0.4*r**(-0.9)*f(r)**0.4
     H2 = 4639.5*alpha**(-0.1)*cgs_kapes**0.1*mbh**0.9*mdot**0.2*r**1.05*f(r)**0.2
-    rho3 = 5.9458e+5*alpha**(-0.7)*kappa_ff**(-0.15)*mbh**(-0.7)*mdot**0.55*r**(-1.875)*f(r)**0.55
-    T3 = 7.4475e+5*alpha**(-0.2)*kappa_ff**0.1*mbh**(-0.2)*mdot**0.3*r**(-0.75)*f(r)**0.3
-    H3 = 154.42*alpha**(-0.1)*kappa_ff**0.05*mbh**0.9*mdot**0.15*r**1.125*f(r)**0.15
+    rho3 = 5.9458e+5*alpha**(-0.7)*kappa_abs_0**(-0.15)*mbh**(-0.7)*mdot**0.55*r**(-1.875)*f(r)**0.55
+    T3 = 7.4475e+5*alpha**(-0.2)*kappa_abs_0**0.1*mbh**(-0.2)*mdot**0.3*r**(-0.75)*f(r)**0.3
+    H3 = 154.42*alpha**(-0.1)*kappa_abs_0**0.05*mbh**0.9*mdot**0.15*r**1.125*f(r)**0.15
 
     return [ (rho1, rho2, rho3), (T1, T2, T3), (H1, H2, H3) ]
