@@ -421,7 +421,7 @@ for balance, bilfull, magnetic, conduction in choices:
     fswptrs.write ('  fbr  => {}\n'      \
         .format('mrx_coeffbr_' + model_name if nbr > 0 else 'NULL()'))
     # fswptrs.write('  fout => mrx_output_{}\n'.format(model_name))
-    # fswptrs.write('  fout => mrx_output_{}\n'.format(model_name))
+    # fswptrs.write('  fout => mrx_heat_{}\n'.format(model_name))
 # XXX
     fswdims.write ('  ny   = {}\n'.format(ny))
     fswdims.write ('  neq0 = {}\n'.format(neq0))
