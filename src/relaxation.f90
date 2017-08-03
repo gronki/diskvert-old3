@@ -9,7 +9,7 @@ module relaxation
 
   implicit none
 
-  abstract interface
+  interface
     pure subroutine funout_t(z, Y, F, YY)
       import r64
       real(r64), intent(in) :: z
@@ -41,17 +41,16 @@ module relaxation
       real(r64), intent(out), dimension(:) :: A
       real(r64), intent(out), dimension(:,:) :: MY,MD,MD2
     end subroutine
+    pure subroutine fheat_t(z,Y,heat)
+      import r64
+      real(r64), intent(in) :: z
+      real(r64), dimension(:), intent(in) :: Y
+      real(r64), intent(out) :: heat
+    end subroutine
   end interface
 
   real(r64) :: alpha = 0, zeta = 0
   real(r64) :: omega, radius, facc, teff, zscale
-
-  ! integer, parameter :: c_rho = 1, c_Tgas = 2, c_Trad = 3, &
-  ! & c_Frad = 4, c_Pmag = 5, c_Fcond = 6, c_taues = 7
-
-  character(4), dimension(*), parameter :: labels = ['rho ', 'trad', 'tgas', &
-      'heat', 'frad', 'fmag', 'fcnd', 'ftot', 'ksct', 'kabs', 'kcnd', &
-      'pgas', 'prad', 'pmag', 'ptot', 'beta']
 
 contains
 
@@ -254,15 +253,19 @@ contains
     if (present(y0)) y = y0 + (1 - y0) * y
   end function
 
-  ! this is a very smooth, s-shaped ramp
-  ! slow convergence but good if we are away from the solution
+  ! this is a very smooth ramp where you can control the starting
+  ! level as well as slope of the starting point. It may be applied
+  ! for very unstable equations (A = 0, B = 0) or for a very quick
+  ! convergence (A = 0.25, B = 1)
   elemental function ramp4(i,n,A,B) result(y)
     integer, intent(in) :: i,n
     real(r64), intent(in) :: A,B
     real(r64) :: x,y
     x = merge(real(i) / n, 1.0, i .le. n)
-    y = A + B*x*(-A + 1) + x**4*(A*B - 3*A - B + 3) &
-      + x**3*(-3*A*B + 8*A + 3*B - 8) + x**2*(3*A*B - 6*A - 3*B + 6)
+    y = A + (1 - A) * B * x           &
+      + 3 * (A - 1) * (B - 2) * x**2  &
+      - (A - 1) * (3*B - 8) * x**3    &
+      + (A - 1) * (B - 3) * x**4
   end function
 
   !----------------------------------------------------------------------------!

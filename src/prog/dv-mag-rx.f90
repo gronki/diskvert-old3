@@ -19,16 +19,42 @@ program dv_mag_relax
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0
   integer, dimension(3) :: niter = [ 24, 8, 48 ]
-  real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:)
+  real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:), YY(:,:)
+  real(dp), pointer :: yv(:,:)
   integer, dimension(:), allocatable :: ipiv
   logical, dimension(:), allocatable :: errmask
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, y_pmag, y_Trad
-  real(dp), allocatable, dimension(:) :: tau, d_frad
+  real(dp), allocatable, dimension(:) :: tau, heat
   real(dp) :: rhoc, Tc, Hdisk, err, err0, ramp
   character(*), parameter :: fmiter = '(I5,2X,ES9.2,2X,F5.1,"%")'
   logical :: user_ff, user_bf
   integer, dimension(6) :: c_
   integer, parameter :: upar = 92
+  procedure (fheat_t), pointer :: fheat
+
+  integer, parameter :: ncols = 16
+  integer, parameter :: c_rho = 1, c_temp = 2, c_trad = 3, c_pgas = 4, &
+      c_prad = 5, c_pmag = 6, c_heat = 7, c_frad = 8, c_fmag = 9, &
+      c_fcnd = 10, c_ksct = 11, c_kabs = 12, c_kcnd = 13, c_tau = 14, &
+      c_taues = 15, c_tauth = 16
+  character(8), dimension(ncols) :: labels
+
+  labels(c_rho) = 'rho'
+  labels(c_temp) = 'temp'
+  labels(c_trad) = 'trad'
+  labels(c_pgas) = 'pgas'
+  labels(c_prad) = 'prad'
+  labels(c_pmag) = 'pmag'
+  labels(c_heat) = 'heat'
+  labels(c_frad) = 'frad'
+  labels(c_fmag) = 'fmag'
+  labels(c_fcnd) = 'fcnd'
+  labels(c_ksct) = 'ksct'
+  labels(c_kabs) = 'kabs'
+  labels(c_kcnd) = 'kcnd'
+  labels(c_tau) = 'tau'
+  labels(c_taues) = 'taues'
+  labels(c_tauth) = 'tauth'
 
   !----------------------------------------------------------------------------!
 
@@ -60,7 +86,7 @@ program dv_mag_relax
   call mrx_sel_nvar(model, ny)
   call mrx_sel_hash(model, C_)
 
-  allocate( x(ngrid), x0(ngrid), Y(ny*ngrid), dY(ny*ngrid),  M(ny*ngrid,ny*ngrid), tau(ngrid), d_frad(ngrid) )
+  allocate( x(ngrid), x0(ngrid), Y(ny*ngrid), dY(ny*ngrid),  M(ny*ngrid,ny*ngrid), tau(ngrid), heat(ngrid), YY(24,ngrid) )
   allocate(errmask(ny*ngrid), ipiv(ny*ngrid))
 
   !----------------------------------------------------------------------------!
@@ -80,6 +106,7 @@ program dv_mag_relax
   y_trad  => Y(C_(3)::ny)
   y_frad  => Y(C_(4)::ny)
   y_pmag  => Y(C_(5)::ny)
+  YV(1:ny,1:ngrid) => Y
 
   !----------------------------------------------------------------------------!
 
@@ -192,11 +219,12 @@ program dv_mag_relax
     y_trad  => Y(C_(3)::ny)
     y_frad  => Y(C_(4)::ny)
     y_pmag  => Y(C_(5)::ny)
+    YV(1:ny,1:ngrid) => Y
 
-    call deriv(x, y_frad, d_frad)
+    call deriv(x, y_frad, heat)
 
     forall (i = 1:ngrid)
-      y_temp(i) = d_frad(i) * (cgs_mel * cgs_c**2) &
+      y_temp(i) = heat(i) * (cgs_mel * cgs_c**2) &
             & / (16 * cgs_boltz * (cgs_kapes*y_rho(i)) &
             & * (cgs_stef*y_trad(i)**4) )
       y_temp(i) = sqrt(y_temp(i)**2 + y_trad(i)**2)
@@ -246,8 +274,10 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
 
-  call mktaues(x,y_rho,y_temp,tau)
-  call deriv(x, y_frad, d_frad)
+  call mrx_sel_fheat(model, fheat)
+  do i = 1,ngrid
+    call fheat(x(i), yv(:,i), heat(i))
+  end do
 
   !----------------------------------------------------------------------------!
 
@@ -316,7 +346,7 @@ program dv_mag_relax
 
   close(upar)
 
-  deallocate(x,x0,Y,M,dY,tau,d_frad,errmask,ipiv)
+  deallocate(x,x0,Y,M,dY,tau,heat,errmask,ipiv,yy)
 
 contains
 
@@ -328,7 +358,7 @@ contains
     write (fn,'(A,".",I0.3,".dat")') trim(outfn),iter
     open(33, file = trim(fn), action = 'write')
     call mktaues(x,y_rho,y_temp,tau)
-    call deriv(x, y_frad, d_frad)
+    call deriv(x, y_frad, heat)
     call saveresult(33)
     close(33)
   end subroutine
@@ -346,7 +376,7 @@ contains
       y_rho(i), y_temp(i), y_trad(i), y_frad(i),  &
       fksct(y_rho(i), y_temp(i)), fkabs(y_rho(i), y_temp(i)), &
       fkcnd(y_rho(i), y_temp(i)), &
-      pgas, prad, y_pmag(i), pgas / y_pmag(i), d_frad(i)
+      pgas, prad, y_pmag(i), pgas / y_pmag(i), heat(i)
     end do
   end subroutine
 

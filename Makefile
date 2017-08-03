@@ -53,7 +53,7 @@ LDLIBS += -mkl
 else
 # openblas is much faster than standard BLAS and allows
 # parallel processing, just like ifort and MKL
-LDLIBS += -lopenblas
+LDLIBS += -lopenblaso
 # compile lapack from source. for unknown reasons, this works faster on PSK
 OBJECTS += $(addsuffix .o,$(basename $(notdir \
 			$(wildcard src/lapack/*.[fF]))))

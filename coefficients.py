@@ -51,29 +51,19 @@ class F90CodePrinter(FCodePrinter):
         settings['source_format'] = 'free'
         settings['standard'] = 2008
         super(F90CodePrinter, self).__init__(settings)
-        self._relationals['!='] = '.ne.'
-        self._relationals['=='] = '.eq.'
-        self._relationals['>='] = '.ge.'
-        self._relationals['>'] = '.gt.'
-        self._relationals['<='] = '.le.'
-        self._relationals['<'] = '.lt.'
-        self._relationals['&&'] = '.and.'
-        self._relationals['||'] = '.or.'
-        self._relationals['!'] = '.not.'
-        self._lead_cont = ' '*3 + '&' + ' '*3
 
     def _print_MatrixElement(self, expr):
         if expr.parent.shape[1] <= 1:
             return "{0}({1})".format(expr.parent, expr.i + 1)
         return "{0}({1},{2})".format(expr.parent, expr.i + 1, expr.j + 1)
 
-fprinter = F90CodePrinter({'source_format':'free', 'standard':2008})
+fprinter = F90CodePrinter()
 
 #------------------------------------------------------------------------------#
 
 fcoeff = open('src/mrxcoeff.fi','w')
 
-fsub_coeff = """pure subroutine {name}_eq1 (z,Y,D,F,A,MY,MD)
+fsub_coeff = """pure subroutine mrx_coeff1_{name} (z,Y,D,F,A,MY,MD)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -87,7 +77,7 @@ real(dp), dimension(:), intent(out) :: A
 real(dp), dimension(:,:), intent(out) :: MY, MD
 {A}\n{MY}\n{MD}\nend subroutine\n\n"""
 
-fsub_bound = """pure subroutine {name}_{lr} (z,Y,F,B,MB)
+fsub_bound = """pure subroutine mrx_coeff{lr}_{name} (z,Y,F,B,MB)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -97,7 +87,7 @@ real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
 {B}\n{MB}\nend subroutine\n\n"""
 
-fsub_constr = """pure subroutine {name}_eq0 (z,Y,F,C,MC)
+fsub_constr = """pure subroutine mrx_coeff0_{name} (z,Y,F,C,MC)
 use iso_fortran_env, only: dp => real64
 implicit none
 real(dp), intent(in) :: z
@@ -107,14 +97,14 @@ real(dp), dimension(:), intent(out) :: C
 real(dp), dimension(:,:), intent(out) :: MC
 {B}\n{MB}\nend subroutine\n\n"""
 
-fsub_yout = """pure subroutine {name}_out (z,Y,F,YY)
-use iso_fortran_env, only: dp => real64
-implicit none
-real(dp), intent(in) :: z
-real(dp), dimension(:), intent(in) :: Y
-real(dp), dimension(:,:), intent(in) :: F
-real(dp), dimension(:), intent(out) :: YY
-{YY}\nend subroutine\n\n"""
+# fsub_yout = """pure subroutine mrx_output_{name} (z,Y,F,YY)
+# use iso_fortran_env, only: dp => real64
+# implicit none
+# real(dp), intent(in) :: z
+# real(dp), dimension(:), intent(in) :: Y
+# real(dp), dimension(:,:), intent(in) :: F
+# real(dp), dimension(:), intent(out) :: YY
+# {YY}\nend subroutine\n\n"""
 
 #------------------------------------------------------------------------------#
 
@@ -127,11 +117,16 @@ for f in fswall: f.write("select case (nr)\n")
 
 #------------------------------------------------------------------------------#
 
-choices = [ (bil,bilf,mag,cnd)          \
-            for cnd in [False,True]     \
-            for mag in [False,True]     \
-            for bil in [False,True]     \
-            for bilf in [False,True]    ]
+choices = [
+#   BIL     FULL   MAGN   CND
+    (False, False, False, False),
+    (False, False, False, True ),
+    (False, False, True,  False),
+    (True,  False, True,  False),
+    (True,  True,  True,  False),
+    (True,  True,  True,  True ),
+    (True,  False, True,  True ),
+]
 
 for balance, bilfull, magnetic, conduction in choices:
 
@@ -321,8 +316,6 @@ for balance, bilfull, magnetic, conduction in choices:
         + (8 if conduction else 0)
     print "{:4d} -> {}".format(model_nr,model_name.upper())
 
-    routine_name = "mrx_coeff_{}".format(model_name)
-
     #--------------------------------------------------------------------------#
 
     fcoeff.write('!' + 78 * '-' + '!\n')
@@ -344,7 +337,7 @@ for balance, bilfull, magnetic, conduction in choices:
             MD[ieq,iy] = discretize(eq.diff(Derivative(y,z)))
 
     fcoeff.write(fsub_coeff.format(
-        name = routine_name,
+        name = model_name,
         A = fprinter.doprint(A, 'A'),
         MY = fprinter.doprint(MY, 'MY'),
         MD = fprinter.doprint(MD, 'MD'),
@@ -362,7 +355,7 @@ for balance, bilfull, magnetic, conduction in choices:
                 MC[ict,iy] = discretize(ct.diff(y))
 
         fcoeff.write(fsub_constr.format(
-            name = routine_name,
+            name = model_name,
             B = fprinter.doprint(C, 'C'),
             MB = fprinter.doprint(MC, 'MC'),
         ))
@@ -379,7 +372,7 @@ for balance, bilfull, magnetic, conduction in choices:
                 MBL[ib,iy] = discretize(b.diff(y))
 
         fcoeff.write(fsub_bound.format(
-            name = routine_name, lr = 'bl',
+            name = model_name, lr = 'bl',
             B = fprinter.doprint(BL, 'B'),
             MB = fprinter.doprint(MBL, 'MB'),
         ))
@@ -396,50 +389,40 @@ for balance, bilfull, magnetic, conduction in choices:
                 MBR[ib,iy] = discretize(b.diff(y))
 
         fcoeff.write(fsub_bound.format(
-            name = routine_name, lr = 'br',
+            name = model_name, lr = 'br',
             B = fprinter.doprint(BR, 'B'),
             MB = fprinter.doprint(MBR, 'MB'),
         ))
 
     #--------------------------------------------------------------------------#
 
-    yout = [
-        ('rho',  rho    ),
-        ('trad', T_rad  ),
-        ('temp', T_gas  ),
-        ('heat', heat   ),
-        ('frad', F_rad  ),
-        ('fmag', F_mag  ),
-        ('fcnd', F_cond ),
-        ('ftot', F_tot  ),
-        ('ksct', ksct   ),
-        ('kabs', kabs   ),
-        ('kcnd', kcnd   ),
-        ('pgas', P_gas  ),
-        ('prad', P_rad  ),
-        ('pmag', P_mag  ),
-        ('ptot', P_tot  ),
-        ('beta', beta if magnetic else 0),
-    ]
-
-    fcoeff.write(fsub_yout.format(
-        name = routine_name,
-        YY = fprinter.doprint(Matrix([ discretize(y) for k,y in yout ]), 'YY'),
-    ))
+    # yout = [
+    #     rho,  T_gas, T_rad,
+    #     P_gas, P_rad, P_mag,
+    #     heat,
+    #     F_rad, F_mag, F_cond,
+    #     ksct, kabs, kcnd,
+    # ]
+    #
+    # fcoeff.write(fsub_yout.format(
+    #     name = model_name,
+    #     YY = fprinter.doprint(Matrix([ discretize(y) for y in yout ]), 'YY'),
+    # ))
 
     #--------------------------------------------------------------------------#
 
     for f in fswall: f.write('case({})\n'.format(model_nr))
 
     fswptrs.write ('  feq0 => {}\n'      \
-        .format(routine_name+'_eq0' if neq0 > 0 else 'NULL()'))
-    fswptrs.write ('  feq1 => {}\n'.format(routine_name + '_eq1'))
+        .format('mrx_coeff0_' + model_name if neq0 > 0 else 'NULL()'))
+    fswptrs.write ('  feq1 => {}\n'.format('mrx_coeff1_' + model_name))
     fswptrs.write ('  fbl  => {}\n'      \
-        .format(routine_name+'_bl' if nbl > 0 else 'NULL()'))
+        .format('mrx_coeffbl_' + model_name if nbl > 0 else 'NULL()'))
     fswptrs.write ('  fbr  => {}\n'      \
-        .format(routine_name+'_br' if nbr > 0 else 'NULL()'))
-    fswptrs.write ('  fout => {}\n'.format(routine_name + '_out'))
-
+        .format('mrx_coeffbr_' + model_name if nbr > 0 else 'NULL()'))
+    # fswptrs.write('  fout => mrx_output_{}\n'.format(model_name))
+    # fswptrs.write('  fout => mrx_output_{}\n'.format(model_name))
+# XXX
     fswdims.write ('  ny   = {}\n'.format(ny))
     fswdims.write ('  neq0 = {}\n'.format(neq0))
     fswdims.write ('  neq1 = {}\n'.format(neq1))

@@ -1,27 +1,17 @@
 select case (nr)
 case(1)
   ihash(:) = [1, 2, 2, 3, 0, 0]
-case(2)
-  ihash(:) = [1, 2, 3, 4, 0, 0]
-case(4)
-  ihash(:) = [1, 2, 3, 4, 0, 0]
+case(9)
+  ihash(:) = [1, 2, 2, 3, 0, 4]
 case(5)
   ihash(:) = [1, 2, 2, 3, 4, 0]
 case(6)
   ihash(:) = [1, 2, 3, 4, 5, 0]
 case(8)
   ihash(:) = [1, 2, 3, 4, 5, 0]
-case(9)
-  ihash(:) = [1, 2, 2, 3, 0, 4]
-case(10)
-  ihash(:) = [1, 2, 3, 4, 0, 5]
-case(12)
-  ihash(:) = [1, 2, 3, 4, 0, 5]
-case(13)
-  ihash(:) = [1, 2, 2, 3, 5, 4]
-case(14)
-  ihash(:) = [1, 2, 3, 4, 6, 5]
 case(16)
+  ihash(:) = [1, 2, 3, 4, 6, 5]
+case(14)
   ihash(:) = [1, 2, 3, 4, 6, 5]
 case default
   error stop
