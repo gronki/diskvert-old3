@@ -41,12 +41,12 @@ module relaxation
       real(r64), intent(out), dimension(:) :: A
       real(r64), intent(out), dimension(:,:) :: MY,MD,MD2
     end subroutine
-    pure subroutine fheat_t(z,Y,heat)
+    pure function func_t(z,Y) result(y)
       import r64
       real(r64), intent(in) :: z
       real(r64), dimension(:), intent(in) :: Y
-      real(r64), intent(out) :: heat
-    end subroutine
+      real(r64) :: y
+    end function
   end interface
 
   real(r64) :: alpha = 0, zeta = 0
@@ -114,6 +114,12 @@ contains
     integer, intent(in) :: nr
     integer, dimension(:), intent(out) :: ihash
     include 'mrxhash.fi'
+  end subroutine
+
+  pure subroutine mrx_sel_fheat (nr, fheat)
+    integer, intent(in) :: nr
+    procedure(func_t), pointer, intent(out) :: fheat
+    include 'mrxheat.fi'
   end subroutine
 
   !----------------------------------------------------------------------------!

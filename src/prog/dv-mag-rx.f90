@@ -329,19 +329,9 @@ program dv_mag_relax
   write(35, fmcol) 'i', 'i4'
   write(35, fmcol) 'z', 'f4'
   write(35, fmcol) 'h', 'f4'
-  write(35, fmcol) 'tau', 'f4'
-  write(35, fmcol) 'rho', 'f4'
-  write(35, fmcol) 'temp', 'f4'
-  write(35, fmcol) 'trad', 'f4'
-  write(35, fmcol) 'frad', 'f4'
-  write(35, fmcol) 'ksct', 'f4'
-  write(35, fmcol) 'kabs', 'f4'
-  write(35, fmcol) 'kcnd', 'f4'
-  write(35, fmcol) 'pgas', 'f4'
-  write(35, fmcol) 'prad', 'f4'
-  write(35, fmcol) 'pmag', 'f4'
-  write(35, fmcol) 'beta', 'f4'
-  write(35, fmcol) 'd*frad', 'f4'
+  do i = 1,ncols
+    write (35,fmcol) labels(i), 'f4'
+  end do
   close(35)
 
   close(upar)
@@ -351,6 +341,7 @@ program dv_mag_relax
 contains
 
   !----------------------------------------------------------------------------!
+
   subroutine saveiter(iter)
     use relaxutils
     integer, intent(in) :: iter
@@ -370,8 +361,17 @@ contains
 
 
     do i = 1,ngrid
-      pgas =  cgs_k_over_mh / miu * y_rho(i) * y_temp(i)
-      prad = cgs_a / 3 * y_trad(i)**4
+      yy(c_rho,i) = yv(c_(1),i)
+      yy(c_temp,i) = yv(c_(2),i)
+      yy(c_trad,i) = yv(c_(3),i)
+      yy(c_pgas,i) =  cgs_k_over_mh / miu * y_rho(i) * y_temp(i)
+      yy(c_prad,i) = cgs_a / 3 * y_trad(i)**4
+      yy(c_pmag,i) = yv(c_(5),i)
+      yy(c_frad,i) = yv(c_(4),i)
+      yy(c_fmag,i) = 2 * y_pmag(i) * (zeta * omega * x(i))
+      yy(c_fcnd,i) = yv(c_(6),i)
+      yy(c_heat,i) = fheat(x(i), yv(:,i))
+
       write (u,'(I6,*(ES14.5E3))') i, x(i), x(i) / zscale, tau(i), &
       y_rho(i), y_temp(i), y_trad(i), y_frad(i),  &
       fksct(y_rho(i), y_temp(i)), fkabs(y_rho(i), y_temp(i)), &
@@ -381,6 +381,7 @@ contains
   end subroutine
 
   !----------------------------------------------------------------------------!
+
   ! searches for temperature minimum in a given array
   subroutine findtempmin(x,temp,xtmin)
     real(dp), intent(in), dimension(:) :: x,temp
@@ -404,6 +405,7 @@ contains
   end subroutine
 
   !----------------------------------------------------------------------------!
+
   subroutine rdconf(cfg)
     integer :: errno
     type(config), intent(inout) :: cfg
