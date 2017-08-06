@@ -124,7 +124,7 @@ cool_net_dT = zeros([nx,ny])
 
 pgas = interp(xax,d['h'],d['pgas'])
 prad = interp(xax,d['h'],d['prad'])
-heat = interp(xax,d['h'],d['d*frad'])
+heat = interp(xax,d['h'],d['heat'])
 trad = interp(xax,d['h'],d['trad'])
 tempgas = interp(xax,d['h'],d['temp'])
 

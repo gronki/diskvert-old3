@@ -30,13 +30,14 @@ program dv_mag_relax
   logical :: user_ff, user_bf
   integer, dimension(6) :: c_
   integer, parameter :: upar = 92
-  procedure (fheat_t), pointer :: fheat
 
-  integer, parameter :: ncols = 16
-  integer, parameter :: c_rho = 1, c_temp = 2, c_trad = 3, c_pgas = 4, &
-      c_prad = 5, c_pmag = 6, c_heat = 7, c_frad = 8, c_fmag = 9, &
-      c_fcnd = 10, c_ksct = 11, c_kabs = 12, c_kcnd = 13, c_tau = 14, &
-      c_taues = 15, c_tauth = 16
+  integer, parameter :: ncols  = 17, &
+      c_rho = 1, c_temp = 2, c_trad = 3, &
+      c_pgas = 4, c_prad = 5, c_pmag = 6, &
+      c_frad = 7, c_fmag = 8, c_fcnd = 9, &
+      c_heat = 10, c_vrise = 11, &
+      c_ksct = 12, c_kabs = 13, c_kcnd = 14, &
+      c_tau = 15, c_taues = 16, c_tauth = 17
   character(8), dimension(ncols) :: labels
 
   labels(c_rho) = 'rho'
@@ -45,10 +46,12 @@ program dv_mag_relax
   labels(c_pgas) = 'pgas'
   labels(c_prad) = 'prad'
   labels(c_pmag) = 'pmag'
-  labels(c_heat) = 'heat'
   labels(c_frad) = 'frad'
   labels(c_fmag) = 'fmag'
   labels(c_fcnd) = 'fcnd'
+  labels(c_vrise) = 'vrise'
+  labels(c_heat) = 'heat'
+  labels(c_vrise) = 'vrise'
   labels(c_ksct) = 'ksct'
   labels(c_kabs) = 'kabs'
   labels(c_kcnd) = 'kcnd'
@@ -86,7 +89,7 @@ program dv_mag_relax
   call mrx_sel_nvar(model, ny)
   call mrx_sel_hash(model, C_)
 
-  allocate( x(ngrid), x0(ngrid), Y(ny*ngrid), dY(ny*ngrid),  M(ny*ngrid,ny*ngrid), tau(ngrid), heat(ngrid), YY(24,ngrid) )
+  allocate( x(ngrid), x0(ngrid), Y(ny*ngrid), dY(ny*ngrid),  M(ny*ngrid,ny*ngrid), tau(ngrid), heat(ngrid), YY(ncols,ngrid) )
   allocate(errmask(ny*ngrid), ipiv(ny*ngrid))
 
   !----------------------------------------------------------------------------!
@@ -205,7 +208,8 @@ program dv_mag_relax
 
     err0 = 0
 
-    call mrx_transfer(model, mrx_number(cfg_temperature_method, .TRUE., .FALSE.), x, Y)
+    call mrx_transfer(model, &
+        mrx_number(cfg_temperature_method, .TRUE., .FALSE.), x, Y)
 
     call mrx_sel_nvar(model, ny)
     call mrx_sel_hash(model, c_)
@@ -232,6 +236,8 @@ program dv_mag_relax
 
     nitert = nitert + 1
     if (cfg_write_all_iters) call saveiter(nitert)
+
+    !--------------------------------------------------------------------------!
 
     relx_corona : do iter = 1,niter(3)
 
@@ -274,15 +280,11 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
 
-  call mrx_sel_fheat(model, fheat)
-  do i = 1,ngrid
-    call fheat(x(i), yv(:,i), heat(i))
-  end do
-
-  !----------------------------------------------------------------------------!
-
   open(33, file = trim(outfn) // '.dat', action = 'write')
-  call saveresult(33)
+  call fillcols(yv, c_, yy)
+  writeresults : do i = 1,ngrid
+    write (33,'(I6,*(ES14.5E3))') i, x(i), x(i) / zscale, yy(:,i)
+  end do writeresults
   close(33)
 
   !----------------------------------------------------------------------------!
@@ -346,38 +348,57 @@ contains
     use relaxutils
     integer, intent(in) :: iter
     character(256) :: fn
-    write (fn,'(A,".",I0.3,".dat")') trim(outfn),iter
-    open(33, file = trim(fn), action = 'write')
-    call mktaues(x,y_rho,y_temp,tau)
-    call deriv(x, y_frad, heat)
-    call saveresult(33)
-    close(33)
-  end subroutine
-
-  subroutine saveresult(u)
-    integer, intent(in) :: u
-    real(r64) :: pgas, prad
     integer :: i
 
+    write (fn,'(A,".",I0.3,".dat")') trim(outfn),iter
+    open(33, file = trim(fn), action = 'write')
+
+    call fillcols(yv, c_, yy)
+
+    writeresults : do i = 1,ngrid
+      write (33,'(I6,*(ES14.5E3))') i, x(i), x(i) / zscale, yy(:,i)
+    end do writeresults
+
+    close(33)
+
+  end subroutine
+
+  !----------------------------------------------------------------------------!
+
+  subroutine fillcols(yv,c_,yy)
+    procedure(funout_t), pointer :: fout
+    real(dp) :: kabs,ksct,rhom,tempm,dx
+    real(dp), dimension(:,:), intent(in) :: yv
+    integer, dimension(:), intent(in) :: c_
+    real(dp), dimension(:,:), intent(inout) :: yy
+    integer :: i
+
+    ! select the function appropriate for this model
+    call mrx_sel_fout(model, fout)
 
     do i = 1,ngrid
-      yy(c_rho,i) = yv(c_(1),i)
-      yy(c_temp,i) = yv(c_(2),i)
-      yy(c_trad,i) = yv(c_(3),i)
-      yy(c_pgas,i) =  cgs_k_over_mh / miu * y_rho(i) * y_temp(i)
-      yy(c_prad,i) = cgs_a / 3 * y_trad(i)**4
-      yy(c_pmag,i) = yv(c_(5),i)
-      yy(c_frad,i) = yv(c_(4),i)
-      yy(c_fmag,i) = 2 * y_pmag(i) * (zeta * omega * x(i))
-      yy(c_fcnd,i) = yv(c_(6),i)
-      yy(c_heat,i) = fheat(x(i), yv(:,i))
-
-      write (u,'(I6,*(ES14.5E3))') i, x(i), x(i) / zscale, tau(i), &
-      y_rho(i), y_temp(i), y_trad(i), y_frad(i),  &
-      fksct(y_rho(i), y_temp(i)), fkabs(y_rho(i), y_temp(i)), &
-      fkcnd(y_rho(i), y_temp(i)), &
-      pgas, prad, y_pmag(i), pgas / y_pmag(i), heat(i)
+      call fout(x(i), yv(:,i), yy(:,i))
+      yy(c_ksct,i) = fksct(yy(c_rho,i),yy(c_temp,i))
+      yy(c_kabs,i) = fkabs(yy(c_rho,i),yy(c_temp,i))
+      yy(c_kcnd,i) = fkcnd(yy(c_rho,i),yy(c_temp,i))
     end do
+
+    ! compute the optical depths
+    yy(c_tau,ngrid) = 0
+    yy(c_taues,ngrid) = 0
+    yy(c_tauth,ngrid) = 0
+
+    integrate_tau : do i = ngrid-1,1,-1
+      rhom = (yy(c_rho,i) + yy(c_rho,i+1)) / 2
+      tempm = (yy(c_temp,i) + yy(c_temp,i+1)) / 2
+      dx = x(i+1) - x(i)
+      kabs = fkabs(rhom,tempm)
+      ksct = fksct(rhom,tempm)
+      yy(c_tau,i) = yy(c_tau,i+1) - dx * rhom * (kabs + ksct)
+      yy(c_taues,i) = yy(c_taues,i+1) - dx * rhom * ksct
+      yy(c_tauth,i) = yy(c_tauth,i+1) - dx * rhom * sqrt(kabs*(kabs+ksct))
+    end do integrate_tau
+
   end subroutine
 
   !----------------------------------------------------------------------------!
@@ -386,7 +407,7 @@ contains
   subroutine findtempmin(x,temp,xtmin)
     real(dp), intent(in), dimension(:) :: x,temp
     real(dp), intent(out) :: xtmin
-    real(dp), dimension(size(x)-1) :: dtemp,xm
+    real(dp), dimension(size(x) - 1) :: dtemp,xm
     integer :: i
 
     do i = 1, size(x)-1
@@ -430,5 +451,7 @@ contains
     read (buf,*) zeta
 
   end subroutine
+
+  !----------------------------------------------------------------------------!
 
 end program

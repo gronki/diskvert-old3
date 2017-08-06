@@ -77,7 +77,7 @@ install: all
 	install -d $(fmoddir)/diskvert
 	install -m 644 slf_{cgs,rk4integr,threshold}.mod \
 	 	{globals,settings,fileunits,grid,rk4settings}.mod \
-		{alphadisk,alphasimp,modelmag,relaxation,ss73solution}.mod \
+		{alphadisk,modelmag,relaxation,ss73solution}.mod \
 		$(fmoddir)/diskvert
 	install -d $(bindir)
 	install $(BINARIES) $(bindir)

@@ -10,11 +10,10 @@ module relaxation
   implicit none
 
   interface
-    pure subroutine funout_t(z, Y, F, YY)
+    pure subroutine funout_t(z, Y, YY)
       import r64
       real(r64), intent(in) :: z
       real(r64), intent(in), dimension(:) :: Y
-      real(r64), intent(in), dimension(:,:) :: F
       real(r64), intent(out), dimension(:) :: YY
     end subroutine
     pure subroutine fun0_t(z, Y, F, A, M)
@@ -41,12 +40,6 @@ module relaxation
       real(r64), intent(out), dimension(:) :: A
       real(r64), intent(out), dimension(:,:) :: MY,MD,MD2
     end subroutine
-    pure function func_t(z,Y) result(y)
-      import r64
-      real(r64), intent(in) :: z
-      real(r64), dimension(:), intent(in) :: Y
-      real(r64) :: y
-    end function
   end interface
 
   real(r64) :: alpha = 0, zeta = 0
@@ -116,10 +109,10 @@ contains
     include 'mrxhash.fi'
   end subroutine
 
-  pure subroutine mrx_sel_fheat (nr, fheat)
+  pure subroutine mrx_sel_fout (nr, fout)
     integer, intent(in) :: nr
-    procedure(func_t), pointer, intent(out) :: fheat
-    include 'mrxheat.fi'
+    procedure(funout_t), pointer, intent(out) :: fout
+    include 'mrxfout.fi'
   end subroutine
 
   !----------------------------------------------------------------------------!

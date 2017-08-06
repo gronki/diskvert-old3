@@ -97,21 +97,21 @@ real(dp), dimension(:), intent(out) :: C
 real(dp), dimension(:,:), intent(out) :: MC
 {B}\n{MB}\nend subroutine\n\n"""
 
-# fsub_yout = """pure subroutine mrx_output_{name} (z,Y,F,YY)
-# use iso_fortran_env, only: dp => real64
-# implicit none
-# real(dp), intent(in) :: z
-# real(dp), dimension(:), intent(in) :: Y
-# real(dp), dimension(:,:), intent(in) :: F
-# real(dp), dimension(:), intent(out) :: YY
-# {YY}\nend subroutine\n\n"""
+fsub_yout = """pure subroutine mrx_output_{name} (z,Y,YY)
+use iso_fortran_env, only: dp => real64
+implicit none
+real(dp), intent(in) :: z
+real(dp), dimension(:), intent(in) :: Y
+real(dp), dimension(:), intent(out) :: YY
+{YY}\nend subroutine\n\n"""
 
 #------------------------------------------------------------------------------#
 
 fswptrs = open('src/mrxptrs.fi','w')
 fswdims = open('src/mrxdims.fi','w')
 fswhash = open('src/mrxhash.fi','w')
-fswall = [fswptrs, fswdims, fswhash]
+fswfout = open('src/mrxfout.fi','w')
+fswall = [fswptrs, fswdims, fswhash, fswfout]
 
 for f in fswall: f.write("select case (nr)\n")
 
@@ -396,18 +396,17 @@ for balance, bilfull, magnetic, conduction in choices:
 
     #--------------------------------------------------------------------------#
 
-    # yout = [
-    #     rho,  T_gas, T_rad,
-    #     P_gas, P_rad, P_mag,
-    #     heat,
-    #     F_rad, F_mag, F_cond,
-    #     ksct, kabs, kcnd,
-    # ]
-    #
-    # fcoeff.write(fsub_yout.format(
-    #     name = model_name,
-    #     YY = fprinter.doprint(Matrix([ discretize(y) for y in yout ]), 'YY'),
-    # ))
+    yout = [
+        rho,  T_gas, T_rad,
+        P_gas, P_rad, P_mag,
+        F_rad, F_mag, F_cond,
+        heat, vrise(z),
+    ]
+
+    fcoeff.write(fsub_yout.format(
+        name = model_name,
+        YY = fprinter.doprint(Matrix([ discretize(y) for y in yout ]), 'YY'),
+    ))
 
     #--------------------------------------------------------------------------#
 
@@ -420,9 +419,8 @@ for balance, bilfull, magnetic, conduction in choices:
         .format('mrx_coeffbl_' + model_name if nbl > 0 else 'NULL()'))
     fswptrs.write ('  fbr  => {}\n'      \
         .format('mrx_coeffbr_' + model_name if nbr > 0 else 'NULL()'))
-    # fswptrs.write('  fout => mrx_output_{}\n'.format(model_name))
-    # fswptrs.write('  fout => mrx_heat_{}\n'.format(model_name))
-# XXX
+    fswfout.write('  fout => {}\n'.format('mrx_output_' + model_name))
+
     fswdims.write ('  ny   = {}\n'.format(ny))
     fswdims.write ('  neq0 = {}\n'.format(neq0))
     fswdims.write ('  neq1 = {}\n'.format(neq1))
