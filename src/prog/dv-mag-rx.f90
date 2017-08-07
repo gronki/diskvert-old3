@@ -31,14 +31,14 @@ program dv_mag_relax
   integer, dimension(6) :: c_
   integer, parameter :: upar = 92
 
-  integer, parameter :: ncols  = 18, &
+  integer, parameter :: ncols  = 19, &
       c_rho = 1, c_temp = 2, c_trad = 3, &
       c_pgas = 4, c_prad = 5, c_pmag = 6, &
       c_frad = 7, c_fmag = 8, c_fcnd = 9, &
       c_heat = 10, c_vrise = 11, &
       c_ksct = 12, c_kabs = 13, c_kcnd = 14, &
       c_tau = 15, c_taues = 16, c_tauth = 17, &
-      c_tavg = 18
+      c_tavg = 18, c_beta = 19
   character(8), dimension(ncols) :: labels
 
   labels(c_rho) = 'rho'
@@ -60,6 +60,7 @@ program dv_mag_relax
   labels(c_taues) = 'taues'
   labels(c_tauth) = 'tauth'
   labels(c_tavg) = 'tavg'
+  labels(c_beta) = 'beta'
 
   !----------------------------------------------------------------------------!
 
@@ -315,7 +316,7 @@ program dv_mag_relax
     coronal_properties : block
 
       use slf_interpol
-      real(dp) :: zcor, taucor, frad_disk, tcor
+      real(dp) :: zcor, taucor, frad_disk, tcor, betacor
 
       ! search for temperature minimum
       call findtempmin(x,y_temp,zcor)
@@ -343,6 +344,11 @@ program dv_mag_relax
       write (upar,fmparfc) "chicor", 1 - frad_disk / y_frad(ngrid), &
       & "relative amount of radiative flux released in the corona"
 
+      ! magnetic beta
+      call interpol(x, yy(c_beta,:), zcor, betacor)
+      write (upar,fmparec) 'betacor', betacor, &
+        & 'magnetic beta in temperature minimum'
+
     end block coronal_properties
   end if
 
@@ -351,6 +357,8 @@ program dv_mag_relax
   PhotosphereLocation : block
     use slf_interpol
     real(dp) :: zphot, ztherm
+
+    write (upar,fmhdr) 'Photosphere'
 
     call interpol(yy(c_tau,:), x, 1d0, zphot)
     write (upar,fmparec) 'zphot', zphot, 'altitude of the photosphere (tau=1)'
@@ -438,6 +446,7 @@ contains
     ! average tempearture
     forall (i = 1:ngrid)
       yy(c_tavg,i) = yy(c_tavg,i) / yy(c_tau,i)
+      yy(c_beta,i) = yy(c_pgas,i) / yy(c_pmag,i)
     end forall
     yy(c_tavg,ngrid) = yy(c_temp,ngrid)
 
