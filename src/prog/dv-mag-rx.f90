@@ -31,13 +31,14 @@ program dv_mag_relax
   integer, dimension(6) :: c_
   integer, parameter :: upar = 92
 
-  integer, parameter :: ncols  = 17, &
+  integer, parameter :: ncols  = 18, &
       c_rho = 1, c_temp = 2, c_trad = 3, &
       c_pgas = 4, c_prad = 5, c_pmag = 6, &
       c_frad = 7, c_fmag = 8, c_fcnd = 9, &
       c_heat = 10, c_vrise = 11, &
       c_ksct = 12, c_kabs = 13, c_kcnd = 14, &
-      c_tau = 15, c_taues = 16, c_tauth = 17
+      c_tau = 15, c_taues = 16, c_tauth = 17, &
+      c_tavg = 18
   character(8), dimension(ncols) :: labels
 
   labels(c_rho) = 'rho'
@@ -58,6 +59,7 @@ program dv_mag_relax
   labels(c_tau) = 'tau'
   labels(c_taues) = 'taues'
   labels(c_tauth) = 'tauth'
+  labels(c_tavg) = 'tavg'
 
   !----------------------------------------------------------------------------!
 
@@ -296,6 +298,7 @@ program dv_mag_relax
   write (upar, fmpare) "zscale", zscale
   write (upar, fmparec) "rho_0", rhoc, "Central density"
   write (upar, fmparec) "temp_0", Tc, "Central gas temperature"
+  write (upar, fmpare) "teff", teff
   write (upar, fmparec) "Hdisk", Hdisk, "Disk height [cm]"
   write (upar, fmhdr)  "Model information"
   write (upar, fmpari) "model", model
@@ -310,20 +313,51 @@ program dv_mag_relax
   if (cfg_temperature_method .ne. EQUATION_DIFFUSION) then
     write (upar, fmhdr)  "Corona properties"
     coronal_properties : block
+
       use slf_interpol
-      real(dp) :: zcor, taucor, frad_disk
+      real(dp) :: zcor, taucor, frad_disk, tcor
+
+      ! search for temperature minimum
       call findtempmin(x,y_temp,zcor)
       write (upar,fmparec) "zcor", zcor, "height of temperature minimum [cm]"
       write (upar,fmparfc) "hcor", zcor / zscale, "height of temperature minimum [H]"
-      call interpol(x,tau,zcor,taucor)
-      write (upar,fmparf) "taucor", taucor
+      call interpol(x, yy(c_temp,:), zcor, tcor)
+      write (upar,fmparec) 'tmin', tcor, 'temperature minimum'
+
+      ! average temperature of the corona
+      call interpol(x, yy(c_tavg,:), zcor, tcor)
+      write (upar,fmparec) 'tcor', tcor, 'average temperature in corona'
+
+      ! optical depth of the corona
+      call interpol(x, yy(c_tau,:), zcor, taucor)
+      write (upar,fmparf) "tau_cor", taucor
+      call interpol(x, yy(c_taues,:), zcor, taucor)
+      write (upar,fmparf) "taues_cor", taucor
+      call interpol(x, yy(c_tauth,:), zcor, taucor)
+      write (upar,fmparf) "tauth_cor", taucor
+
+      ! energy released in the corona
       call interpol(x,y_frad,zcor,frad_disk)
       write (upar,fmpare) "frad_disk", frad_disk
       write (upar,fmpare) "frad_cor", y_frad(ngrid) - frad_disk
       write (upar,fmparfc) "chicor", 1 - frad_disk / y_frad(ngrid), &
       & "relative amount of radiative flux released in the corona"
+
     end block coronal_properties
   end if
+
+  !----------------------------------------------------------------------------!
+
+  PhotosphereLocation : block
+    use slf_interpol
+    real(dp) :: zphot, ztherm
+
+    call interpol(yy(c_tau,:), x, 1d0, zphot)
+    write (upar,fmparec) 'zphot', zphot, 'altitude of the photosphere (tau=1)'
+
+    call interpol(yy(c_tauth,:), x, 1d0, ztherm)
+    write (upar,fmparec) 'ztherm', ztherm, 'thermalization depth (tauth=1)'
+  end block PhotosphereLocation
 
   !----------------------------------------------------------------------------!
 
@@ -383,10 +417,11 @@ contains
       yy(c_kcnd,i) = fkcnd(yy(c_rho,i),yy(c_temp,i))
     end do
 
-    ! compute the optical depths
+    ! compute the optical depths and averaged temperature
     yy(c_tau,ngrid) = 0
     yy(c_taues,ngrid) = 0
     yy(c_tauth,ngrid) = 0
+    yy(c_tavg,ngrid) = 0
 
     integrate_tau : do i = ngrid-1,1,-1
       rhom = (yy(c_rho,i) + yy(c_rho,i+1)) / 2
@@ -394,10 +429,17 @@ contains
       dx = x(i+1) - x(i)
       kabs = fkabs(rhom,tempm)
       ksct = fksct(rhom,tempm)
-      yy(c_tau,i) = yy(c_tau,i+1) - dx * rhom * (kabs + ksct)
-      yy(c_taues,i) = yy(c_taues,i+1) - dx * rhom * ksct
-      yy(c_tauth,i) = yy(c_tauth,i+1) - dx * rhom * sqrt(kabs*(kabs+ksct))
+      yy(c_tau,  i) = yy(c_tau,  i+1) + dx * rhom * (kabs + ksct)
+      yy(c_tavg, i) = yy(c_tavg, i+1) + dx * rhom * (kabs + ksct) * tempm
+      yy(c_taues,i) = yy(c_taues,i+1) + dx * rhom * ksct
+      yy(c_tauth,i) = yy(c_tauth,i+1) + dx * rhom * sqrt(kabs*(kabs+ksct))
     end do integrate_tau
+
+    ! average tempearture
+    forall (i = 1:ngrid)
+      yy(c_tavg,i) = yy(c_tavg,i) / yy(c_tau,i)
+    end forall
+    yy(c_tavg,ngrid) = yy(c_temp,ngrid)
 
   end subroutine
 
