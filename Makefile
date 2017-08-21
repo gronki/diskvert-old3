@@ -20,7 +20,8 @@ LDFLAGS = -L.
 # gfortran is default, although ifort is also supported
 FC = gfortran
 # default flags
-FFLAGS = -g -O2 -mieee-fp
+FFLAGS ?= -O2 -g
+FFLAGS += -mieee-fp
 # apply some warning flags
 ifeq ($(FC),gfortran)
 FFLAGS += -Wall -Wno-unused-dummy-argument -pedantic
