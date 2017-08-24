@@ -1,12 +1,11 @@
-from multiprocessing import cpu_count
-import numpy as np
+from numpy import logspace
 
 alpha = 0.007
 betamax = (2 - alpha) / alpha
 
-mdots = np.logspace(-4,-1,7)
-betas = np.logspace(0,np.log10(betamax),20)
-rads = np.logspace(0.5,2.7,100)
+mdots = logspace(-4,-1,7)
+betas = logspace(0,np.log10(betamax),12)
+rads =  logspace(0.5,2.7,72)
 
 izip = lambda x: zip(range(len(x)),x)
 
