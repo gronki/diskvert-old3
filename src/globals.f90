@@ -19,6 +19,7 @@ module globals
 
     logical :: use_opacity_ff = .true.
     logical :: use_opacity_bf = .true.
+    logical :: use_conduction = .false.
 
     real(r64) :: mbh, mdot
 
@@ -123,16 +124,20 @@ contains !-----------------------------------------------------------------!
     elemental function fkcnd(rho,T) result(kcnd)
       real(r64), intent(in) :: rho,T
       real(r64) :: kcnd
-      kcnd = 0
+      real(r64), parameter :: red = 0.1
+
+      kcnd = 5.6d-7 * red * T**2.5d0
     end function
 
     elemental subroutine kappcnd(rho,T,kap,krho,kT)
       use ieee_arithmetic, only: ieee_is_nan
       real(r64), intent(in) :: rho,T
       real(r64), intent(out) :: kap,krho,kT
-      kap = 0
+      real(r64), parameter :: red = 0.1
+
+      kap = 5.6d-7 * red * T**2.5d0
       krho = 0
-      kT = 0
+      kT = 5.6d-7 * red * 2.5d0 * T**1.5d0
     end subroutine
 
 

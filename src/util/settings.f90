@@ -40,6 +40,11 @@ contains
       case("-no-opacity-bf", "-no-bound-free", "-no-bf")
         use_opacity_bf = .FALSE.
 
+      case("-conduction", "-cond")
+        use_conduction = .TRUE.
+      case("-no-conduction", "-no-cond")
+        use_conduction = .FALSE.
+
       case ("-linear","-grid-linear")
         tgrid = GRID_LINEAR
       case ("-log","-grid-log")
