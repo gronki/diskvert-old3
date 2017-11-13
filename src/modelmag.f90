@@ -244,6 +244,8 @@ contains
 
   subroutine fder(x,y,pder,a,abort)
 
+    use heatbalance, only: heatbil
+
     real(r64), intent(in) :: x, y(:)
     real(r64), intent(inout) :: pder(size(y)), a(:)
     logical, intent(inout) :: abort
@@ -321,17 +323,8 @@ contains
     call calc_compswitch(y(v_pgas),a(p_temp),a(p_compsw))
 
   case (EQUATION_BALANCE)
-    fcool_heat = a(p_heat)
-    fcool_prad = y(v_prad)
-    fcool_pgas = y(v_pgas)
-    fcool_trad = a(p_trad)
-
-    a(p_tbil) = log(a(p_Trad)) + log(1 + a(p_compW)**2) / 2
-
-    call findzer(a(p_tbil), log(a(p_trad) / 2), &
-    & log(a(p_trad) * 1e5), 1d-9, fcool)
-
-    a(p_temp) = exp(a(p_tbil))
+    a(p_temp) = a(p_Trad) * (1 + a(p_compW))
+    call heatbil(a(p_temp), a(p_trad), y(v_pgas), a(p_heat))
 
   case (EQUATION_MULTIBIL)
     fcool_heat = a(p_heat)
@@ -342,9 +335,9 @@ contains
     a(p_tbil+0:p_tbil+4) = 0
 
     call solve_balance_multi(a(p_tbil+0:p_tbil+4), n,&
-    & log(a(p_trad) / 2), log(a(p_trad) * 1e6), 50, fcool)
+    & log(a(p_trad) / 2), log(a(p_trad) * 1e4), 64, fcool)
 
-    a(p_temp) = exp(a(p_tbil+0))
+    a(p_temp) = exp(maxval(a(p_tbil+0:p_tbil+4)))
 
   case default
     error stop "incorrect value of cfg_temperature_method"

@@ -47,7 +47,7 @@ contains
         cfg_temperature_method = EQUATION_COMPTON
       case ("-compton2")
         cfg_temperature_method = EQUATION_COMPTON_2
-      case ("-balance-multi")
+      case ("-balance-multi","-multibil")
         cfg_temperature_method = EQUATION_MULTIBIL
       case ("-max-iteration-error","-precision")
         call get_command_argument(i+1,nextarg)

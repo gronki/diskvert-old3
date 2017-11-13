@@ -39,7 +39,7 @@ program dv_mag
 
     if (ngrid .eq. 0) then
       select case (cfg_temperature_method)
-      case ('C','E')
+      case ('C','E','M')
         ngrid = ceiling(htop * 400)
       case ('W','Q')
         ngrid = ceiling(htop * 240)
