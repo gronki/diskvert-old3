@@ -308,6 +308,17 @@ program dv_mag_relax
         & (cfg_temperature_method .ne. EQUATION_DIFFUSION)
   write (upar, fmparl) "has_magnetic", .TRUE.
   write (upar, fmparl) "has_conduction", .FALSE.
+  
+  !----------------------------------------------------------------------------!
+
+  open(35, file = trim(outfn) // ".col", action = 'write')
+  write(35, fmcol) 'i', 'i4'
+  write(35, fmcol) 'z', 'f4'
+  write(35, fmcol) 'h', 'f4'
+  do i = 1,ncols
+    write (35,fmcol) labels(i), 'f4'
+  end do
+  close(35)
 
   !----------------------------------------------------------------------------!
 
@@ -367,16 +378,8 @@ program dv_mag_relax
     write (upar,fmparec) 'ztherm', ztherm, 'thermalization depth (tauth=1)'
   end block PhotosphereLocation
 
-  !----------------------------------------------------------------------------!
 
-  open(35, file = trim(outfn) // ".col", action = 'write')
-  write(35, fmcol) 'i', 'i4'
-  write(35, fmcol) 'z', 'f4'
-  write(35, fmcol) 'h', 'f4'
-  do i = 1,ncols
-    write (35,fmcol) labels(i), 'f4'
-  end do
-  close(35)
+  !----------------------------------------------------------------------------!
 
   close(upar)
 
@@ -433,10 +436,11 @@ contains
 
     integrate_tau : do i = ngrid-1,1,-1
       rhom = (yy(c_rho,i) + yy(c_rho,i+1)) / 2
+      if (rhom < 0) rhom = 0
       tempm = (yy(c_temp,i) + yy(c_temp,i+1)) / 2
       dx = x(i+1) - x(i)
-      kabs = fkabs(rhom,tempm)
-      ksct = fksct(rhom,tempm)
+      kabs = merge(fkabs(rhom,tempm), 0.0_dp, tempm > 0)
+      ksct = merge(fksct(rhom,tempm), 0.0_dp, tempm > 0)
       yy(c_tau,  i) = yy(c_tau,  i+1) + dx * rhom * (kabs + ksct)
       yy(c_tavg, i) = yy(c_tavg, i+1) + dx * rhom * (kabs + ksct) * tempm
       yy(c_taues,i) = yy(c_taues,i+1) + dx * rhom * ksct
