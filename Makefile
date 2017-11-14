@@ -1,4 +1,4 @@
-VERSION = 170802
+VERSION = 171114
 
 #------------------------------------------------------------------------------#
 
@@ -17,19 +17,17 @@ LDFLAGS = -L.
 
 #------------------------------------------------------------------------------#
 
-# gfortran is default, although ifort is also supported
 FC = gfortran
-# default flags
-FFLAGS ?= -O2 -g
-FFLAGS += -mieee-fp
-# apply some warning flags
+
 ifeq ($(FC),gfortran)
-FFLAGS += -Wall -Wno-unused-dummy-argument -pedantic
-FFLAGS += -Warray-temporaries -Wrealloc-lhs-all
+FFLAGS = -g -O3 -Wall -Warray-temporaries -Wrealloc-lhs-all
 endif
+
 ifeq ($(FC),ifort)
-FFLAGS += -warn all
+FFLAGS = -g -O2 -fp-model precise -Winline
 endif
+
+FFLAGS ?= -g -O2
 
 #------------------------------------------------------------------------------#
 
