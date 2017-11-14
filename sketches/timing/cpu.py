@@ -13,4 +13,4 @@ with open('/proc/cpuinfo','r') as f:
             info[processor] = {}
         info[processor][k] = v
     for inf in info.values():
-        print "{physical id}:{core id}:{processor} F{cpu family}M{model} {model name}\n    at {cpu MHz} MHz, cache {cache size}".format(**inf)
+        print "{physical id}:{core id}:{processor} F{cpu family}M{model} {model name} ({cache size} cache)".format(**inf)
