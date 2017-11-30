@@ -48,7 +48,7 @@ OBJECTS_UTIL = $(addsuffix .o,$(basename $(notdir \
 
 # if using intel compiler, use the MKL instead of standard LAPACK
 ifeq ($(FC),ifort)
-LDLIBS += -mkl
+LDLIBS += -mkl=sequential
 else
 # openblas is much faster than standard BLAS and allows
 # parallel processing, just like ifort and MKL
