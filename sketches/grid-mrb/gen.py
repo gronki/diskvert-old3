@@ -4,12 +4,12 @@ fmt  = '  {:12s} {:10.5e}\n'
 fmtc = '# {:12s} {:10.5e}\n'
 
 mbh = 10.0
-alpha = 0.007
+alpha = 0.1
 betamax = (2 - alpha) / alpha
 
 mdots = [0.0003, 0.0010, 0.0031, 0.0100, 0.0310]
 betas = logspace(0, log10(betamax), 18)
-rads =  logspace(log10(3.1), log10(160), 48)
+rads =  logspace(log10(3.1), log10(200), 48)
 
 izip = lambda x: zip(range(len(x)),x)
 

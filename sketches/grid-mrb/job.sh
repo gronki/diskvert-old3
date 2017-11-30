@@ -1,4 +1,4 @@
-DVFLAGS="-no-bf -top 150"
+DVFLAGS="-no-bf -top 120"
 
 cat "par/${1}" | dv-mag-rx $DVFLAGS          -o "data/${1}D"
 cat "par/${1}" | dv-mag-rx $DVFLAGS -compton -o "data/${1}W"

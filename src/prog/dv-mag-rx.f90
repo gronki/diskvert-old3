@@ -18,7 +18,7 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0
-  integer, dimension(3) :: niter = [ 24, 8, 48 ]
+  integer, dimension(3) :: niter = [ 24, 8, 72 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:), YY(:,:)
   real(dp), pointer :: yv(:,:)
   integer, dimension(:), allocatable :: ipiv
@@ -308,7 +308,7 @@ program dv_mag_relax
         & (cfg_temperature_method .ne. EQUATION_DIFFUSION)
   write (upar, fmparl) "has_magnetic", .TRUE.
   write (upar, fmparl) "has_conduction", .FALSE.
-  
+
   !----------------------------------------------------------------------------!
 
   open(35, file = trim(outfn) // ".col", action = 'write')
