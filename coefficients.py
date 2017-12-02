@@ -13,6 +13,7 @@ RPS = lambda x: Symbol(x, real = True, positive = True)
 
 alpha = RPS('alpha')
 eta   = RPS('eta')
+nu    = RPS('nu')
 omega = RPS('omega')
 F_acc = RPS('F_acc')
 mu    = RPS('mu')
@@ -227,7 +228,8 @@ for balance, bilfull, magnetic, conduction in choices:
     # Bilans grzania i chlodzenia
     #
     if magnetic:
-        heat = 2 * P_mag * vrise(z).diff(z) - alpha * omega * P_tot
+        heat = 2 * P_mag * vrise(z).diff(z) \
+            - alpha * omega * (P_tot - 2 * nu * P_mag)
     else:
         heat = alpha * omega * P_tot
 
@@ -245,11 +247,12 @@ for balance, bilfull, magnetic, conduction in choices:
     #
     if magnetic:
         eq1ord.append(
-            2 * P_mag * vrise(z).diff(z) \
-            + vrise(z) * Derivative(P_mag,z) \
-            - alpha * omega * P_tot
+            2 * P_mag * vrise(z).diff(z)        \
+            + vrise(z) * Derivative(P_mag,z)    \
+            - alpha * omega * (P_tot - nu * P_mag)
         )
-        boundL.append(2 * P_mag * vrise(z).diff(z) - alpha * omega * P_tot)
+        boundL.append(  2 * P_mag * vrise(z).diff(z)            \
+                        - alpha * omega * (P_tot - nu * P_mag)  )
 
     #--------------------------------------------------------------------------#
     # Funkcja zrodlowa

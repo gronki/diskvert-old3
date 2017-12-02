@@ -42,7 +42,7 @@ module relaxation
     end subroutine
   end interface
 
-  real(r64) :: alpha = 0, zeta = 0
+  real(r64) :: alpha = 0, zeta = 0, nu = 0
   real(r64) :: omega, radius, facc, teff, zscale
 
 contains

@@ -125,6 +125,7 @@ contains
     write (u, fmparl) "use_opacity_ff", use_opacity_ff
     write (u, fmparl) "use_opacity_bf", use_opacity_bf
     write (u, fmparl) "use_opacity_bb", .FALSE.
+    write (u, fmparl) "conduction", use_conduction
   end subroutine
 
 end module

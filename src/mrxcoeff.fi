@@ -237,12 +237,12 @@ A(1) = (-cgs_boltz*cgs_c*(D(2)*Y(1) + Y(2)*D(1)) - cgs_c*cgs_mhydr*miu*( &
       omega**2*z*Y(1) + D(4)) + cgs_mhydr*miu*Y(3)*(F(1,1) + F(1,2))*Y( &
       1))/(cgs_c*cgs_mhydr*miu)
 A(2) = -16*cgs_stef*Y(2)**3*D(2) - 3*Y(3)*(F(1,1) + F(1,2))*Y(1)
-A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) - alpha*omega*Y( &
-      4) - 4.0d0/3.0d0*alpha*cgs_stef*omega*Y(2)**4/cgs_c + 2*omega* &
-      zeta*Y(4) - D(3)
+A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) + 2*alpha*nu* &
+      omega*Y(4) - alpha*omega*Y(4) - 4.0d0/3.0d0*alpha*cgs_stef*omega* &
+      Y(2)**4/cgs_c + 2*omega*zeta*Y(4) - D(3)
 A(4) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-      + 3*alpha*Y(4) + 4*alpha*cgs_stef*Y(2)**4/cgs_c - 3*z*zeta*D(4) - &
-      6*zeta*Y(4))
+      - 3*alpha*nu*Y(4) + 3*alpha*Y(4) + 4*alpha*cgs_stef*Y(2)**4/cgs_c &
+      - 3*z*zeta*D(4) - 6*zeta*Y(4))
 MY(1,1) = (cgs_boltz*cgs_c*D(2) + cgs_c*cgs_mhydr*miu*omega**2*z - &
       cgs_mhydr*miu*(Y(3)*(F(1,1) + F(1,2)) + Y(3)*(F(2,1) + F(2,2))*Y( &
       1)))/(cgs_c*cgs_mhydr*miu)
@@ -262,8 +262,8 @@ MY(3,3) = 0
 MY(4,3) = 0
 MY(1,4) = 0
 MY(2,4) = 0
-MY(3,4) = omega*(alpha - 2*zeta)
-MY(4,4) = omega*(-alpha + 2*zeta)
+MY(3,4) = omega*(-2*alpha*nu + alpha - 2*zeta)
+MY(4,4) = omega*(alpha*(nu - 1) + 2*zeta)
 MD(1,1) = cgs_boltz*Y(2)/(cgs_mhydr*miu)
 MD(2,1) = 0
 MD(3,1) = 0
@@ -292,7 +292,8 @@ real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
 B(1) = -Y(3)
 B(2) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-      + 3*alpha*Y(4) + 4*alpha*cgs_stef*Y(2)**4/cgs_c - 6*zeta*Y(4))
+      - 3*alpha*nu*Y(4) + 3*alpha*Y(4) + 4*alpha*cgs_stef*Y(2)**4/cgs_c &
+      - 6*zeta*Y(4))
 MB(1,1) = 0
 MB(2,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
 MB(1,2) = 0
@@ -301,7 +302,7 @@ MB(2,2) = -1.0d0/3.0d0*alpha*omega*(3*cgs_boltz*Y(1)/(cgs_mhydr*miu) + &
 MB(1,3) = 1
 MB(2,3) = 0
 MB(1,4) = 0
-MB(2,4) = omega*(-alpha + 2*zeta)
+MB(2,4) = omega*(alpha*(nu - 1) + 2*zeta)
 end subroutine
 
 pure subroutine mrx_coeffbr_md (z,Y,F,B,MB)
@@ -340,8 +341,8 @@ YY(7) = Y(3)
 YY(8) = 2*omega*z*zeta*Y(4)
 YY(9) = 0
 YY(10) = (1.0d0/3.0d0)*omega*(-3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr* &
-      miu) - 3*alpha*Y(4) - 4*alpha*cgs_stef*Y(2)**4/cgs_c + 6*zeta*Y(4 &
-      ))
+      miu) + 6*alpha*nu*Y(4) - 3*alpha*Y(4) - 4*alpha*cgs_stef*Y(2)**4/ &
+      cgs_c + 6*zeta*Y(4))
 YY(11) = omega*z*zeta
 end subroutine
 
@@ -365,12 +366,12 @@ A(1) = (-cgs_boltz*cgs_c*(D(2)*Y(1) + Y(2)*D(1)) - cgs_c*cgs_mhydr*miu*( &
       omega**2*z*Y(1) + D(5)) + cgs_mhydr*miu*Y(4)*(F(1,1) + F(1,2))*Y( &
       1))/(cgs_c*cgs_mhydr*miu)
 A(2) = -16*cgs_stef*Y(3)**3*D(3) - 3*Y(4)*(F(1,1) + F(1,2))*Y(1)
-A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) - alpha*omega*Y( &
-      5) - 4.0d0/3.0d0*alpha*cgs_stef*omega*Y(3)**4/cgs_c + 2*omega* &
-      zeta*Y(5) - D(4)
+A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) + 2*alpha*nu* &
+      omega*Y(5) - alpha*omega*Y(5) - 4.0d0/3.0d0*alpha*cgs_stef*omega* &
+      Y(3)**4/cgs_c + 2*omega*zeta*Y(5) - D(4)
 A(4) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-      + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(3)**4/cgs_c - 3*z*zeta*D(5) - &
-      6*zeta*Y(5))
+      - 3*alpha*nu*Y(5) + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(3)**4/cgs_c &
+      - 3*z*zeta*D(5) - 6*zeta*Y(5))
 MY(1,1) = (cgs_boltz*cgs_c*D(2) + cgs_c*cgs_mhydr*miu*omega**2*z - &
       cgs_mhydr*miu*(Y(4)*(F(1,1) + F(1,2)) + Y(4)*(F(2,1) + F(2,2))*Y( &
       1)))/(cgs_c*cgs_mhydr*miu)
@@ -392,8 +393,8 @@ MY(3,4) = 0
 MY(4,4) = 0
 MY(1,5) = 0
 MY(2,5) = 0
-MY(3,5) = omega*(alpha - 2*zeta)
-MY(4,5) = omega*(-alpha + 2*zeta)
+MY(3,5) = omega*(-2*alpha*nu + alpha - 2*zeta)
+MY(4,5) = omega*(alpha*(nu - 1) + 2*zeta)
 MD(1,1) = cgs_boltz*Y(2)/(cgs_mhydr*miu)
 MD(2,1) = 0
 MD(3,1) = 0
@@ -424,11 +425,11 @@ real(dp), dimension(:), intent(in) :: Y
 real(dp), dimension(:,:), intent(in) :: F
 real(dp), dimension(:), intent(out) :: C
 real(dp), dimension(:,:), intent(out) :: MC
-C(1) = alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) + alpha*omega*Y(5 &
-      ) + (4.0d0/3.0d0)*alpha*cgs_stef*omega*Y(3)**4/cgs_c + 16* &
-      cgs_boltz*cgs_stef*F(1,2)*Y(3)**4*Y(2)*Y(1)/(cgs_c**2*cgs_mel) - &
-      16*cgs_boltz*cgs_stef*F(1,2)*Y(3)**5*Y(1)/(cgs_c**2*cgs_mel) - 2* &
-      omega*zeta*Y(5)
+C(1) = alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) - 2*alpha*nu* &
+      omega*Y(5) + alpha*omega*Y(5) + (4.0d0/3.0d0)*alpha*cgs_stef* &
+      omega*Y(3)**4/cgs_c + 16*cgs_boltz*cgs_stef*F(1,2)*Y(3)**4*Y(2)*Y &
+      (1)/(cgs_c**2*cgs_mel) - 16*cgs_boltz*cgs_stef*F(1,2)*Y(3)**5*Y(1 &
+      )/(cgs_c**2*cgs_mel) - 2*omega*zeta*Y(5)
 MC(1,1) = -cgs_boltz*(alpha*cgs_c**2*cgs_mel*omega*Y(2) + 16*cgs_mhydr* &
       cgs_stef*miu*(F(1,2)*Y(3)**4*(Y(2) - Y(3)) + F(2,2)*Y(3)**4*(Y(2 &
       ) - Y(3))*Y(1)))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
@@ -439,7 +440,7 @@ MC(1,3) = (16.0d0/3.0d0)*cgs_stef*(-alpha*cgs_c*cgs_mel*omega*Y(3)**3 + &
       3*cgs_boltz*(-4*F(1,2)*Y(3)**3*(Y(2) - Y(3))*Y(1) + F(1,2)*Y(3)** &
       4*Y(1)))/(cgs_c**2*cgs_mel)
 MC(1,4) = 0
-MC(1,5) = omega*(-alpha + 2*zeta)
+MC(1,5) = omega*(alpha*(2*nu - 1) + 2*zeta)
 end subroutine
 
 pure subroutine mrx_coeffbl_mw (z,Y,F,B,MB)
@@ -452,7 +453,8 @@ real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
 B(1) = -Y(4)
 B(2) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-      + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(3)**4/cgs_c - 6*zeta*Y(5))
+      - 3*alpha*nu*Y(5) + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(3)**4/cgs_c &
+      - 6*zeta*Y(5))
 MB(1,1) = 0
 MB(2,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
 MB(1,2) = 0
@@ -462,7 +464,7 @@ MB(2,3) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(3)**3/cgs_c
 MB(1,4) = 1
 MB(2,4) = 0
 MB(1,5) = 0
-MB(2,5) = omega*(-alpha + 2*zeta)
+MB(2,5) = omega*(alpha*(nu - 1) + 2*zeta)
 end subroutine
 
 pure subroutine mrx_coeffbr_mw (z,Y,F,B,MB)
@@ -503,8 +505,8 @@ YY(7) = Y(4)
 YY(8) = 2*omega*z*zeta*Y(5)
 YY(9) = 0
 YY(10) = (1.0d0/3.0d0)*omega*(-3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr* &
-      miu) - 3*alpha*Y(5) - 4*alpha*cgs_stef*Y(3)**4/cgs_c + 6*zeta*Y(5 &
-      ))
+      miu) + 6*alpha*nu*Y(5) - 3*alpha*Y(5) - 4*alpha*cgs_stef*Y(3)**4/ &
+      cgs_c + 6*zeta*Y(5))
 YY(11) = omega*z*zeta
 end subroutine
 
@@ -528,12 +530,12 @@ A(1) = (-cgs_boltz*cgs_c*(D(2)*Y(1) + Y(2)*D(1)) - cgs_c*cgs_mhydr*miu*( &
       omega**2*z*Y(1) + D(5)) + cgs_mhydr*miu*Y(4)*(F(1,1) + F(1,2))*Y( &
       1))/(cgs_c*cgs_mhydr*miu)
 A(2) = -16*cgs_stef*Y(3)**3*D(3) - 3*Y(4)*(F(1,1) + F(1,2))*Y(1)
-A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) - alpha*omega*Y( &
-      5) - 4.0d0/3.0d0*alpha*cgs_stef*omega*Y(3)**4/cgs_c + 2*omega* &
-      zeta*Y(5) - D(4)
+A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) + 2*alpha*nu* &
+      omega*Y(5) - alpha*omega*Y(5) - 4.0d0/3.0d0*alpha*cgs_stef*omega* &
+      Y(3)**4/cgs_c + 2*omega*zeta*Y(5) - D(4)
 A(4) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-      + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(3)**4/cgs_c - 3*z*zeta*D(5) - &
-      6*zeta*Y(5))
+      - 3*alpha*nu*Y(5) + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(3)**4/cgs_c &
+      - 3*z*zeta*D(5) - 6*zeta*Y(5))
 MY(1,1) = (cgs_boltz*cgs_c*D(2) + cgs_c*cgs_mhydr*miu*omega**2*z - &
       cgs_mhydr*miu*(Y(4)*(F(1,1) + F(1,2)) + Y(4)*(F(2,1) + F(2,2))*Y( &
       1)))/(cgs_c*cgs_mhydr*miu)
@@ -555,8 +557,8 @@ MY(3,4) = 0
 MY(4,4) = 0
 MY(1,5) = 0
 MY(2,5) = 0
-MY(3,5) = omega*(alpha - 2*zeta)
-MY(4,5) = omega*(-alpha + 2*zeta)
+MY(3,5) = omega*(-2*alpha*nu + alpha - 2*zeta)
+MY(4,5) = omega*(alpha*(nu - 1) + 2*zeta)
 MD(1,1) = cgs_boltz*Y(2)/(cgs_mhydr*miu)
 MD(2,1) = 0
 MD(3,1) = 0
@@ -588,11 +590,11 @@ real(dp), dimension(:,:), intent(in) :: F
 real(dp), dimension(:), intent(out) :: C
 real(dp), dimension(:,:), intent(out) :: MC
 C(1) = (1.0d0/3.0d0)*(alpha*cgs_c*cgs_mel*omega*(3*cgs_boltz*cgs_c*Y(2)* &
-      Y(1) + 3*cgs_c*cgs_mhydr*miu*Y(5) + 4*cgs_mhydr*cgs_stef*miu*Y(3) &
-      **4) - 6*cgs_c**2*cgs_mel*cgs_mhydr*miu*omega*zeta*Y(5) + 12* &
-      cgs_mhydr*cgs_stef*miu*(Y(2) - Y(3))*(4*cgs_boltz*F(1,2)*Y(3)**4 &
-      + cgs_c**2*cgs_mel*F(1,1)*(Y(2)**2 + Y(3)**2)*(Y(2) + Y(3)))*Y(1 &
-      ))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
+      Y(1) + 3*cgs_c*cgs_mhydr*miu*(-2*nu*Y(5) + Y(5)) + 4*cgs_mhydr* &
+      cgs_stef*miu*Y(3)**4) - 6*cgs_c**2*cgs_mel*cgs_mhydr*miu*omega* &
+      zeta*Y(5) + 12*cgs_mhydr*cgs_stef*miu*(Y(2) - Y(3))*(4*cgs_boltz* &
+      F(1,2)*Y(3)**4 + cgs_c**2*cgs_mel*F(1,1)*(Y(2)**2 + Y(3)**2)*(Y(2 &
+      ) + Y(3)))*Y(1))/(cgs_c**2*cgs_mel*cgs_mhydr*miu)
 MC(1,1) = -(alpha*cgs_boltz*cgs_c**2*cgs_mel*omega*Y(2) + 4*cgs_mhydr* &
       cgs_stef*miu*((Y(2) - Y(3))*(4*cgs_boltz*F(1,2)*Y(3)**4 + cgs_c** &
       2*cgs_mel*F(1,1)*(Y(2)**2 + Y(3)**2)*(Y(2) + Y(3))) + (Y(2) - Y(3 &
@@ -610,7 +612,7 @@ MC(1,3) = (4.0d0/3.0d0)*cgs_stef*(-4*alpha*cgs_c*cgs_mel*omega*Y(3)**3 + &
       2)*Y(3)**3 + cgs_c**2*cgs_mel*(F(1,1)*(Y(2)**2 + Y(3)**2) + 2*F(1 &
       ,1)*Y(3)*(Y(2) + Y(3))))*Y(1)))/(cgs_c**2*cgs_mel)
 MC(1,4) = 0
-MC(1,5) = omega*(-alpha + 2*zeta)
+MC(1,5) = omega*(alpha*(2*nu - 1) + 2*zeta)
 end subroutine
 
 pure subroutine mrx_coeffbl_mc (z,Y,F,B,MB)
@@ -623,7 +625,8 @@ real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
 B(1) = -Y(4)
 B(2) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-      + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(3)**4/cgs_c - 6*zeta*Y(5))
+      - 3*alpha*nu*Y(5) + 3*alpha*Y(5) + 4*alpha*cgs_stef*Y(3)**4/cgs_c &
+      - 6*zeta*Y(5))
 MB(1,1) = 0
 MB(2,1) = -alpha*cgs_boltz*omega*Y(2)/(cgs_mhydr*miu)
 MB(1,2) = 0
@@ -633,7 +636,7 @@ MB(2,3) = -16.0d0/3.0d0*alpha*cgs_stef*omega*Y(3)**3/cgs_c
 MB(1,4) = 1
 MB(2,4) = 0
 MB(1,5) = 0
-MB(2,5) = omega*(-alpha + 2*zeta)
+MB(2,5) = omega*(alpha*(nu - 1) + 2*zeta)
 end subroutine
 
 pure subroutine mrx_coeffbr_mc (z,Y,F,B,MB)
@@ -674,8 +677,8 @@ YY(7) = Y(4)
 YY(8) = 2*omega*z*zeta*Y(5)
 YY(9) = 0
 YY(10) = (1.0d0/3.0d0)*omega*(-3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr* &
-      miu) - 3*alpha*Y(5) - 4*alpha*cgs_stef*Y(3)**4/cgs_c + 6*zeta*Y(5 &
-      ))
+      miu) + 6*alpha*nu*Y(5) - 3*alpha*Y(5) - 4*alpha*cgs_stef*Y(3)**4/ &
+      cgs_c + 6*zeta*Y(5))
 YY(11) = omega*z*zeta
 end subroutine
 
@@ -699,12 +702,12 @@ A(1) = (-cgs_boltz*cgs_c*(D(2)*Y(1) + Y(2)*D(1)) - cgs_c*cgs_mhydr*miu*( &
       omega**2*z*Y(1) + D(6)) + cgs_mhydr*miu*Y(4)*(F(1,1) + F(1,2))*Y( &
       1))/(cgs_c*cgs_mhydr*miu)
 A(2) = -16*cgs_stef*Y(3)**3*D(3) - 3*Y(4)*(F(1,1) + F(1,2))*Y(1)
-A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) - alpha*omega*Y( &
-      6) - 4.0d0/3.0d0*alpha*cgs_stef*omega*Y(3)**4/cgs_c + 2*omega* &
-      zeta*Y(6) - D(4) - D(5)
+A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) + 2*alpha*nu* &
+      omega*Y(6) - alpha*omega*Y(6) - 4.0d0/3.0d0*alpha*cgs_stef*omega* &
+      Y(3)**4/cgs_c + 2*omega*zeta*Y(6) - D(4) - D(5)
 A(4) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-      + 3*alpha*Y(6) + 4*alpha*cgs_stef*Y(3)**4/cgs_c - 3*z*zeta*D(6) - &
-      6*zeta*Y(6))
+      - 3*alpha*nu*Y(6) + 3*alpha*Y(6) + 4*alpha*cgs_stef*Y(3)**4/cgs_c &
+      - 3*z*zeta*D(6) - 6*zeta*Y(6))
 A(5) = (cgs_c**2*cgs_mel*D(4) - 4*cgs_stef*(Y(2) - Y(3))*(4*cgs_boltz*F( &
       1,2)*Y(3)**4 + cgs_c**2*cgs_mel*F(1,1)*(Y(2)**2 + Y(3)**2)*(Y(2) &
       + Y(3)))*Y(1))/(cgs_c**2*cgs_mel)
@@ -754,8 +757,8 @@ MY(5,5) = 0
 MY(6,5) = 1
 MY(1,6) = 0
 MY(2,6) = 0
-MY(3,6) = omega*(alpha - 2*zeta)
-MY(4,6) = omega*(-alpha + 2*zeta)
+MY(3,6) = omega*(-2*alpha*nu + alpha - 2*zeta)
+MY(4,6) = omega*(alpha*(nu - 1) + 2*zeta)
 MY(5,6) = 0
 MY(6,6) = 0
 MD(1,1) = cgs_boltz*Y(2)/(cgs_mhydr*miu)
@@ -806,7 +809,8 @@ real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
 B(1) = -Y(4)
 B(2) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-      + 3*alpha*Y(6) + 4*alpha*cgs_stef*Y(3)**4/cgs_c - 6*zeta*Y(6))
+      - 3*alpha*nu*Y(6) + 3*alpha*Y(6) + 4*alpha*cgs_stef*Y(3)**4/cgs_c &
+      - 6*zeta*Y(6))
 B(3) = -Y(2) + Y(3)
 B(4) = -Y(5)
 MB(1,1) = 0
@@ -830,7 +834,7 @@ MB(2,5) = 0
 MB(3,5) = 0
 MB(4,5) = 1
 MB(1,6) = 0
-MB(2,6) = omega*(-alpha + 2*zeta)
+MB(2,6) = omega*(alpha*(nu - 1) + 2*zeta)
 MB(3,6) = 0
 MB(4,6) = 0
 end subroutine
@@ -875,8 +879,8 @@ YY(7) = Y(4)
 YY(8) = 2*omega*z*zeta*Y(6)
 YY(9) = Y(5)
 YY(10) = (1.0d0/3.0d0)*omega*(-3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr* &
-      miu) - 3*alpha*Y(6) - 4*alpha*cgs_stef*Y(3)**4/cgs_c + 6*zeta*Y(6 &
-      ))
+      miu) + 6*alpha*nu*Y(6) - 3*alpha*Y(6) - 4*alpha*cgs_stef*Y(3)**4/ &
+      cgs_c + 6*zeta*Y(6))
 YY(11) = omega*z*zeta
 end subroutine
 
@@ -900,12 +904,12 @@ A(1) = (-cgs_boltz*cgs_c*(D(2)*Y(1) + Y(2)*D(1)) - cgs_c*cgs_mhydr*miu*( &
       omega**2*z*Y(1) + D(6)) + cgs_mhydr*miu*Y(4)*(F(1,1) + F(1,2))*Y( &
       1))/(cgs_c*cgs_mhydr*miu)
 A(2) = -16*cgs_stef*Y(3)**3*D(3) - 3*Y(4)*(F(1,1) + F(1,2))*Y(1)
-A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) - alpha*omega*Y( &
-      6) - 4.0d0/3.0d0*alpha*cgs_stef*omega*Y(3)**4/cgs_c + 2*omega* &
-      zeta*Y(6) - D(4) - D(5)
+A(3) = -alpha*cgs_boltz*omega*Y(2)*Y(1)/(cgs_mhydr*miu) + 2*alpha*nu* &
+      omega*Y(6) - alpha*omega*Y(6) - 4.0d0/3.0d0*alpha*cgs_stef*omega* &
+      Y(3)**4/cgs_c + 2*omega*zeta*Y(6) - D(4) - D(5)
 A(4) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-      + 3*alpha*Y(6) + 4*alpha*cgs_stef*Y(3)**4/cgs_c - 3*z*zeta*D(6) - &
-      6*zeta*Y(6))
+      - 3*alpha*nu*Y(6) + 3*alpha*Y(6) + 4*alpha*cgs_stef*Y(3)**4/cgs_c &
+      - 3*z*zeta*D(6) - 6*zeta*Y(6))
 A(5) = (-16*cgs_boltz*cgs_stef*F(1,2)*Y(3)**4*(Y(2) - Y(3))*Y(1) + cgs_c &
       **2*cgs_mel*D(4))/(cgs_c**2*cgs_mel)
 A(6) = -F(1,3)*D(2) - Y(5)
@@ -947,8 +951,8 @@ MY(5,5) = 0
 MY(6,5) = 1
 MY(1,6) = 0
 MY(2,6) = 0
-MY(3,6) = omega*(alpha - 2*zeta)
-MY(4,6) = omega*(-alpha + 2*zeta)
+MY(3,6) = omega*(-2*alpha*nu + alpha - 2*zeta)
+MY(4,6) = omega*(alpha*(nu - 1) + 2*zeta)
 MY(5,6) = 0
 MY(6,6) = 0
 MD(1,1) = cgs_boltz*Y(2)/(cgs_mhydr*miu)
@@ -999,7 +1003,8 @@ real(dp), dimension(:), intent(out) :: B
 real(dp), dimension(:,:), intent(out) :: MB
 B(1) = -Y(4)
 B(2) = (1.0d0/3.0d0)*omega*(3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr*miu) &
-      + 3*alpha*Y(6) + 4*alpha*cgs_stef*Y(3)**4/cgs_c - 6*zeta*Y(6))
+      - 3*alpha*nu*Y(6) + 3*alpha*Y(6) + 4*alpha*cgs_stef*Y(3)**4/cgs_c &
+      - 6*zeta*Y(6))
 B(3) = -Y(2) + Y(3)
 B(4) = -Y(5)
 MB(1,1) = 0
@@ -1023,7 +1028,7 @@ MB(2,5) = 0
 MB(3,5) = 0
 MB(4,5) = 1
 MB(1,6) = 0
-MB(2,6) = omega*(-alpha + 2*zeta)
+MB(2,6) = omega*(alpha*(nu - 1) + 2*zeta)
 MB(3,6) = 0
 MB(4,6) = 0
 end subroutine
@@ -1068,8 +1073,8 @@ YY(7) = Y(4)
 YY(8) = 2*omega*z*zeta*Y(6)
 YY(9) = Y(5)
 YY(10) = (1.0d0/3.0d0)*omega*(-3*alpha*cgs_boltz*Y(2)*Y(1)/(cgs_mhydr* &
-      miu) - 3*alpha*Y(6) - 4*alpha*cgs_stef*Y(3)**4/cgs_c + 6*zeta*Y(6 &
-      ))
+      miu) + 6*alpha*nu*Y(6) - 3*alpha*Y(6) - 4*alpha*cgs_stef*Y(3)**4/ &
+      cgs_c + 6*zeta*Y(6))
 YY(11) = omega*z*zeta
 end subroutine
 

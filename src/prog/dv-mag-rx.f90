@@ -18,7 +18,7 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0
-  integer, dimension(3) :: niter = [ 24, 8, 72 ]
+  integer, dimension(3) :: niter = [ 24, 8, 64 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:), YY(:,:)
   real(dp), pointer :: yv(:,:)
   integer, dimension(:), allocatable :: ipiv
@@ -116,7 +116,7 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
 
-  associate (beta_0 => 2 * zeta / alpha - 1)
+  associate (beta_0 => 2 * zeta / alpha + nu - 1)
     if (beta_0 < 0) error stop "MAGNETIC BETA cannot be negative! " &
           & // "zeta > alpha / 2!!!"
     write (upar,fmpare) 'beta_0', beta_0
@@ -154,7 +154,7 @@ program dv_mag_relax
     nitert = nitert + 1
     if (cfg_write_all_iters) call saveiter(nitert)
 
-    if (err < 1e-6 .and. err0 / err > 10) then
+    if (err < 1e-4 .and. err0 / err > 5) then
       write (uerr, '("convergence reached with error = ",ES9.2)') err
       exit relx_opacity_es
     end if
@@ -191,7 +191,7 @@ program dv_mag_relax
       nitert = nitert + 1
       if (cfg_write_all_iters) call saveiter(nitert)
 
-      if (err < 1e-6 .and. err0 / err > 10) then
+      if (err < 1e-4 .and. err0 / err > 5) then
         write (uerr, '("convergence reached with error = ",ES9.2)') err
         exit relx_opacity_full
       end if
@@ -252,7 +252,7 @@ program dv_mag_relax
       forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
           & .and. ieee_is_normal(dY(i))
       err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-      ramp = ramp4(iter, niter(3), 1d-2, 0d1)
+      ramp = ramp4(iter, niter(3), 1d-3, 0d1)
 
       write(uerr,fmiter) nitert+1, err, 100*ramp
 
@@ -268,7 +268,7 @@ program dv_mag_relax
       nitert = nitert + 1
       if (cfg_write_all_iters) call saveiter(nitert)
 
-      if (err < 1e-6 .and. err0 / err > 10) then
+      if (err < 1e-4 .and. err0 / err > 5) then
         write (uerr, '("convergence reached with error = ",ES9.2)') err
         exit relx_corona
       end if
@@ -293,8 +293,9 @@ program dv_mag_relax
   !----------------------------------------------------------------------------!
 
   call wpar_gl(upar)
-  write (upar, fmparfc) "alpha", alpha, "Alpha parameter"
-  write (upar, fmparfc) "zeta", zeta, "Zeta parameter"
+  write (upar, fmparfc) "alpha", alpha, "alpha parameter"
+  write (upar, fmparfc) "zeta", zeta, "field rise parameter"
+  write (upar, fmparfc) "nu", nu, "reconnection parameter"
   write (upar, fmpare) "radius", radius
   write (upar, fmpare) "zscale", zscale
   write (upar, fmparec) "rho_0", rhoc, "Central density"
@@ -504,6 +505,14 @@ contains
       error stop "Magnetic field parameter (key: zeta) is REQUIRED!"
     end if
     read (buf,*) zeta
+
+    call mincf_get(cfg, "nu", buf, errno)
+    if ( iand(errno, mincf_not_found) .eq. 0 )  then
+      read (buf,*) nu
+    else
+      write (0,*) "warning: assuming nu = 0"
+      nu = 0
+    end if
 
   end subroutine
 
