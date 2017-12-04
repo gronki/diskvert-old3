@@ -5,19 +5,18 @@ fmtc = '# {:12s} {:10.5e}\n'
 
 mbh = 10.0
 alpha = 0.1
-betamax = (2 - alpha) / alpha
 
-mdots = [0.0003, 0.0010, 0.0031, 0.0100, 0.0310]
-betas = logspace(0, log10(betamax), 18)
+mdots = [0.0003, 0.0010, 0.0031, 0.0100, 0.0310, 0.1000]
+zetas = logspace(log10(alpha), 0, 16)
 rads =  logspace(log10(3.1), log10(200), 48)
 
-izip = lambda x: zip(range(len(x)),x)
+izip = lambda x: zip(range(len(x)), x)
 
 for imdot,mdot in izip(mdots):
-    for ibeta,beta in izip(betas):
-        zeta = alpha * (beta + 1) / 2
+    for izeta,zeta in izip(zetas):
+        beta = 2 * zeta / alpha - 1
         for irad,rad in izip(rads):
-            fn = 'M{:02d}R{:02d}B{:02d}'.format(imdot+1,irad+1,ibeta+1)
+            fn = 'M{:02d}R{:02d}B{:02d}'.format(imdot+1, irad+1, izeta+1)
             with open('par/{}'.format(fn),'w') as f:
                 f.write("# model: {}\n".format(fn))
                 f.write( fmt.format('mbh',    mbh   ))
@@ -27,4 +26,4 @@ for imdot,mdot in izip(mdots):
                 f.write( fmt.format('zeta',   zeta  ))
                 f.write(fmtc.format('beta',   beta  ))
 
-print "generated {} files".format(len(mdots)*len(betas)*len(rads))
+print "generated {} files".format(len(mdots)*len(zetas)*len(rads))
