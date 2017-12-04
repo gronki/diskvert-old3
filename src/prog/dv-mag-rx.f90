@@ -18,12 +18,13 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0
-  integer, dimension(3) :: niter = [ 24, 8, 64 ]
+  integer, dimension(3) :: niter = [ 24, 8, 36 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:), YY(:,:)
   real(dp), pointer :: yv(:,:)
   integer, dimension(:), allocatable :: ipiv
   logical, dimension(:), allocatable :: errmask
-  real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, y_pmag, y_Trad
+  real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, y_pmag, &
+        & y_Trad, y_fcnd
   real(dp), allocatable, dimension(:) :: tau, heat
   real(dp) :: rhoc, Tc, Hdisk, err, err0, ramp
   character(*), parameter :: fmiter = '(I5,2X,ES9.2,2X,F5.1,"%")'
@@ -146,7 +147,7 @@ program dv_mag_relax
     forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
         & .and. ieee_is_normal(dY(i))
     err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-    ramp = ramp4(iter, niter(1), 5d-2, 0.25d0)
+    ramp = ramp3(iter, niter(1), 1d-2)
     write(uerr,fmiter) nitert+1, err, 100*ramp
 
     Y(:) = Y + dY * ramp
@@ -183,7 +184,7 @@ program dv_mag_relax
       forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
           & .and. ieee_is_normal(dY(i))
       err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-      ramp = ramp4(iter, niter(2), 2d-1, 0.5d0)
+      ramp = ramp3(iter, niter(2), 0.5d0)
       write(uerr,fmiter) nitert+1, err, 100*ramp
 
       Y(:) = Y + dY * ramp
@@ -212,7 +213,7 @@ program dv_mag_relax
     err0 = 0
 
     call mrx_transfer(model, &
-        mrx_number(cfg_temperature_method, .TRUE., .FALSE.), x, Y)
+        mrx_number(cfg_temperature_method, .TRUE., use_conduction), x, Y)
 
     call mrx_sel_nvar(model, ny)
     call mrx_sel_hash(model, c_)
@@ -227,6 +228,14 @@ program dv_mag_relax
     y_frad  => Y(C_(4)::ny)
     y_pmag  => Y(C_(5)::ny)
     YV(1:ny,1:ngrid) => Y
+
+    if (cfg_temperature_method == EQUATION_BALANCE) niter(3) = niter(3) + 12
+
+    if (use_conduction) then
+      niter(3) = niter(3) + 24
+      y_fcnd => Y(C_(6)::ny)
+      y_fcnd(:) = 0
+    end if
 
     call deriv(x, y_frad, heat)
 
@@ -252,7 +261,7 @@ program dv_mag_relax
       forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
           & .and. ieee_is_normal(dY(i))
       err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-      ramp = ramp4(iter, niter(3), 1d-3, 0d1)
+      ramp = ramp3(iter, niter(3)) * min(err0 / err, 1.0_r64)
 
       write(uerr,fmiter) nitert+1, err, 100*ramp
 
@@ -268,7 +277,7 @@ program dv_mag_relax
       nitert = nitert + 1
       if (cfg_write_all_iters) call saveiter(nitert)
 
-      if (err < 1e-4 .and. err0 / err > 5) then
+      if (err < 1e-4 .and. err0 / err > 3) then
         write (uerr, '("convergence reached with error = ",ES9.2)') err
         exit relx_corona
       end if
@@ -298,9 +307,11 @@ program dv_mag_relax
   write (upar, fmparfc) "nu", nu, "reconnection parameter"
   write (upar, fmpare) "radius", radius
   write (upar, fmpare) "zscale", zscale
+  write (upar, fmpare) "facc", facc
   write (upar, fmparec) "rho_0", rhoc, "Central density"
   write (upar, fmparec) "temp_0", Tc, "Central gas temperature"
   write (upar, fmpare) "teff", teff
+  write (upar, fmpare) "teff_kev", teff * keV_in_kelvin
   write (upar, fmparec) "Hdisk", Hdisk, "Disk height [cm]"
   write (upar, fmhdr)  "Model information"
   write (upar, fmpari) "model", model
@@ -336,10 +347,12 @@ program dv_mag_relax
       write (upar,fmparfc) "hcor", zcor / zscale, "height of temperature minimum [H]"
       call interpol(x, yy(c_temp,:), zcor, tcor)
       write (upar,fmparec) 'tmin', tcor, 'temperature minimum'
+      write (upar,fmparec) 'tmin_keV', tcor * keV_in_kelvin, 'same but in keV'
 
       ! average temperature of the corona
       call interpol(x, yy(c_tavg,:), zcor, tcor)
       write (upar,fmparec) 'tcor', tcor, 'average temperature in corona'
+      write (upar,fmparec) 'tcor_keV', tcor * keV_in_kelvin, 'same but in keV'
 
       ! optical depth of the corona
       call interpol(x, yy(c_tau,:), zcor, taucor)

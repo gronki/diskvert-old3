@@ -23,6 +23,8 @@ module globals
 
     real(r64) :: mbh, mdot
 
+    real(r64) :: cndredu = 1e-1
+
     real(r64), parameter :: miu = 0.50
     real(r64), parameter :: pi = 4*atan(real(1,r64))
 
@@ -124,20 +126,17 @@ contains !-----------------------------------------------------------------!
     elemental function fkcnd(rho,T) result(kcnd)
       real(r64), intent(in) :: rho,T
       real(r64) :: kcnd
-      real(r64), parameter :: red = 0.1
-
-      kcnd = 5.6d-7 * red * T**2.5d0
+      kcnd = 5.6d-7 * cndredu * T**2.5d0
     end function
 
     elemental subroutine kappcnd(rho,T,kap,krho,kT)
       use ieee_arithmetic, only: ieee_is_nan
       real(r64), intent(in) :: rho,T
       real(r64), intent(out) :: kap,krho,kT
-      real(r64), parameter :: red = 0.1
 
-      kap = 5.6d-7 * red * T**2.5d0
+      kap = 5.6d-7 * cndredu * T**2.5d0
       krho = 0
-      kT = 5.6d-7 * red * 2.5d0 * T**1.5d0
+      kT = 2.5d0 * kap / T
     end subroutine
 
 
