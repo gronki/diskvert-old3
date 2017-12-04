@@ -7,12 +7,11 @@ mdot = 0.007
 radius = 9
 alpha = 0.01
 
-beta = logspace(log10(0.333), log10(2 - alpha) - log10(alpha), 36)
-zeta = alpha * (beta + 1) / 2
+zeta = logspace(log10(alpha), 0, 48)
+beta = 2 * zeta / alpha - 1
 
-fn = lambda a,b: 'B{:06d}'.format(int(round(b*100)))
-for bet,zet in zip(beta,zeta):
-    with open(fn(alpha,bet) + '.par','w') as f:
+for bet,zet,i in zip(beta,zeta,range(len(zeta))):
+    with open('B{:02d}.par'.format(i),'w') as f:
         f.write("mbh {}\nmdot {}\nradius {}\n".format(mbh,mdot,radius))
         f.write("alpha {}\nzeta {}\n".format(alpha,zet))
         f.write("# beta {}\n".format(bet))
