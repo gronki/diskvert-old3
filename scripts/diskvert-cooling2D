@@ -35,7 +35,7 @@ parser.add_argument('--logT-max', type=float, default = 3.0,
 parser.add_argument('--logT-min', type=float, default = -1.5,
         help=u"logarytm minimalnej temperatury")
 # 2. Wyświetlanie
-parser.add_argument('--display-range', type=float, default = 0.2,
+parser.add_argument('--display-range', type=float, default = 0.1,
         help=u"zakres wyświetlany przy pomocy kolorów")
 parser.add_argument('--resolution', type=int, default = 96,
         help=u"ile przedziałów w osi X")
@@ -138,7 +138,7 @@ for iy in range(ny):
             + 12 * kappa_es * rho * prad * cgs_boltz * ( temp - trad ) \
             / ( cgs_mel * cgs_c )
 
-    cool_net[:,iy] = 1 - cool_net0/heat
+    cool_net[:,iy] = 1 - cool_net0 / heat
 
     cool1 = where(temp > trad, cool_net0, np.nan)
 
@@ -152,7 +152,6 @@ for iy in range(ny):
 
 
 def mygrad(s,yl,yh,xg,yg,wg,xl,xh,sm):
-    a = wg
     return LinearSegmentedColormap(s, {
         'red': (
             (0.0,yl,yl),
@@ -164,22 +163,22 @@ def mygrad(s,yl,yh,xg,yg,wg,xl,xh,sm):
         'green': (
             (0.0,yl,yl),
             (0.5-xg,yg,yg),
-            (0.5-0.5*xg, yg+a*(1-yg), yg+a*(1-yg)),
+            (0.5-0.5*xg, yg+wg*(1-yg), yg+wg*(1-yg)),
             (0.5,1,1),
-            (0.5+0.5*xg, yg+a*(1-yg), yg+a*(1-yg)),
+            (0.5+0.5*xg, yg+wg*(1-yg), yg+wg*(1-yg)),
             (0.5+xg,yg,yg),
             (1.0,yl,yl),
         ),
         'blue': (
             (0.0,yh,yh),
             (xh,1.0-sm,1.0-sm),
-            (0.5,0.96,0.96),
+            (0.5,0.97,0.97),
             (1-xl,0.0,0.0),
             (1.0,yl,yl),
         ),
-    })
+    }, N = 1024)
 
-plt.register_cmap(cmap=mygrad('diskvert1',0.1,0.36, 0.27,0.1,0.6, 0.4,0.25,0.04))
+plt.register_cmap(cmap=mygrad('diskvert1',0.1,0.36, 0.27,0.09,0.55, 0.4,0.25,0.04))
 plt.register_cmap(cmap=mygrad('diskvert2',0.18,0.32, 0.3,0.25,0.75, 0.2,0.45,0.0))
 cm = plt.get_cmap(args.colormap)
 
@@ -240,7 +239,7 @@ ax.contour(xax,yax,log10(1 - cool_net.transpose()),\
         colors=['#003300']*(2*nc-1) )
 
 # pasek na prawo
-plt.colorbar(mp,ax=ax,label='$\\log \\left( \\Lambda_{\\rm cool} / \\Lambda_{\\rm heat} \\right) $')
+plt.colorbar(mp,ax=ax,label='$1 - {\\rm cool} / {\\rm heat}$')
 
 if args.show:
     plt.show()
