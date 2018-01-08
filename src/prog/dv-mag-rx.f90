@@ -303,6 +303,7 @@ program dv_mag_relax
 
   call wpar_gl(upar)
   write (upar, fmparfc) "alpha", alpha, "alpha parameter"
+  write (upar, fmparfc) "eta", zeta, "field rise parameter"
   write (upar, fmparfc) "zeta", zeta, "field rise parameter"
   write (upar, fmparfc) "nu", nu, "reconnection parameter"
   write (upar, fmpare) "radius", radius
@@ -319,7 +320,7 @@ program dv_mag_relax
   write (upar, fmparl) "has_corona", &
         & (cfg_temperature_method .ne. EQUATION_DIFFUSION)
   write (upar, fmparl) "has_magnetic", .TRUE.
-  write (upar, fmparl) "has_conduction", .FALSE.
+  write (upar, fmparl) "has_conduction", use_conduction
 
   !----------------------------------------------------------------------------!
 
