@@ -267,6 +267,14 @@ contains
       + (A - 1) * (B - 3) * x**4
   end function
 
+  ! this ramp starts smoothly, rises rapidly, and then slowly saturates to 1
+  elemental function ramp5(i,n) result(y)
+    integer, intent(in) :: i,n
+    real(r64) :: t,y
+    t = merge(real(i) / n, 1.0, i .le. n)
+    y = (3*t**2 - 8*t + 6) * t**2
+  end function
+
   !----------------------------------------------------------------------------!
 
   subroutine mrx_relax(nr, x, Y, niter, r, errno)

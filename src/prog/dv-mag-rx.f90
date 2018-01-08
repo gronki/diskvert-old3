@@ -18,7 +18,7 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0
-  integer, dimension(3) :: niter = [ 24, 8, 36 ]
+  integer, dimension(3) :: niter = [ 20, 10, 28 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:), YY(:,:)
   real(dp), pointer :: yv(:,:)
   integer, dimension(:), allocatable :: ipiv
@@ -28,7 +28,7 @@ program dv_mag_relax
   real(dp), allocatable, dimension(:) :: tau, heat
   real(dp) :: rhoc, Tc, Hdisk, err, err0, ramp
   character(*), parameter :: fmiter = '(I5,2X,ES9.2,2X,F5.1,"%")'
-  logical :: user_ff, user_bf
+  logical :: user_ff, user_bf, converged
   integer, dimension(6) :: c_
   integer, parameter :: upar = 92
 
@@ -83,6 +83,7 @@ program dv_mag_relax
 
   user_ff = use_opacity_ff
   user_bf = use_opacity_bf
+  converged = .true.
 
   !----------------------------------------------------------------------------!
   ! calculate the global parameters
@@ -124,7 +125,7 @@ program dv_mag_relax
     forall (i = 1:ngrid)
       y_frad(i) = x0(i) * facc
       y_temp(i) = (1 - x0(i)) * (Tc - 0.841 * Teff) + 0.841 * Teff
-      y_rho(i) =  rhoc * (exp(-0.5*(x(i)/Hdisk)**2) + 1e-8)
+      y_rho(i) =  rhoc * (exp(-0.5*(x(i)/Hdisk)**2) + 1e-6)
 
       y_pmag(i) = 2 * cgs_k_over_mh * y_rho(i) * y_temp(i)   &
             & / (beta_0 * exp(- 0.5 * (x(i) / Hdisk)**2 ) + 1e-2)
@@ -147,7 +148,7 @@ program dv_mag_relax
     forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
         & .and. ieee_is_normal(dY(i))
     err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-    ramp = ramp3(iter, niter(1), 1d-2)
+    ramp = ramp5(iter, niter(1) - 6)
     write(uerr,fmiter) nitert+1, err, 100*ramp
 
     Y(:) = Y + dY * ramp
@@ -155,7 +156,7 @@ program dv_mag_relax
     nitert = nitert + 1
     if (cfg_write_all_iters) call saveiter(nitert)
 
-    if (err < 1e-4 .and. err0 / err > 5) then
+    if (err < 1e-5 .and. err0 / err > 5) then
       write (uerr, '("convergence reached with error = ",ES9.2)') err
       exit relx_opacity_es
     end if
@@ -184,7 +185,7 @@ program dv_mag_relax
       forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
           & .and. ieee_is_normal(dY(i))
       err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-      ramp = ramp3(iter, niter(2), 0.5d0)
+      ramp = ramp2(iter, niter(2) - 2)
       write(uerr,fmiter) nitert+1, err, 100*ramp
 
       Y(:) = Y + dY * ramp
@@ -192,7 +193,7 @@ program dv_mag_relax
       nitert = nitert + 1
       if (cfg_write_all_iters) call saveiter(nitert)
 
-      if (err < 1e-4 .and. err0 / err > 5) then
+      if (err < 1e-5 .and. err0 / err > 5) then
         write (uerr, '("convergence reached with error = ",ES9.2)') err
         exit relx_opacity_full
       end if
@@ -229,10 +230,10 @@ program dv_mag_relax
     y_pmag  => Y(C_(5)::ny)
     YV(1:ny,1:ngrid) => Y
 
-    if (cfg_temperature_method == EQUATION_BALANCE) niter(3) = niter(3) + 12
+    if (cfg_temperature_method == EQUATION_BALANCE) niter(3) = niter(3) + 6
 
     if (use_conduction) then
-      niter(3) = niter(3) + 24
+      niter(3) = niter(3) + 12
       y_fcnd => Y(C_(6)::ny)
       y_fcnd(:) = 0
     end if
@@ -243,7 +244,7 @@ program dv_mag_relax
       y_temp(i) = heat(i) * (cgs_mel * cgs_c**2) &
             & / (16 * cgs_boltz * (cgs_kapes*y_rho(i)) &
             & * (cgs_stef*y_trad(i)**4) )
-      y_temp(i) = sqrt(y_temp(i)**2 + y_trad(i)**2)
+      y_temp(i) = sqrt(y_trad(i)**2 + y_temp(i)**2)
     end forall
 
     nitert = nitert + 1
@@ -261,12 +262,17 @@ program dv_mag_relax
       forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
           & .and. ieee_is_normal(dY(i))
       err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-      ramp = ramp3(iter, niter(3)) * min(err0 / err, 1.0_r64)
+      ramp = ramp5(iter, niter(3) - 8) ! * min(err0 / err, 1.0_r64)
 
       write(uerr,fmiter) nitert+1, err, 100*ramp
 
       if (ieee_is_nan(err)) exit relx_corona
 
+      if ((iter > 1 .and. err > err0) .or. (err > 1e4)) then
+        write (uerr, '(''diverged: '', Es9.2, '' -> '', Es9.2)') err0, err
+        converged = .false.
+        exit relx_corona
+      end if
       Y(:) = Y + dY * ramp
 
       where (y_trad < teff * 0.80) y_trad = teff * 0.80
@@ -277,7 +283,7 @@ program dv_mag_relax
       nitert = nitert + 1
       if (cfg_write_all_iters) call saveiter(nitert)
 
-      if (err < 1e-4 .and. err0 / err > 3) then
+      if (err < 1e-5 .and. err0 / err > 5) then
         write (uerr, '("convergence reached with error = ",ES9.2)') err
         exit relx_corona
       end if
@@ -317,6 +323,7 @@ program dv_mag_relax
   write (upar, fmhdr)  "Model information"
   write (upar, fmpari) "model", model
   write (upar, fmpari) "niter", nitert
+  write (upar, fmparl) "converged", converged
   write (upar, fmparl) "has_corona", &
         & (cfg_temperature_method .ne. EQUATION_DIFFUSION)
   write (upar, fmparl) "has_magnetic", .TRUE.

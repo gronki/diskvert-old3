@@ -258,6 +258,7 @@ for balance, bilfull, magnetic, conduction in choices:
     # Funkcja zrodlowa
     #
     if balance:
+        # sdyf = 4 * T_rad**3
         sdyf = (T_gas + T_rad) * (T_gas**2 + T_rad**2)
         ssct = 4 * kboltz * T_rad**4 / ( m_el * c**2 )
         radcool = 4 * sigma * rho * (T_gas - T_rad) \
