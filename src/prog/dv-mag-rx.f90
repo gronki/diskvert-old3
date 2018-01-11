@@ -318,7 +318,7 @@ program dv_mag_relax
   write (upar, fmparec) "rho_0", rhoc, "Central density"
   write (upar, fmparec) "temp_0", Tc, "Central gas temperature"
   write (upar, fmpare) "teff", teff
-  write (upar, fmpare) "teff_kev", teff * keV_in_kelvin
+  write (upar, fmpare) "teff_keV", teff * keV_in_kelvin
   write (upar, fmparec) "Hdisk", Hdisk, "Disk height [cm]"
   write (upar, fmhdr)  "Model information"
   write (upar, fmpari) "model", model
