@@ -1,0 +1,6 @@
+*.pyc
+/datac
+/dataw
+/par
+/jobs.lst
+*.png
