@@ -268,7 +268,7 @@ program dv_mag_relax
 
       if (ieee_is_nan(err)) exit relx_corona
 
-      if ((iter > 1 .and. err > err0) .or. (err > 1e4)) then
+      if ((iter > 1 .and. err > 1.05 * err0) .or. (err > 1e4)) then
         write (uerr, '(''diverged: '', Es9.2, '' -> '', Es9.2)') err0, err
         converged = .false.
         exit relx_corona
