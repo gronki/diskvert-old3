@@ -17,9 +17,10 @@ program dv_mag_relax
 
   type(config) :: cfg
   integer :: model, errno
-  integer :: ny = 3, i, iter, nitert = 0
+  integer :: ny = 3, i, iter, nitert = 0, KL, KU
   integer, dimension(3) :: niter = [ 20, 10, 28 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:), YY(:,:)
+  real(dp), allocatable :: MB(:,:)
   real(dp), pointer :: yv(:,:)
   integer, dimension(:), allocatable :: ipiv
   logical, dimension(:), allocatable :: errmask
@@ -143,7 +144,9 @@ program dv_mag_relax
   relx_opacity_es : do iter = 1,niter(1)
 
     call mrx_matrix(model, x, Y, M, dY)
-    call dgesv(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
+    ! call dgesv(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
+    call m2band(M, MB, KL, KU)
+    call dgbsv(size(MB,2), KL, KU, 1, MB, size(MB,1), ipiv, dY, size(dY), errno)
 
     forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
         & .and. ieee_is_normal(dY(i))
@@ -180,7 +183,9 @@ program dv_mag_relax
     relx_opacity_full : do iter = 1,niter(2)
 
       call mrx_matrix(model, x, Y, M, dY)
-      call dgesv(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
+      ! call dgesv(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
+      call m2band(M, MB, KL, KU)
+      call dgbsv(size(MB,2), KL, KU, 1, MB, size(MB,1), ipiv, dY, size(dY), errno)
 
       forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
           & .and. ieee_is_normal(dY(i))
@@ -255,7 +260,9 @@ program dv_mag_relax
     relx_corona : do iter = 1,niter(3)
 
       call mrx_matrix(model, x, Y, M, dY)
-      call dgesv(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
+      ! call dgesv(size(M,2), 1, M, size(M,1), ipiv, dY, size(dY), errno)
+      call m2band(M, MB, KL, KU)
+      call dgbsv(size(MB,2), KL, KU, 1, MB, size(MB,1), ipiv, dY, size(dY), errno)
 
       if (errno .ne. 0) exit relx_corona
 
@@ -268,7 +275,7 @@ program dv_mag_relax
 
       if (ieee_is_nan(err)) exit relx_corona
 
-      if ((iter > 1 .and. err > 1.05 * err0) .or. (err > 1e4)) then
+      if ((iter > 1 .and. err > err0) .or. (err > 1e4)) then
         write (uerr, '(''diverged: '', Es9.2, '' -> '', Es9.2)') err0, err
         converged = .false.
         exit relx_corona
@@ -536,6 +543,52 @@ contains
     end if
 
   end subroutine
+
+  !----------------------------------------------------------------------------!
+
+  subroutine m2band(A,AB,KL,KU)
+    real(dp), dimension(:,:), intent(in) :: A
+    real(dp), dimension(:,:), allocatable, intent(out) :: AB
+    integer, intent(out) :: KL, KU
+    integer :: i,j,n
+
+    if (size(A,1) /= size(A,2)) error stop "sizes must match!"
+
+    n = size(A,1)
+
+    kl = 0
+    ku = 0
+
+    do j = 1, N
+      do i = 1, N
+        if (A(i,j) /= 0) then
+          if (i > j) then
+            if ((i - j) > kl) kl = i - j
+          else if (i < j) then
+            if ((j - i) > ku) ku = j - i
+          end if
+        end if
+      end do
+    end do
+
+    ! write (0, '("N = ", I0, 2X, "KL = ", I0, 2X, "KU = ", I0)') N, KL, KU
+
+    if (allocated(AB)) then
+      if ( size(AB,1) /= 2*KL+KU+1 .or. size(AB,2) /= N ) then
+        deallocate(ab)
+        allocate(AB(2*KL+KU+1,N))
+      end if
+    else
+      allocate(AB(2*KL+KU+1,N))
+    end if
+
+    do j = 1,N
+      do i = max(1,j-KU), min(N,j+KL)
+        AB(KL+KU+1+i-j,j) = A(i,j)
+      end do
+    end do
+
+  end subroutine m2band
 
   !----------------------------------------------------------------------------!
 
