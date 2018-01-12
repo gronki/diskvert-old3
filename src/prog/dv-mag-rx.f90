@@ -18,7 +18,7 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0, KL, KU
-  integer, dimension(3) :: niter = [ 20, 10, 28 ]
+  integer, dimension(3) :: niter = [ 24, 12, 30 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:), YY(:,:)
   real(dp), allocatable :: MB(:,:)
   real(dp), pointer :: yv(:,:)
@@ -275,7 +275,7 @@ program dv_mag_relax
 
       if (ieee_is_nan(err)) exit relx_corona
 
-      if ((iter > 1 .and. err > err0) .or. (err > 1e4)) then
+      if ((iter > 1 .and. err > err0 * 1.05) .or. (err > 1e4)) then
         write (uerr, '(''diverged: '', Es9.2, '' -> '', Es9.2)') err0, err
         converged = .false.
         exit relx_corona
@@ -413,6 +413,7 @@ program dv_mag_relax
   close(upar)
 
   deallocate(x,x0,Y,M,dY,tau,heat,errmask,ipiv,yy)
+  if (allocated(MB)) deallocate(MB)
 
 contains
 
