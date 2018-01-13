@@ -36,6 +36,7 @@ module slf_cgs
             keV_in_kelvin = cgs_boltz / keV_in_erg,   &
             angstr_keV = 1e8 * cgs_h * cgs_c / keV_in_erg
 
+    ! UWAGA: nie uzywac!!!!
     real(r64), parameter ::  &
         sol_mass = 1.98855d33, sol_lum = 3.828d33,              &
         sol_rschw = 2 * cgs_graw * sol_mass / cgs_c**2,         &

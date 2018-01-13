@@ -88,7 +88,7 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
   ! calculate the global parameters
-  call mrx_init(mbh, mdot, radius, alpha)
+  call cylinder(mbh, mdot, radius, omega, facc, teff, zscale)
 
   ! get the model number
   model = mrx_number( 'D', .TRUE., .FALSE. )
@@ -453,7 +453,7 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
   !----------------------------------------------------------------------------!
-  
+
 contains
 
   !----------------------------------------------------------------------------!

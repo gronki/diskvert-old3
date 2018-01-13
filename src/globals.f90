@@ -35,29 +35,35 @@ module globals
 
 contains !-----------------------------------------------------------------!
 
-    elemental subroutine cylinder(mbh, mdot, r, omega, flux, teff, zscale)
+    elemental subroutine cylinder(mbh, mdot, r, omega, facc, teff, zscale)
         real(r64), intent(in) :: mbh, mdot, r
-        real(r64), intent(out) :: omega, flux, teff, zscale
-        omega = sol_omega / sqrt( mbh**2 * r**3 )
-        flux = sol_facc_edd * (mdot / mbh) * (1 - sqrt(3/r)) / r**3
-        teff = ( flux / cgs_stef ) ** (1d0 / 4d0)
+        real(r64), intent(out) :: omega, facc, teff, zscale
+        real(r64) :: GM, rschw, mdot_crit, mdot_edd
+
+        GM = cgs_graw * mbh * sol_mass
+
+        rschw = 2 * GM / cgs_c**2
+        omega = sqrt( GM / (r * rschw)**3 )
+
+        mdot_crit = 4 * pi * GM / (cgs_c * cgs_kapes)
+        mdot_edd = 12 * mdot_crit
+        facc = 3 * GM * (mdot * mdot_edd) / (8 * pi * (r * rschw)**3) &
+        &    * (1 - sqrt(3/r))
+
+        teff = ( facc / cgs_stef ) ** (1d0 / 4d0)
         zscale = sqrt( 2 * cgs_k_over_mh * teff ) / omega
     end subroutine
 
     elemental function fzscale(mbh, mdot, r) result(zscale)
         real(r64), intent(in) :: mbh, mdot, r
-        real(r64) :: omega, flux, teff, zscale
-        omega = sol_omega / sqrt( mbh**2 * r**3 )
-        flux = sol_facc_edd * (mdot / mbh) * (1 - sqrt(3/r)) / r**3
-        teff = ( flux / cgs_stef ) ** (1d0 / 4d0)
-        zscale = sqrt( 2 * cgs_k_over_mh * teff ) / omega
+        real(r64) :: omega, facc, teff, zscale
+        call cylinder(mbh, mdot, r, omega, facc, teff, zscale)
     end function
 
     elemental function fTeff(mbh, mdot, r) result(teff)
       real(r64), intent(in) :: mbh, mdot, r
-      real(r64) :: flux, teff
-      flux = sol_facc_edd * (mdot / mbh) * (1 - sqrt(3/r)) / r**3
-      teff = ( flux / cgs_stef ) ** (1d0 / 4d0)
+      real(r64) :: omega, facc, teff, zscale
+      call cylinder(mbh, mdot, r, omega, facc, teff, zscale)
     end function
 
 !--------------------------------------------------------------------------!

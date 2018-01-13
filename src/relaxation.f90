@@ -47,17 +47,6 @@ module relaxation
 
 contains
 
-  subroutine mrx_init(mb, md, rad, alph, zet)
-    real(r64), intent(in) :: mb, md, rad, alph
-    real(r64), intent(in), optional :: zet
-    mbh = mb
-    mdot = md
-    radius = rad
-    alpha = alph
-    if (present(zet)) zeta = zet
-    call cylinder(mbh, mdot, radius, omega, facc, teff, zscale)
-  end subroutine
-
   !----------------------------------------------------------------------------!
 
   pure function mrx_number(bil, magnetic, conduction) result(nr)

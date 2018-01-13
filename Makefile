@@ -1,4 +1,4 @@
-VERSION = 171114
+VERSION = 180113
 
 #------------------------------------------------------------------------------#
 
@@ -18,16 +18,15 @@ LDFLAGS = -L.
 #------------------------------------------------------------------------------#
 
 FC = gfortran
+FFLAGS ?= -g -O2
 
 ifeq ($(FC),gfortran)
-FFLAGS = -g -O3 -Wall -Warray-temporaries -Wrealloc-lhs-all
+FFLAGS += -fno-unsafe-math-optimizations -Wall -Warray-temporaries -Wrealloc-lhs-all
 endif
 
 ifeq ($(FC),ifort)
-FFLAGS = -g -O2 -fp-model precise -Winline
+FFLAGS += -fp-model precise -Winline
 endif
-
-FFLAGS ?= -g -O2
 
 #------------------------------------------------------------------------------#
 
