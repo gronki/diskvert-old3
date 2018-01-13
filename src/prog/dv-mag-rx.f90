@@ -430,6 +430,7 @@ program dv_mag_relax
 
   compute_diskscale: block
 
+    use slf_integrate
     real(dp) :: coldens, diskscale
 
     write (upar, fmhdr)  "column density and disk vertical scale"
@@ -455,18 +456,6 @@ program dv_mag_relax
   !----------------------------------------------------------------------------!
 
 contains
-
-  !----------------------------------------------------------------------------!
-
-  pure real(dp) function integrate(y,x) result(intg)
-    real(dp), dimension(:), intent(in) :: x, y
-    integer :: n
-
-    if (size(x) /= size(y)) error stop "size(x) /= size(y)"
-
-    n = size(x)
-    intg = sum((y(2:n) + y(1:n-1)) * (x(2:n) - x(1:n-1))) / 2
-  end function
 
   !----------------------------------------------------------------------------!
 
