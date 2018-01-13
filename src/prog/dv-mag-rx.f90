@@ -305,16 +305,24 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
 
-  open(33, file = trim(outfn) // '.dat', action = 'write')
-  call fillcols(yv, c_, yy)
-  writeresults : do i = 1,ngrid
-    write (33,'(I6,*(ES14.5E3))') i, x(i), x(i) / zscale, yy(:,i)
-  end do writeresults
-  close(33)
+  write_results: block
+
+    open(33, file = trim(outfn) // '.dat', action = 'write')
+
+    call fillcols(yv, c_, yy)
+
+    do i = 1,ngrid
+      write (33,'(I6,*(ES14.5E3))') i, x(i), x(i) / zscale, yy(:,i)
+    end do
+
+    close(33)
+
+  end block write_results
 
   !----------------------------------------------------------------------------!
 
   call wpar_gl(upar)
+
   write (upar, fmparfc) "alpha", alpha, "alpha parameter"
   write (upar, fmparfc) "eta", zeta, "field rise parameter"
   write (upar, fmparfc) "zeta", zeta, "field rise parameter"
@@ -326,7 +334,8 @@ program dv_mag_relax
   write (upar, fmparec) "temp_0", Tc, "Central gas temperature"
   write (upar, fmpare) "teff", teff
   write (upar, fmpare) "teff_keV", teff * keV_in_kelvin
-  write (upar, fmparec) "Hdisk", Hdisk, "Disk height [cm]"
+  write (upar, fmparec) "zdisk_ss73", Hdisk, "Disk height [cm]"
+  write (upar, fmparec) "hdisk_ss73", Hdisk / zscale, "Disk height [cm]"
   write (upar, fmhdr)  "Model information"
   write (upar, fmpari) "model", model
   write (upar, fmpari) "niter", nitert
@@ -338,14 +347,21 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
 
-  open(35, file = trim(outfn) // ".col", action = 'write')
-  write(35, fmcol) 'i', 'i4'
-  write(35, fmcol) 'z', 'f4'
-  write(35, fmcol) 'h', 'f4'
-  do i = 1,ncols
-    write (35,fmcol) labels(i), 'f4'
-  end do
-  close(35)
+  write_columns: block
+
+    open(35, file = trim(outfn) // ".col", action = 'write')
+
+    write(35, fmcol) 'i', 'i4'
+    write(35, fmcol) 'z', 'f4'
+    write(35, fmcol) 'h', 'f4'
+
+    do i = 1,ncols
+      write (35,fmcol) labels(i), 'f4'
+    end do
+
+    close(35)
+
+  end block write_columns
 
   !----------------------------------------------------------------------------!
 
@@ -395,6 +411,7 @@ program dv_mag_relax
   !----------------------------------------------------------------------------!
 
   PhotosphereLocation : block
+
     use slf_interpol
     real(dp) :: zphot, ztherm
 
@@ -405,8 +422,27 @@ program dv_mag_relax
 
     call interpol(yy(c_tauth,:), x, 1d0, ztherm)
     write (upar,fmparec) 'ztherm', ztherm, 'thermalization depth (tauth=1)'
+
   end block PhotosphereLocation
 
+
+  !----------------------------------------------------------------------------!
+
+  compute_diskscale: block
+
+    real(dp) :: coldens, diskscale
+
+    write (upar, fmhdr)  "column density and disk vertical scale"
+
+    coldens = integrate(yy(c_rho,:), x)
+    write (upar, fmparec) 'coldens', coldens, 'column density'
+
+    diskscale = sqrt(integrate(yy(c_rho,:) * x**2, x) / coldens)
+
+    write (upar, fmparec) 'zdisk', diskscale, 'disk vertical scale (second moment)'
+    write (upar, fmparec) 'hdisk', diskscale / zscale, 'same but in scale heights'
+
+  end block compute_diskscale
 
   !----------------------------------------------------------------------------!
 
@@ -415,7 +451,22 @@ program dv_mag_relax
   deallocate(x,x0,Y,M,dY,tau,heat,errmask,ipiv,yy)
   if (allocated(MB)) deallocate(MB)
 
+  !----------------------------------------------------------------------------!
+  !----------------------------------------------------------------------------!
+  
 contains
+
+  !----------------------------------------------------------------------------!
+
+  pure real(dp) function integrate(y,x) result(intg)
+    real(dp), dimension(:), intent(in) :: x, y
+    integer :: n
+
+    if (size(x) /= size(y)) error stop "size(x) /= size(y)"
+
+    n = size(x)
+    intg = sum((y(2:n) + y(1:n-1)) * (x(2:n) - x(1:n-1))) / 2
+  end function
 
   !----------------------------------------------------------------------------!
 
