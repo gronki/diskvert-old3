@@ -10,7 +10,8 @@ module settings
 
     integer, parameter ::   GRID_LINEAR = 1, &
                         &   GRID_LOG    = 2, &
-                        &   GRID_ASINH  = 3
+                        &   GRID_ASINH  = 3, &
+                        &   GRID_POW2   = 4
     integer :: tgrid = GRID_LOG
     real(r64) :: htop = 60
 
@@ -51,6 +52,8 @@ contains
         tgrid = GRID_LOG
       case ("-asinh","-grid-asinh")
         tgrid = GRID_ASINH
+      case ("-grid-pow2", "-pow2")
+        tgrid = GRID_POW2
 
       case ("-top","-htop","-z-top")
         call get_command_argument(i+1,nextarg)

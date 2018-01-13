@@ -10,7 +10,7 @@ program dv_mag_relax
   use slf_deriv, only: deriv
   use rxsettings
   use ss73solution, only: apxdisk, apx_estim, apx_refin
-  use grid, only: space_linear, space_linlog
+  use grid
 
   !----------------------------------------------------------------------------!
   implicit none
@@ -27,11 +27,13 @@ program dv_mag_relax
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, y_pmag, &
         & y_Trad, y_fcnd
   real(dp), allocatable, dimension(:) :: tau, heat
-  real(dp) :: rhoc, Tc, Hdisk, err, err0, ramp
+  real(dp) :: rhoc, Tc, Hdisk, err, err0, ramp, beta_0
   character(*), parameter :: fmiter = '(I5,2X,ES9.2,2X,F5.1,"%")'
   logical :: user_ff, user_bf, converged
   integer, dimension(6) :: c_
   integer, parameter :: upar = 92
+
+  real(dp), parameter :: typical_hdisk = 10
 
   integer, parameter :: ncols  = 19, &
       c_rho = 1, c_temp = 2, c_trad = 3, &
@@ -65,11 +67,13 @@ program dv_mag_relax
   labels(c_beta) = 'beta'
 
   !----------------------------------------------------------------------------!
+  ! default values
 
   ngrid = -1
   htop = 120
 
   !----------------------------------------------------------------------------!
+  ! initialize the globals, read the config etc
 
   call rdargvgl
   call rdargvrx
@@ -78,7 +82,6 @@ program dv_mag_relax
   call rdconf(cfg)
   call mincf_free(cfg)
 
-  if (ngrid .eq. -1) ngrid = ceiling(8*htop)
 
   open(upar, file = trim(outfn) // '.txt', action = 'write')
 
@@ -88,7 +91,36 @@ program dv_mag_relax
 
   !----------------------------------------------------------------------------!
   ! calculate the global parameters
+
   call cylinder(mbh, mdot, radius, omega, facc, teff, zscale)
+
+  beta_0 = 2 * zeta / alpha + nu - 1
+
+  if (beta_0 < 0) error stop "MAGNETIC BETA cannot be negative! " &
+        & // "zeta > alpha / 2!!!"
+
+  write (upar,fmpare) 'beta_0', beta_0
+
+  if (tgrid /= GRID_LINEAR .and. cfg_adjust_height_beta) &
+    htop = htop * (1 + 6 / sqrt(1 + beta_0))
+
+  !----------------------------------------------------------------------------!
+  ! if the grid number has not been set, choose the default
+
+  if (ngrid .eq. -1) then
+    select case (tgrid)
+    case (grid_linear)
+      ngrid = ceiling(8 * htop)
+    case (grid_log, grid_asinh)
+      ngrid = ceiling(200 * log(1 + htop / typical_hdisk))
+    case (grid_pow2)
+      ngrid = ceiling(4 * htop)
+    case default
+      error stop "this grid is not supported"
+    end select
+  end if
+
+  !----------------------------------------------------------------------------!
 
   ! get the model number
   model = mrx_number( 'D', .TRUE., .FALSE. )
@@ -99,16 +131,49 @@ program dv_mag_relax
   allocate(errmask(ny*ngrid), ipiv(ny*ngrid))
 
   !----------------------------------------------------------------------------!
+  ! calculate the SS73 solution to obtain the initial profile for iteration
 
   call apx_estim(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
   call apx_refin(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
 
   !----------------------------------------------------------------------------!
+  ! generate the grid
 
-  forall (i = 1:ngrid)
-    x(i) = space_linear(i,ngrid,htop) * zscale
-    x0(i) = space_linear(i,ngrid,htop) / htop
-  end forall
+  generate_grid: block
+
+    select case (tgrid)
+    case (grid_linear)
+      forall (i = 1:ngrid)
+        x(i)  = space_linear(i, ngrid, htop) * zscale
+        x0(i) = space_linear(i, ngrid, htop) / htop
+      end forall
+    case (grid_log)
+      forall (i = 1:ngrid)
+        x(i)  = space_linlog(i, ngrid, htop / typical_hdisk) &
+              * typical_hdisk * zscale
+        x0(i) = space_linlog(i, ngrid, htop / typical_hdisk) &
+              * typical_hdisk / htop
+      end forall
+    case (grid_asinh)
+      forall (i = 1:ngrid)
+        x(i)  = space_asinh(i, ngrid, htop / typical_hdisk) &
+              * typical_hdisk * zscale
+        x0(i) = space_asinh(i, ngrid, htop / typical_hdisk) &
+              * typical_hdisk / htop
+      end forall
+    case (grid_pow2)
+      forall (i = 1:ngrid)
+        x(i)  = space_pow2(i, ngrid, real(100, dp)) * htop * zscale
+        x0(i) = space_pow2(i, ngrid, real(100, dp))
+      end forall
+    case default
+      error stop "this grid is not supported"
+    end select
+
+  end block generate_grid
+
+  !----------------------------------------------------------------------------!
+  ! set pointers
 
   y_rho   => Y(C_(1)::ny)
   y_temp  => Y(C_(2)::ny)
@@ -118,22 +183,19 @@ program dv_mag_relax
   YV(1:ny,1:ngrid) => Y
 
   !----------------------------------------------------------------------------!
+  ! generate the initial disk profile
 
-  associate (beta_0 => 2 * zeta / alpha + nu - 1)
-    if (beta_0 < 0) error stop "MAGNETIC BETA cannot be negative! " &
-          & // "zeta > alpha / 2!!!"
-    write (upar,fmpare) 'beta_0', beta_0
-    forall (i = 1:ngrid)
-      y_frad(i) = x0(i) * facc
-      y_temp(i) = (1 - x0(i)) * (Tc - 0.841 * Teff) + 0.841 * Teff
-      y_rho(i) =  rhoc * (exp(-0.5*(x(i)/Hdisk)**2) + 1e-6)
+  forall (i = 1:ngrid)
+    y_frad(i) = x0(i) * facc
+    y_temp(i) = (1 - x0(i)) * (Tc - 0.841 * Teff) + 0.841 * Teff
+    y_rho(i) =  rhoc * (exp(-0.5*(x(i)/Hdisk)**2) + 1e-6)
 
-      y_pmag(i) = 2 * cgs_k_over_mh * y_rho(i) * y_temp(i)   &
-            & / (beta_0 * exp(- 0.5 * (x(i) / Hdisk)**2 ) + 1e-2)
-    end forall
-  end associate
+    y_pmag(i) = 2 * cgs_k_over_mh * y_rho(i) * y_temp(i)   &
+          & / (beta_0 * exp(- 0.5 * (x(i) / Hdisk)**2 ) + 1e-2)
+  end forall
 
   !----------------------------------------------------------------------------!
+  ! do the initial relaxation with only electron scattering opacity
 
   if (cfg_write_all_iters) call saveiter(0)
 
@@ -170,6 +232,7 @@ program dv_mag_relax
 
 
   !----------------------------------------------------------------------------!
+  ! do relaxation with other opacities
 
   use_opacity_ff = user_ff
   use_opacity_bf = user_bf
@@ -211,6 +274,7 @@ program dv_mag_relax
   end if
 
   !----------------------------------------------------------------------------!
+  ! if the coorna was requested, relax the gas temperature
 
   if ( cfg_temperature_method .ne. EQUATION_DIFFUSION ) then
 
@@ -304,6 +368,7 @@ program dv_mag_relax
   write (uerr,*) '--- DONE'
 
   !----------------------------------------------------------------------------!
+  ! write model data
 
   write_results: block
 
@@ -320,6 +385,7 @@ program dv_mag_relax
   end block write_results
 
   !----------------------------------------------------------------------------!
+  ! write some global information
 
   call wpar_gl(upar)
 
@@ -346,6 +412,7 @@ program dv_mag_relax
   write (upar, fmparl) "has_conduction", use_conduction
 
   !----------------------------------------------------------------------------!
+  ! save the column information for col2python
 
   write_columns: block
 
@@ -364,6 +431,7 @@ program dv_mag_relax
   end block write_columns
 
   !----------------------------------------------------------------------------!
+  ! evaluate and write the coronal properties
 
   if (cfg_temperature_method .ne. EQUATION_DIFFUSION) then
     write (upar, fmhdr)  "Corona properties"
@@ -409,6 +477,7 @@ program dv_mag_relax
   end if
 
   !----------------------------------------------------------------------------!
+  ! determine and save the photosphere location
 
   PhotosphereLocation : block
 
@@ -427,6 +496,7 @@ program dv_mag_relax
 
 
   !----------------------------------------------------------------------------!
+  ! compute the vertical disk scale and save it
 
   compute_diskscale: block
 
@@ -446,13 +516,13 @@ program dv_mag_relax
   end block compute_diskscale
 
   !----------------------------------------------------------------------------!
+  ! clean up
 
   close(upar)
 
   deallocate(x,x0,Y,M,dY,tau,heat,errmask,ipiv,yy)
   if (allocated(MB)) deallocate(MB)
 
-  !----------------------------------------------------------------------------!
   !----------------------------------------------------------------------------!
 
 contains
