@@ -393,6 +393,49 @@ contains
 
   !----------------------------------------------------------------------------!
 
+  subroutine m2band(A,AB,KL,KU)
+    real(r64), dimension(:,:), intent(in) :: A
+    real(r64), dimension(:,:), allocatable, intent(out) :: AB
+    integer, intent(out) :: KL, KU
+    integer :: i,j,n
+
+    if (size(A,1) /= size(A,2)) error stop "sizes must match!"
+
+    n = size(A,1)
+
+    kl = 0
+    ku = 0
+
+    do j = 1, N
+      do i = 1, N
+        if (A(i,j) /= 0) then
+          if ((i - j) > kl) kl = i - j
+          if ((j - i) > ku) ku = j - i
+        end if
+      end do
+    end do
+
+    ! write (0, '("N = ", I0, 2X, "KL = ", I0, 2X, "KU = ", I0)') N, KL, KU
+
+    if (allocated(AB)) then
+      if ( size(AB,1) /= 2*KL+KU+1 .or. size(AB,2) /= N ) then
+        deallocate(ab)
+        allocate(AB(2*KL+KU+1,N))
+      end if
+    else
+      allocate(AB(2*KL+KU+1,N))
+    end if
+
+    do j = 1,N
+      do i = max(1,j-KU), min(N,j+KL)
+        AB(KL+KU+1+i-j,j) = A(i,j)
+      end do
+    end do
+
+  end subroutine m2band
+
+  !----------------------------------------------------------------------------!
+
   include 'mrxcoeff.fi'
 
 end module relaxation
