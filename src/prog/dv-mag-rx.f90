@@ -33,16 +33,16 @@ program dv_mag_relax
   integer, dimension(6) :: c_
   integer, parameter :: upar = 92
 
-  real(dp), parameter :: typical_hdisk = 10
+  real(dp), parameter :: typical_hdisk = 15
 
-  integer, parameter :: ncols  = 19, &
+  integer, parameter :: ncols  = 20, &
       c_rho = 1, c_temp = 2, c_trad = 3, &
       c_pgas = 4, c_prad = 5, c_pmag = 6, &
       c_frad = 7, c_fmag = 8, c_fcnd = 9, &
       c_heat = 10, c_vrise = 11, &
       c_ksct = 12, c_kabs = 13, c_kcnd = 14, &
       c_tau = 15, c_taues = 16, c_tauth = 17, &
-      c_tavg = 18, c_beta = 19
+      c_tavg = 18, c_beta = 19, c_coldens = 20
   character(8), dimension(ncols) :: labels
 
   labels(c_rho) = 'rho'
@@ -65,12 +65,13 @@ program dv_mag_relax
   labels(c_tauth) = 'tauth'
   labels(c_tavg) = 'tavg'
   labels(c_beta) = 'beta'
+  labels(c_coldens) = 'coldens'
 
   !----------------------------------------------------------------------------!
   ! default values
 
   ngrid = -1
-  htop = 120
+  htop = 150
 
   !----------------------------------------------------------------------------!
   ! initialize the globals, read the config etc
@@ -101,8 +102,9 @@ program dv_mag_relax
 
   write (upar,fmpare) 'beta_0', beta_0
 
-  if (tgrid /= GRID_LINEAR .and. cfg_adjust_height_beta) &
-    htop = htop * (1 + 6 / sqrt(1 + beta_0))
+  if ((tgrid == GRID_LOG .or. tgrid == GRID_ASINH) &
+      .and. cfg_adjust_height_beta) &
+    htop = htop * (1 + 1 / sqrt(beta_0))
 
   !----------------------------------------------------------------------------!
   ! if the grid number has not been set, choose the default
@@ -112,7 +114,7 @@ program dv_mag_relax
     case (grid_linear)
       ngrid = ceiling(8 * htop)
     case (grid_log, grid_asinh)
-      ngrid = ceiling(200 * log(1 + htop / typical_hdisk))
+      ngrid = ceiling(300 * log(1 + htop / typical_hdisk))
     case (grid_pow2)
       ngrid = ceiling(4 * htop)
     case default
@@ -405,6 +407,7 @@ program dv_mag_relax
   write (upar, fmhdr)  "Model information"
   write (upar, fmpari) "model", model
   write (upar, fmpari) "niter", nitert
+  write (upar, fmpari) "ngrid", ngrid
   write (upar, fmparl) "converged", converged
   write (upar, fmparl) "has_corona", &
         & (cfg_temperature_method .ne. EQUATION_DIFFUSION)
@@ -431,89 +434,116 @@ program dv_mag_relax
   end block write_columns
 
   !----------------------------------------------------------------------------!
-  ! evaluate and write the coronal properties
-
-  if (cfg_temperature_method .ne. EQUATION_DIFFUSION) then
-    write (upar, fmhdr)  "Corona properties"
-    coronal_properties : block
-
-      use slf_interpol
-      real(dp) :: zcor, taucor, frad_disk, tcor, betacor
-
-      ! search for temperature minimum
-      call findtempmin(x,y_temp,zcor)
-      write (upar,fmparec) "zcor", zcor, "height of temperature minimum [cm]"
-      write (upar,fmparfc) "hcor", zcor / zscale, "height of temperature minimum [H]"
-      call interpol(x, yy(c_temp,:), zcor, tcor)
-      write (upar,fmparec) 'tmin', tcor, 'temperature minimum'
-      write (upar,fmparec) 'tmin_keV', tcor * keV_in_kelvin, 'same but in keV'
-
-      ! average temperature of the corona
-      call interpol(x, yy(c_tavg,:), zcor, tcor)
-      write (upar,fmparec) 'tcor', tcor, 'average temperature in corona'
-      write (upar,fmparec) 'tcor_keV', tcor * keV_in_kelvin, 'same but in keV'
-
-      ! optical depth of the corona
-      call interpol(x, yy(c_tau,:), zcor, taucor)
-      write (upar,fmparf) "tau_cor", taucor
-      call interpol(x, yy(c_taues,:), zcor, taucor)
-      write (upar,fmparf) "taues_cor", taucor
-      call interpol(x, yy(c_tauth,:), zcor, taucor)
-      write (upar,fmparf) "tauth_cor", taucor
-
-      ! energy released in the corona
-      call interpol(x,y_frad,zcor,frad_disk)
-      write (upar,fmpare) "frad_disk", frad_disk
-      write (upar,fmpare) "frad_cor", y_frad(ngrid) - frad_disk
-      write (upar,fmparfc) "chicor", 1 - frad_disk / y_frad(ngrid), &
-      & "relative amount of radiative flux released in the corona"
-
-      ! magnetic beta
-      call interpol(x, yy(c_beta,:), zcor, betacor)
-      write (upar,fmparec) 'betacor', betacor, &
-        & 'magnetic beta in temperature minimum'
-
-    end block coronal_properties
-  end if
-
-  !----------------------------------------------------------------------------!
   ! determine and save the photosphere location
 
-  PhotosphereLocation : block
+  write_disk_globals: block
 
     use slf_interpol
-    real(dp) :: zphot, ztherm
+    use slf_integrate
+    real(dp) :: zphot, ztherm, tavg_therm, tavg_phot
+    real(dp) :: coldens, diskscale
 
     write (upar,fmhdr) 'Photosphere'
 
     call interpol(yy(c_tau,:), x, 1d0, zphot)
     write (upar,fmparec) 'zphot', zphot, 'altitude of the photosphere (tau=1)'
+    write (upar,fmparf)  'hphot', zphot / zscale
 
     call interpol(yy(c_tauth,:), x, 1d0, ztherm)
     write (upar,fmparec) 'ztherm', ztherm, 'thermalization depth (tauth=1)'
+    write (upar,fmparf)  'htherm', ztherm / zscale
 
-  end block PhotosphereLocation
+    call interpol(x, yy(c_tavg,:), zphot, tavg_phot)
+    write (upar, fmparec) 'tavg_phot', tavg_phot, &
+          'average temperature up to the photosphere'
 
+    call interpol(x, yy(c_tavg,:), ztherm, tavg_therm)
+    write (upar, fmparec) 'tavg_therm', tavg_therm, &
+          'average temperature up to the termalization depth'
 
-  !----------------------------------------------------------------------------!
-  ! compute the vertical disk scale and save it
-
-  compute_diskscale: block
-
-    use slf_integrate
-    real(dp) :: coldens, diskscale
+    !--------------------------------------------------------------------------!
+    ! compute the vertical disk scale and save it
 
     write (upar, fmhdr)  "column density and disk vertical scale"
 
-    coldens = integrate(yy(c_rho,:), x)
+    coldens = yy(c_coldens,ngrid)
     write (upar, fmparec) 'coldens', coldens, 'column density'
 
     diskscale = sqrt(integrate(yy(c_rho,:) * x**2, x) / coldens)
 
-    write (upar, fmparec) 'zdisk', diskscale, 'disk vertical scale (second moment)'
-    write (upar, fmparec) 'hdisk', diskscale / zscale, 'same but in scale heights'
+    write (upar, fmparec) 'zdisk', diskscale, &
+          'disk vertical scale (second moment)'
+    write (upar, fmparfc) 'hdisk', diskscale / zscale, &
+          'same but in scale heights'
 
-  end block compute_diskscale
+    !--------------------------------------------------------------------------!
+    ! escaping flux - magnetic vs. radiative
+
+    write (upar, fmparf) 'frfrac_top', &
+          yy(c_frad, ngrid) / (yy(c_frad, ngrid) + yy(c_fmag, ngrid))
+
+    ! some values on the equator
+    write (upar, fmpare) 'betarad_0', yy(c_pgas,1) / yy(c_prad,1)
+
+    !--------------------------------------------------------------------------!
+    ! evaluate and write the coronal properties
+
+    if (cfg_temperature_method .ne. EQUATION_DIFFUSION) then
+      write (upar, fmhdr)  "Corona properties"
+      block
+
+        real(dp) :: zcor, taucor, frad_disk, tcor, betacor, coldens_disk, fmag_disk
+
+        ! search for temperature minimum
+        call findtempmin(x,y_temp,zcor)
+        write (upar,fmparec) "zcor", zcor, "height of temperature minimum [cm]"
+        write (upar,fmparfc) "hcor", zcor / zscale, "height of temperature minimum [H]"
+        call interpol(x, yy(c_temp,:), zcor, tcor)
+        write (upar,fmparec) 'tmin', tcor, 'temperature minimum'
+        write (upar,fmparec) 'tmin_keV', tcor * keV_in_kelvin, 'same but in keV'
+
+        ! average temperature of the corona
+        call interpol(x, yy(c_tavg,:), zcor, tcor)
+        write (upar,fmparec) 'tcor', tcor, 'average temperature in corona'
+        write (upar,fmparec) 'tcor_keV', tcor * keV_in_kelvin, 'same but in keV'
+
+        ! optical depth of the corona
+        call interpol(x, yy(c_tau,:), zcor, taucor)
+        write (upar,fmparf) "tau_cor", taucor
+        call interpol(x, yy(c_taues,:), zcor, taucor)
+        write (upar,fmparf) "taues_cor", taucor
+        call interpol(x, yy(c_tauth,:), zcor, taucor)
+        write (upar,fmparf) "tauth_cor", taucor
+
+        ! energy released in the corona
+        call interpol(x,y_frad,zcor,frad_disk)
+        write (upar,fmpare) "frad_disk", frad_disk
+        write (upar,fmpare) "frad_cor", y_frad(ngrid) - frad_disk
+        write (upar,fmparfc) "chicor", 1 - frad_disk / y_frad(ngrid), &
+            & "relative amount of radiative flux released in the corona"
+
+        call interpol(x, yy(c_fmag,:), zcor, fmag_disk)
+        write (upar, fmparf) 'frfrac_cor', frad_disk / (frad_disk + fmag_disk)
+
+        ! magnetic beta
+        call interpol(x, yy(c_beta,:), zcor, betacor)
+        write (upar,fmparec) 'betacor', betacor, &
+            & 'magnetic beta in temperature minimum'
+
+        ! column density: disk vs corona
+        call interpol(x, yy(c_coldens,:), zcor, coldens_disk)
+        write (upar, fmparec) "coldens_disk", coldens_disk, &
+              "column density (disk only)"
+        write (upar, fmparec) "coldens_cor", coldens - coldens_disk, &
+              "column density (corona only)"
+        write (upar, fmparec) "mfrac_cor", (coldens - coldens_disk) / coldens, &
+              "mass fraction in the corona"
+
+      end block
+    end if
+  end block write_disk_globals
+
+
 
   !----------------------------------------------------------------------------!
   ! clean up
@@ -588,11 +618,16 @@ contains
     end do integrate_tau
 
     ! average tempearture
-    forall (i = 1:ngrid)
-      yy(c_tavg,i) = yy(c_tavg,i) / yy(c_tau,i)
-      yy(c_beta,i) = yy(c_pgas,i) / yy(c_pmag,i)
-    end forall
+    yy(c_tavg,:) = yy(c_tavg,:) / yy(c_tau,:)
+    yy(c_beta,:) = yy(c_pgas,:) / yy(c_pmag,:)
     yy(c_tavg,ngrid) = yy(c_temp,ngrid)
+
+    ! column density
+    yy(c_coldens,1) = 0
+    integrate_coldens: do i = 1, ngrid-1
+      yy(c_coldens, i+1) = yy(c_coldens,i) &
+      + (yy(c_rho,i) + yy(c_rho,i+1)) * (x(i+1) - x(i)) / 2
+    end do integrate_coldens
 
   end subroutine
 
