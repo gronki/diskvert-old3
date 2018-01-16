@@ -35,14 +35,16 @@ program dv_mag_relax
 
   real(dp), parameter :: typical_hdisk = 15
 
-  integer, parameter :: ncols  = 20, &
+  integer, parameter :: ncols  = 24, &
       c_rho = 1, c_temp = 2, c_trad = 3, &
       c_pgas = 4, c_prad = 5, c_pmag = 6, &
       c_frad = 7, c_fmag = 8, c_fcnd = 9, &
       c_heat = 10, c_vrise = 11, &
       c_ksct = 12, c_kabs = 13, c_kcnd = 14, &
       c_tau = 15, c_taues = 16, c_tauth = 17, &
-      c_tavg = 18, c_beta = 19, c_coldens = 20
+      c_tavg = 18, c_beta = 19, c_coldens = 20, &
+      c_cool0 = 21, c_coolb = 22, c_coolc = 23, &
+      c_compy = 24
   character(8), dimension(ncols) :: labels
 
   labels(c_rho) = 'rho'
@@ -66,6 +68,10 @@ program dv_mag_relax
   labels(c_tavg) = 'tavg'
   labels(c_beta) = 'beta'
   labels(c_coldens) = 'coldens'
+  labels(c_cool0) = 'cool0'
+  labels(c_coolb) = 'coolb'
+  labels(c_coolc) = 'coolc'
+  labels(c_compy) = 'compy'
 
   !----------------------------------------------------------------------------!
   ! default values
@@ -440,8 +446,13 @@ program dv_mag_relax
 
     use slf_interpol
     use slf_integrate
-    real(dp) :: zphot, ztherm, tavg_therm, tavg_phot
+    real(dp) :: zphot, ztherm, zhard, zeqbc
+    real(dp) :: tavg_therm, tavg_phot, tavg_hard, tavg_eqbc
+    real(dp) :: taues_eqbc, taues_therm
+    real(dp) :: compfr_phot, compfr_therm
+    real(dp) :: compy_phot, compy_therm, compy_hard, compy_eqbc
     real(dp) :: coldens, diskscale
+    real(dp), dimension(ngrid) :: compfr
 
     write (upar,fmhdr) 'Photosphere'
 
@@ -449,17 +460,73 @@ program dv_mag_relax
     write (upar,fmparec) 'zphot', zphot, 'altitude of the photosphere (tau=1)'
     write (upar,fmparf)  'hphot', zphot / zscale
 
+    call interpol(yy(c_tau,:), x, 0.5d0, zhard)
+    write (upar,fmparec) 'zhard', zhard, 'altitude of the hard corona (tau=0.5)'
+    write (upar,fmparf)  'hhard', zhard / zscale
+
     call interpol(yy(c_tauth,:), x, 1d0, ztherm)
     write (upar,fmparec) 'ztherm', ztherm, 'thermalization depth (tauth=1)'
     write (upar,fmparf)  'htherm', ztherm / zscale
 
+    call interpol(yy(c_tauth,:), yy(c_taues,:), 1d0, taues_therm)
+    write (upar,fmparf)  'taues_therm', taues_therm
+
+    !--------------------------------------------------------------------------!
+    ! compton / brehmstrahlung ratio
+
+    compfr = yy(c_coolc,:) / (yy(c_coolc,:) + yy(c_coolb,:))
+
+    call interpol(x, compfr, zphot, compfr_phot)
+    write (upar, fmpare) 'compfr_phot', compfr_phot
+
+    call interpol(x, compfr, ztherm, compfr_therm)
+    write (upar, fmpare) 'compfr_therm', compfr_therm
+
+    call tabzero(x(ngrid:1:-1), compfr(ngrid:1:-1) - 0.5d0, zeqbc)
+    write (upar, fmpare) 'zeqbc', zeqbc
+    write (upar, fmpare) 'heqbc', zeqbc / zscale
+
+    call interpol(x, yy(c_taues,:), zeqbc, taues_eqbc)
+    write (upar, fmpare) 'taues_eqbc', taues_eqbc
+
+    !--------------------------------------------------------------------------!
+    ! average tempearture
+
     call interpol(x, yy(c_tavg,:), zphot, tavg_phot)
     write (upar, fmparec) 'tavg_phot', tavg_phot, &
           'average temperature up to the photosphere'
+    write (upar, fmparf) 'tavg_phot_keV', tavg_phot * keV_in_kelvin
 
     call interpol(x, yy(c_tavg,:), ztherm, tavg_therm)
     write (upar, fmparec) 'tavg_therm', tavg_therm, &
           'average temperature up to the termalization depth'
+    write (upar, fmparf) 'tavg_therm_keV', tavg_therm * keV_in_kelvin
+
+    call interpol(x, yy(c_tavg,:), zhard, tavg_hard)
+    write (upar, fmparec) 'tavg_hard', tavg_hard, &
+          'average temperature in hot corona'
+    write (upar, fmparf) 'tavg_hard_keV', tavg_hard * keV_in_kelvin
+
+    call interpol(x, yy(c_tavg,:), zeqbc, tavg_eqbc)
+    write (upar, fmpare) 'tavg_eqbc', tavg_eqbc
+    write (upar, fmparf) 'tavg_eqbc_keV', tavg_eqbc * keV_in_kelvin
+
+    !--------------------------------------------------------------------------!
+    ! compton Y parameter
+
+    write (upar, fmparfc) 'compy_0', yy(c_compy,1), 'total Y'
+
+    call interpol(x, yy(c_compy,:), zphot, compy_phot)
+    write (upar, fmparf) 'compy_phot', compy_phot
+
+    call interpol(x, yy(c_compy,:), ztherm, compy_therm)
+    write (upar, fmparf) 'compy_therm', compy_therm
+
+    call interpol(x, yy(c_compy,:), zhard, compy_hard)
+    write (upar, fmparf) 'compy_hard', compy_hard
+
+    call interpol(x, yy(c_compy,:), zeqbc, compy_eqbc)
+    write (upar, fmparf) 'compy_eqbc', compy_eqbc
 
     !--------------------------------------------------------------------------!
     ! compute the vertical disk scale and save it
@@ -479,8 +546,8 @@ program dv_mag_relax
     !--------------------------------------------------------------------------!
     ! escaping flux - magnetic vs. radiative
 
-    write (upar, fmparf) 'frfrac_top', &
-          yy(c_frad, ngrid) / (yy(c_frad, ngrid) + yy(c_fmag, ngrid))
+    write (upar, fmparf) 'fbfrac_top', &
+          yy(c_fmag, ngrid) / (yy(c_frad, ngrid) + yy(c_fmag, ngrid))
 
     ! some values on the equator
     write (upar, fmpare) 'betarad_0', yy(c_pgas,1) / yy(c_prad,1)
@@ -492,7 +559,7 @@ program dv_mag_relax
       write (upar, fmhdr)  "Corona properties"
       block
 
-        real(dp) :: zcor, taucor, frad_disk, tcor, betacor, coldens_disk, fmag_disk
+        real(dp) :: zcor, taucor, frad_disk, tcor, betacor, coldens_disk, fmag_disk, compy_tmin, compfr_tmin
 
         ! search for temperature minimum
         call findtempmin(x,y_temp,zcor)
@@ -515,6 +582,12 @@ program dv_mag_relax
         call interpol(x, yy(c_tauth,:), zcor, taucor)
         write (upar,fmparf) "tauth_cor", taucor
 
+        call interpol(x, yy(c_compy,:), zcor, compy_tmin)
+        write (upar,fmparf) 'compy_tmin', compy_tmin
+
+        call interpol(x, compfr, zcor, compfr_tmin)
+        write (upar,fmparec) 'compfr_tmin', compfr_tmin, 'compton / brehms. ratio'
+
         ! energy released in the corona
         call interpol(x,y_frad,zcor,frad_disk)
         write (upar,fmpare) "frad_disk", frad_disk
@@ -523,7 +596,7 @@ program dv_mag_relax
             & "relative amount of radiative flux released in the corona"
 
         call interpol(x, yy(c_fmag,:), zcor, fmag_disk)
-        write (upar, fmparf) 'frfrac_cor', frad_disk / (frad_disk + fmag_disk)
+        write (upar, fmparf) 'fbfrac_cor', fmag_disk / (frad_disk + fmag_disk)
 
         ! magnetic beta
         call interpol(x, yy(c_beta,:), zcor, betacor)
@@ -542,8 +615,6 @@ program dv_mag_relax
       end block
     end if
   end block write_disk_globals
-
-
 
   !----------------------------------------------------------------------------!
   ! clean up
@@ -582,7 +653,7 @@ contains
 
   subroutine fillcols(yv,c_,yy)
     procedure(funout_t), pointer :: fout
-    real(dp) :: kabs,ksct,rhom,tempm,dx
+    real(dp) :: kabs,ksct,rhom,tempm,tradm,dx
     real(dp), dimension(:,:), intent(in) :: yv
     integer, dimension(:), intent(in) :: c_
     real(dp), dimension(:,:), intent(inout) :: yy
@@ -598,23 +669,36 @@ contains
       yy(c_kcnd,i) = fkcnd(yy(c_rho,i),yy(c_temp,i))
     end do
 
+    yy(c_cool0,:) = 4 * cgs_stef * yy(c_rho,:) * yy(c_trad,:)**3 * (yy(c_temp,:) - yy(c_trad,:))
+    yy(c_coolb,:) = yy(c_kabs,:) * (1 + (yy(c_temp,:) / yy(c_trad,:))   )  &
+                                 * (1 + (yy(c_temp,:) / yy(c_trad,:))**2)
+    yy(c_coolc,:) = 4 * yy(c_ksct,:) * cgs_k_over_mec2 * yy(c_trad,:)
+
     ! compute the optical depths and averaged temperature
     yy(c_tau,ngrid) = 0
     yy(c_taues,ngrid) = 0
     yy(c_tauth,ngrid) = 0
     yy(c_tavg,ngrid) = 0
+    yy(c_compy,ngrid) = 0
 
     integrate_tau : do i = ngrid-1,1,-1
       rhom = (yy(c_rho,i) + yy(c_rho,i+1)) / 2
       if (rhom < 0) rhom = 0
       tempm = (yy(c_temp,i) + yy(c_temp,i+1)) / 2
+      tradm = (yy(c_trad,i) + yy(c_trad,i+1)) / 2
       dx = x(i+1) - x(i)
+
       kabs = merge(fkabs(rhom,tempm), 0.0_dp, tempm > 0)
       ksct = merge(fksct(rhom,tempm), 0.0_dp, tempm > 0)
+
       yy(c_tau,  i) = yy(c_tau,  i+1) + dx * rhom * (kabs + ksct)
-      yy(c_tavg, i) = yy(c_tavg, i+1) + dx * rhom * (kabs + ksct) * tempm
       yy(c_taues,i) = yy(c_taues,i+1) + dx * rhom * ksct
       yy(c_tauth,i) = yy(c_tauth,i+1) + dx * rhom * sqrt(kabs*(kabs+ksct))
+
+      yy(c_tavg, i) = yy(c_tavg, i+1) + dx * rhom * (kabs + ksct) * tempm
+
+      yy(c_compy, i) = yy(c_compy, i+1) + dx * rhom * ksct &
+            * 4 * cgs_k_over_mec2 * (tempm - tradm)
     end do integrate_tau
 
     ! average tempearture
@@ -652,6 +736,25 @@ contains
         exit search_for_minimum
       end if
     end do search_for_minimum
+
+  end subroutine
+
+  !----------------------------------------------------------------------------!
+  ! searches for zero in the array
+
+  subroutine tabzero(x,y,x0)
+    real(dp), intent(in), dimension(:) :: x,y
+    real(dp), intent(inout) :: x0
+    integer :: i
+
+    if (size(x) /= size(y)) error stop
+
+    search_for_zero : do i = 1, size(y)-1
+      if (y(i) .le. 0 .and. y(i+1) .ge. 0) then
+        x0 = (y(i+1)*x(i) - y(i)*x(i+1)) / (y(i+1) - y(i))
+        exit search_for_zero
+      end if
+    end do search_for_zero
 
   end subroutine
 
