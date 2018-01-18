@@ -124,7 +124,7 @@ contains
     procedure(funout_t), pointer :: fout
     ! nieprzezroczystosci: (pochodna,rodzaj)
     ! kolejnosc: abs, sct, cond
-    real(r64), dimension(3,3) :: FV
+    real(r64), dimension(3,4) :: FV
     integer, dimension(6) :: c_
 
     nx = size(x)
@@ -142,8 +142,9 @@ contains
               &  MBL => M(1:nbl,1:ny))
 
         call kappabs(YBL(c_(1)), YBL(c_(2)), FV(1,1), FV(2,1), FV(3,1))
-        call kappsct(YBL(c_(1)), YBL(c_(2)), FV(1,2), FV(2,2), FV(3,2))
-        call kappcnd(YBL(c_(1)), YBL(c_(2)), FV(1,3), FV(2,3), FV(3,3))
+        call kappabp(YBL(c_(1)), YBL(c_(2)), FV(1,2), FV(2,2), FV(3,2))
+        call kappsct(YBL(c_(1)), YBL(c_(2)), FV(1,3), FV(2,3), FV(3,3))
+        call kappcnd(YBL(c_(1)), YBL(c_(2)), FV(1,4), FV(2,4), FV(3,4))
 
         call FBL(xbl, YBL, FV, BL, MBL)
 
@@ -156,8 +157,9 @@ contains
                 & MBR => M(nbl+(nx-1)*ny+1+neq0:nx*ny, (nx-1)*ny+1:nx*ny))
 
         call kappabs(YBR(c_(1)), YBR(c_(2)), FV(1,1), FV(2,1), FV(3,1))
-        call kappsct(YBR(c_(1)), YBR(c_(2)), FV(1,2), FV(2,2), FV(3,2))
-        call kappcnd(YBR(c_(1)), YBR(c_(2)), FV(1,3), FV(2,3), FV(3,3))
+        call kappabp(YBR(c_(1)), YBR(c_(2)), FV(1,2), FV(2,2), FV(3,2))
+        call kappsct(YBR(c_(1)), YBR(c_(2)), FV(1,3), FV(2,3), FV(3,3))
+        call kappcnd(YBR(c_(1)), YBR(c_(2)), FV(1,4), FV(2,4), FV(3,4))
 
         call FBR(xbr, YBR, FV, BR, MBR)
 
@@ -172,8 +174,9 @@ contains
                   & MC => M(nbl+(i-1)*ny+1:nbl+(i-1)*ny+neq0, (i-1)*ny+1:i*ny))
 
           call kappabs(YC(c_(1)), YC(c_(2)), FV(1,1), FV(2,1), FV(3,1))
-          call kappsct(YC(c_(1)), YC(c_(2)), FV(1,2), FV(2,2), FV(3,2))
-          call kappcnd(YC(c_(1)), YC(c_(2)), FV(1,3), FV(2,3), FV(3,3))
+          call kappabp(YC(c_(1)), YC(c_(2)), FV(1,2), FV(2,2), FV(3,2))
+          call kappsct(YC(c_(1)), YC(c_(2)), FV(1,3), FV(2,3), FV(3,3))
+          call kappcnd(YC(c_(1)), YC(c_(2)), FV(1,4), FV(2,4), FV(3,4))
 
           call feq0(xc, YC, FV, C, MC)
 
@@ -193,8 +196,9 @@ contains
         DY(:) = (Y2 - Y1) / dx
 
         call kappabs(YM(c_(1)), YM(c_(2)), FV(1,1), FV(2,1), FV(3,1))
-        call kappsct(YM(c_(1)), YM(c_(2)), FV(1,2), FV(2,2), FV(3,2))
-        call kappcnd(YM(c_(1)), YM(c_(2)), FV(1,3), FV(2,3), FV(3,3))
+        call kappabp(YM(c_(1)), YM(c_(2)), FV(1,2), FV(2,2), FV(3,2))
+        call kappsct(YM(c_(1)), YM(c_(2)), FV(1,3), FV(2,3), FV(3,3))
+        call kappcnd(YM(c_(1)), YM(c_(2)), FV(1,4), FV(2,4), FV(3,4))
 
         call feq1(xm, YM, DY, FV, Ai, MY, MD)
 

@@ -133,7 +133,7 @@ for balance, bilfull, magnetic, conduction in choices:
 
     if bilfull and not balance: continue
 
-    # współrzędneq1, po której liczymy
+    # współrzędne, po której liczymy
     z       = Symbol('z')
 
     # niewiadome
@@ -162,10 +162,11 @@ for balance, bilfull, magnetic, conduction in choices:
 
     # nieprzezroczystosci i rpzewodnizctwa
     kabs = Function('fkabs')(rho,T_gas)
+    kabp = Function('fkabp')(rho,T_gas)
     ksct = Function('fksct')(rho,T_gas)
     kcnd = Function('fkcnd')(rho,T_gas)
 
-    fvec = [ kabs, ksct, kcnd ]
+    fvec = [ kabs, kabp, ksct, kcnd ]
 
     fval = MatrixSymbol('F', 3, len(fvec))
 
@@ -183,8 +184,6 @@ for balance, bilfull, magnetic, conduction in choices:
 
     #--------------------------------------------------------------------------#
 
-    # calkowita nieprzezroczystosc
-    kappa = kabs + ksct
     # predkosc wznoszenia pola
     vrise = Lambda(z, eta * omega * z)
     # cisnienie gazu
@@ -213,7 +212,7 @@ for balance, bilfull, magnetic, conduction in choices:
     # Hydrostatic equilibrium
     #
     eq1ord.append(P_gas.diff(z)      \
-            - kappa * rho / c * F_rad   \
+            - (kabs + ksct) * rho / c * F_rad   \
             + Derivative(P_mag,z)       \
             + omega**2 * rho * z)
 
@@ -221,7 +220,7 @@ for balance, bilfull, magnetic, conduction in choices:
     # Dyfuzja promieniowania
     #
     eq1ord.append(
-        3 * kappa * rho * F_rad + 16 * sigma * T_rad**3 * Derivative(T_rad,z)
+        3 * (kabs + ksct) * rho * F_rad + 16 * sigma * T_rad**3 * Derivative(T_rad,z)
     )
 
     #--------------------------------------------------------------------------#
@@ -262,7 +261,7 @@ for balance, bilfull, magnetic, conduction in choices:
         sdyf = (T_gas + T_rad) * (T_gas**2 + T_rad**2)
         ssct = 4 * kboltz * T_rad**4 / ( m_el * c**2 )
         radcool = 4 * sigma * rho * (T_gas - T_rad) \
-            * (kabs * (sdyf if bilfull else 0) + ksct * ssct)
+            * (kabp * (sdyf if bilfull else 0) + ksct * ssct)
 
         if conduction:
             eq1ord.append(radcool - Derivative(F_rad,z))

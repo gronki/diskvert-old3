@@ -1,6 +1,4 @@
-DVFLAGS="-no-bf -top 120 -n 840"
-PARFILE="par/${1}.par"
+DVFLAGS="-no-bf"
 
-mkdir -p datac dataw
-cat "$PARFILE" | dv-mag-rx $DVFLAGS -compton -o "dataw/${1}"
-cat "$PARFILE" | dv-mag-rx $DVFLAGS -corona  -o "datac/${1}"
+cat "${1}.par" | dv-mag-rx $DVFLAGS -compton -o "${1}W"
+cat "${1}.par" | dv-mag-rx $DVFLAGS -corona  -o "${1}C"

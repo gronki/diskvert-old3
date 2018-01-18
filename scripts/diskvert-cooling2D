@@ -82,7 +82,7 @@ tlim_hi = args.logT_max
 ########################################################################################
 
 
-kram_abs_0 = info.kappa_abs_0
+kram_abs_0 = info.kabp0 if hasattr(info, 'kabp0') else info.kappa_abs_0
 kappa_es = info.kappa_es
 
 print u'Stała w przybliżeniu Kramersa: {:.3e}'.format(kram_abs_0)\

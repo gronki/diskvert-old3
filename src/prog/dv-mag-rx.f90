@@ -35,7 +35,7 @@ program dv_mag_relax
 
   real(dp), parameter :: typical_hdisk = 15
 
-  integer, parameter :: ncols  = 24, &
+  integer, parameter :: ncols  = 25, &
       c_rho = 1, c_temp = 2, c_trad = 3, &
       c_pgas = 4, c_prad = 5, c_pmag = 6, &
       c_frad = 7, c_fmag = 8, c_fcnd = 9, &
@@ -44,7 +44,7 @@ program dv_mag_relax
       c_tau = 15, c_taues = 16, c_tauth = 17, &
       c_tavg = 18, c_beta = 19, c_coldens = 20, &
       c_cool0 = 21, c_coolb = 22, c_coolc = 23, &
-      c_compy = 24
+      c_compy = 24, c_kabp = 25
   character(8), dimension(ncols) :: labels
 
   labels(c_rho) = 'rho'
@@ -61,6 +61,7 @@ program dv_mag_relax
   labels(c_vrise) = 'vrise'
   labels(c_ksct) = 'ksct'
   labels(c_kabs) = 'kabs'
+  labels(c_kabp) = 'kabp'
   labels(c_kcnd) = 'kcnd'
   labels(c_tau) = 'tau'
   labels(c_taues) = 'taues'
@@ -101,6 +102,10 @@ program dv_mag_relax
 
   call cylinder(mbh, mdot, radius, omega, facc, teff, zscale)
 
+  ! calculate the SS73 solution to obtain the initial profile for iteration
+  call apx_estim(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
+  call apx_refin(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
+
   beta_0 = 2 * zeta / alpha + nu - 1
 
   if (beta_0 < 0) error stop "MAGNETIC BETA cannot be negative! " &
@@ -110,7 +115,7 @@ program dv_mag_relax
 
   if ((tgrid == GRID_LOG .or. tgrid == GRID_ASINH) &
       .and. cfg_adjust_height_beta) &
-    htop = htop * (1 + 1 / sqrt(beta_0))
+    htop = htop * (1 + 1 / sqrt(beta_0)) * (hdisk / (3 * zscale))
 
   !----------------------------------------------------------------------------!
   ! if the grid number has not been set, choose the default
@@ -137,12 +142,6 @@ program dv_mag_relax
 
   allocate( x(ngrid), x0(ngrid), Y(ny*ngrid), dY(ny*ngrid),  M(ny*ngrid,ny*ngrid), tau(ngrid), heat(ngrid), YY(ncols,ngrid) )
   allocate(errmask(ny*ngrid), ipiv(ny*ngrid))
-
-  !----------------------------------------------------------------------------!
-  ! calculate the SS73 solution to obtain the initial profile for iteration
-
-  call apx_estim(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
-  call apx_refin(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
 
   !----------------------------------------------------------------------------!
   ! generate the grid
@@ -409,7 +408,7 @@ program dv_mag_relax
   write (upar, fmpare) "teff", teff
   write (upar, fmpare) "teff_keV", teff * keV_in_kelvin
   write (upar, fmparec) "zdisk_ss73", Hdisk, "Disk height [cm]"
-  write (upar, fmparec) "hdisk_ss73", Hdisk / zscale, "Disk height [cm]"
+  write (upar, fmparfc) "hdisk_ss73", Hdisk / zscale, "Disk height [cm]"
   write (upar, fmhdr)  "Model information"
   write (upar, fmpari) "model", model
   write (upar, fmpari) "niter", nitert
@@ -666,11 +665,12 @@ contains
       call fout(x(i), yv(:,i), yy(:,i))
       yy(c_ksct,i) = fksct(yy(c_rho,i),yy(c_temp,i))
       yy(c_kabs,i) = fkabs(yy(c_rho,i),yy(c_temp,i))
+      yy(c_kabp,i) = fkabp(yy(c_rho,i),yy(c_temp,i))
       yy(c_kcnd,i) = fkcnd(yy(c_rho,i),yy(c_temp,i))
     end do
 
     yy(c_cool0,:) = 4 * cgs_stef * yy(c_rho,:) * yy(c_trad,:)**3 * (yy(c_temp,:) - yy(c_trad,:))
-    yy(c_coolb,:) = yy(c_kabs,:) * (1 + (yy(c_temp,:) / yy(c_trad,:))   )  &
+    yy(c_coolb,:) = yy(c_kabp,:) * (1 + (yy(c_temp,:) / yy(c_trad,:))   )  &
                                  * (1 + (yy(c_temp,:) / yy(c_trad,:))**2)
     yy(c_coolc,:) = 4 * yy(c_ksct,:) * cgs_k_over_mec2 * yy(c_trad,:)
 
@@ -750,7 +750,7 @@ contains
     if (size(x) /= size(y)) error stop
 
     search_for_zero : do i = 1, size(y)-1
-      if (y(i) .le. 0 .and. y(i+1) .ge. 0) then
+      if (y(i) * y(i+1) .le. 0) then
         x0 = (y(i+1)*x(i) - y(i)*x(i+1)) / (y(i+1) - y(i))
         exit search_for_zero
       end if

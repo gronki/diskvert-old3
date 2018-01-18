@@ -1,6 +1,6 @@
 *.pyc
-/datac
-/dataw
-/par
+/data*
 /jobs.lst
 *.png
+nohup.out
+completed.txt

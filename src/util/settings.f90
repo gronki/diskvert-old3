@@ -122,6 +122,8 @@ contains
     write (u, fmparf) "X", abuX
     write (u, fmparf) "Z", abuZ
     write (u, fmpare) "kappa_abs_0", kapabs0(abuX,abuZ)
+    write (u, fmpare) "kabs0", kapabs0(abuX,abuZ)
+    write (u, fmpare) "kabp0", kapabp0(abuX,abuZ)
     write (u, fmpare) "kappa_es", kapes0(abuX,abuZ)
     write (u, fmpare) "mbh", mbh
     write (u, fmpare) "mdot", mdot

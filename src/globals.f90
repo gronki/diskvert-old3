@@ -18,7 +18,8 @@ module globals
     real(r64) :: kappa_abs_0 = 3.68d22 * (1 - Z0) * (1 + X0)
 
     logical :: use_opacity_ff = .true.
-    logical :: use_opacity_bf = .true.
+    logical :: use_opacity_bf = .false.
+    logical :: use_opacity_planck = .true.
     logical :: use_conduction = .false.
 
     real(r64) :: mbh, mdot
@@ -77,6 +78,12 @@ contains !-----------------------------------------------------------------!
              + merge(kbf0, 0.0_r64, use_opacity_bf)
     end function
 
+    elemental function kapabp0(X, Z) result(kab0)
+        real(r64), intent(in) :: X, Z
+        real(r64) :: kab0
+        kab0 = kapabs0(X, Z) * merge(37, 1, use_opacity_planck)
+    end function
+
     elemental function kapes0(X, Z) result(kes0)
         real(r64), intent(in) :: X, Z
         real(r64) :: kes0
@@ -117,12 +124,30 @@ contains !-----------------------------------------------------------------!
         kabs = kapabs0(abuX,abuZ) * rho * T ** (-7d0/2d0)
     end function
 
-    elemental subroutine KAPPABS(rho,T,kap,krho,kT)
+    elemental subroutine kappabs(rho,T,kap,krho,kT)
         use ieee_arithmetic, only: ieee_is_nan
         real(r64), intent(in) :: rho,T
         real(r64), intent(out) :: kap,krho,kT
 
         kap = kapabs0(abuX,abuZ) * rho * T ** (-7d0/2d0)
+        krho = kap / rho
+        kT = (-7d0/2d0) * kap / T
+    end subroutine
+
+    !--------------------------------------------------------------------------!
+
+    elemental function fkabp(rho,T) result(kabs)
+        real(r64), intent(in) :: rho,T
+        real(r64) :: kabs
+        kabs = kapabp0(abuX,abuZ) * rho * T ** (-7d0/2d0)
+    end function
+
+    elemental subroutine kappabp(rho,T,kap,krho,kT)
+        use ieee_arithmetic, only: ieee_is_nan
+        real(r64), intent(in) :: rho,T
+        real(r64), intent(out) :: kap,krho,kT
+
+        kap = kapabp0(abuX,abuZ) * rho * T ** (-7d0/2d0)
         krho = kap / rho
         kT = (-7d0/2d0) * kap / T
     end subroutine
