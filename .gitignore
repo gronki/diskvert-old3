@@ -6,7 +6,9 @@
 *.smod
 *.pyc
 /*.tar.gz
-/build
+/build/*
+!/build/Makefile
+!/build/deps.inc
 /*.egg-info
 /dist
 /venv
