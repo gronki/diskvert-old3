@@ -41,6 +41,11 @@ contains
       case("-no-opacity-bf", "-no-bound-free", "-no-bf")
         use_opacity_bf = .FALSE.
 
+      case("-opacity-planck", "-planck")
+        use_opacity_planck = .TRUE.
+      case("-no-opacity-planck", "-no-planck")
+        use_opacity_planck = .FALSE.
+
       case("-conduction", "-cond")
         use_conduction = .TRUE.
       case("-no-conduction", "-no-cond")
@@ -129,6 +134,7 @@ contains
     write (u, fmpare) "mdot", mdot
     write (u, fmparl) "use_opacity_ff", use_opacity_ff
     write (u, fmparl) "use_opacity_bf", use_opacity_bf
+    write (u, fmparl) "use_planck", use_opacity_planck
     write (u, fmparl) "use_opacity_bb", .FALSE.
     write (u, fmparl) "conduction", use_conduction
   end subroutine
