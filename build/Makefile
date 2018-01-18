@@ -8,7 +8,6 @@ datadir = $(prefix)/share
 includedir = $(prefix)/include
 libdir = $(prefix)/lib
 fmoddir = $(libdir)/gfortran/modules
-pkgconfigdir = $(libdir)/pkgconfig
 
 #------------------------------------------------------------------------------#
 
@@ -67,7 +66,8 @@ all: $(programs) libdiskvert.so
 install: all
 	install -d $(libdir)
 	install libdiskvert.so $(libdir)
-	ldconfig -nv $(libdir)
+	install -d $(bindir)
+	install $(programs) $(bindir)
 
 	install -d $(fmoddir)/diskvert
 	install -m 644 slf_{cgs,rk4integr,threshold}.mod \
@@ -75,20 +75,11 @@ install: all
 		{alphadisk,modelmag,relaxation,ss73solution}.mod \
 		$(fmoddir)/diskvert
 
-	install -d $(bindir)
-	install $(programs) $(bindir)
-	install ../scripts/diskvert-pack $(bindir)
-
-	install -d $(pkgconfigdir)
-	@echo "Name: diskvert" | tee $(pkgconfigdir)/diskvert.pc
-	@echo "Version: $(VERSION)" | tee -a $(pkgconfigdir)/diskvert.pc
-	@echo "Description: compute vertical structure of accretion disks" | tee -a $(pkgconfigdir)/diskvert.pc
-	@echo "Cflags: -I$(fmoddir)/diskvert" | tee -a $(pkgconfigdir)/diskvert.pc
-	@echo "Libs: -L$(libdir) -ldiskvert" | tee -a $(pkgconfigdir)/diskvert.pc
-
+install-user: prefix = $(HOME)/.local
+install-user: install
+	@echo
 	@echo "export PATH=\"$(bindir):\$$PATH\"" | tee diskvert-paths.sh
 	@echo "export LD_LIBRARY_PATH=\"$(libdir):\$$LD_LIBRARY_PATH\"" | tee -a diskvert-paths.sh
-	@echo "export PKG_CONFIG_PATH=\"$(pkgconfigdir):\$$PKG_CONFIG_PATH\"" | tee -a diskvert-paths.sh
 	@echo
 	@echo "Program installed in $(bindir) and $(libdir). Invoke one of the following:"
 	@echo
@@ -96,15 +87,10 @@ install: all
 	@echo ". diskvert-paths.sh"
 	@echo "# activate for the current user"
 	@echo "cat diskvert-paths.sh | tee -a ~/.bashrc"
-	@echo "# activate globally for the whole system"
-	@echo "cat diskvert-paths.sh | sudo tee -a /etc/profile.d/diskvert-paths.sh"
 	@echo
 	@echo "You might want to install Python scripts as well:"
-	@echo "python setup.py install --user"
+	@echo "cd ../python && python setup.py install --user"
 	@echo
-
-install-user: prefix = $(HOME)/.local
-install-user: install
 
 #------------------------------------------------------------------------------#
 
