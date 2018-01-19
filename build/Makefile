@@ -35,7 +35,7 @@ VPATH = ../src:../src/util:../src/prog:../src/math
 # objects that go into the shared library
 objects = alphadisk.o balance.o fileunits.o globals.o grid.o heatbil.o modelmag.o relaxation_c.o relaxation.o relaxutils.o rk4settings.o rxsettings.o ss73solution.o
 # various math utilities
-objects += bisect.o cgs.o deriv.o eulerintegr.o findzer.o findzer_multi.o histogram.o integrate.o interpol.o linsect.o random.o rk4integr.o threshold.o
+objects += bisect.o cgs.o deriv.o eulerintegr.o findzer.o findzer_multi.o histogram.o integrate.o interpol.o linsect.o random.o rk4integr.o threshold.o ramps.o
 # objects that are needed for binary programs only
 objects_util = results.o settings.o summary.o
 

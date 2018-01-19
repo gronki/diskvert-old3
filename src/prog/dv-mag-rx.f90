@@ -554,7 +554,7 @@ program dv_mag_relax
     !--------------------------------------------------------------------------!
     ! evaluate and write the coronal properties
 
-    if (cfg_temperature_method .ne. EQUATION_DIFFUSION) then
+    if (cfg_temperature_method .ne. EQUATION_DIFFUSION .or. cfg_post_corona) then
       write (upar, fmhdr)  "Corona properties"
       block
 
@@ -663,11 +663,28 @@ contains
 
     do i = 1,ngrid
       call fout(x(i), yv(:,i), yy(:,i))
-      yy(c_ksct,i) = fksct(yy(c_rho,i),yy(c_temp,i))
-      yy(c_kabs,i) = fkabs(yy(c_rho,i),yy(c_temp,i))
-      yy(c_kabp,i) = fkabp(yy(c_rho,i),yy(c_temp,i))
-      yy(c_kcnd,i) = fkcnd(yy(c_rho,i),yy(c_temp,i))
     end do
+
+    if ( cfg_temperature_method /= EQUATION_BALANCE &
+            .and. cfg_post_corona ) then
+      block
+        use heatbalance, only: heatbil2
+        real(dp) :: temp_old
+        do i = 1,ngrid
+          temp_old = yy(c_temp,i)
+          call heatbil2(yy(c_rho,i), yy(c_temp,i), yy(c_trad,i), &
+                yy(c_heat,i), .false.)
+          yy(c_pgas,i) = yy(c_pgas,i) * yy(c_temp,i) / temp_old
+        end do
+      end block
+    end if
+
+    forall (i = 1:ngrid)
+      yy(c_ksct,i) = fksct(yy(c_rho,i), yy(c_temp,i))
+      yy(c_kabs,i) = fkabs(yy(c_rho,i), yy(c_temp,i))
+      yy(c_kabp,i) = fkabp(yy(c_rho,i), yy(c_temp,i))
+      yy(c_kcnd,i) = fkcnd(yy(c_rho,i), yy(c_temp,i))
+    end forall
 
     yy(c_cool0,:) = 4 * cgs_stef * yy(c_rho,:) * yy(c_trad,:)**3 * (yy(c_temp,:) - yy(c_trad,:))
     yy(c_coolb,:) = yy(c_kabp,:) * (1 + (yy(c_temp,:) / yy(c_trad,:))   )  &
@@ -693,7 +710,7 @@ contains
 
       yy(c_tau,  i) = yy(c_tau,  i+1) + dx * rhom * (kabs + ksct)
       yy(c_taues,i) = yy(c_taues,i+1) + dx * rhom * ksct
-      yy(c_tauth,i) = yy(c_tauth,i+1) + dx * rhom * sqrt(kabs*(kabs+ksct))
+      yy(c_tauth,i) = yy(c_tauth,i+1) + dx * rhom * sqrt(kabs * (kabs + ksct))
 
       yy(c_tavg, i) = yy(c_tavg, i+1) + dx * rhom * (kabs + ksct) * tempm
 
@@ -716,8 +733,8 @@ contains
   end subroutine
 
   !----------------------------------------------------------------------------!
-
   ! searches for temperature minimum in a given array
+
   subroutine findtempmin(x,temp,xtmin)
     real(dp), intent(in), dimension(:) :: x,temp
     real(dp), intent(out) :: xtmin

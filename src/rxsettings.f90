@@ -5,6 +5,7 @@ module rxsettings
   logical :: cfg_write_all_iters = .FALSE.
   logical :: cfg_adjust_height_beta = .TRUE.
   character, parameter :: EQUATION_SIMPBALANCE = 'D'
+  logical :: cfg_post_corona = .false.
 
 contains
 
@@ -22,6 +23,11 @@ contains
         cfg_adjust_height_beta = .TRUE.
       case ("-no-adjust-height","-no-adjust")
         cfg_adjust_height_beta = .FALSE.
+
+      case ("-post-corona")
+        cfg_post_corona = .TRUE.
+      case ("-no-post-corona")
+        cfg_post_corona = .FALSE.
 
       ! case ("-balance-simple","-corona2")
       !   cfg_temperature_method = EQUATION_SIMPBALANCE
