@@ -1,7 +1,7 @@
 from par import *
 import matplotlib.pyplot as plt
 
-for dset in ['W','C']:
+for dset in ['W','Wp','C']:
     D = read2Ddataset(nrad, N2, lambda i,j: fn(i,j) + dset + '.txt')
 
     plt.figure(figsize = (16,11))
@@ -29,7 +29,7 @@ for dset in ['W','C']:
 
     plt.subplot(3,4,1)
     plt.title(u'$\\tau_{\\rm es}$ at $T_{{\\rm min}}')
-    plotser(plt.gca(), 'taues_cor')
+    plotser(plt.gca(), 'taues_tmin')
     plt.yscale('log')
     # plt.ylim(2e2,5)
     plt.ylabel('$\\tau_{\\rm es}$')
@@ -43,7 +43,7 @@ for dset in ['W','C']:
 
     plt.subplot(3,4,2)
     plt.title('$\\chi = F_{\\rm rad}^{\\rm cor} / F_{\\rm rad}^{\\rm tot}$')
-    plotser(plt.gca(), 'chicor')
+    plotser(plt.gca(), 'chi_tmin')
     plt.ylim(0,1)
     plt.ylabel('$\\chi$')
 
@@ -52,7 +52,7 @@ for dset in ['W','C']:
     plt.yscale('log')
     plt.ylabel('$T_{\\rm av}$')
     # plt.ylim(temp_estim, temp_estim * 30)
-    plotser(plt.gca(), 'tcor')
+    plotser(plt.gca(), 'tavg_tmin')
 
 
     plt.subplot(3,4,4)
@@ -67,18 +67,18 @@ for dset in ['W','C']:
     plt.title(u'column density $\\Sigma_{\\rm disk}$')
     plt.yscale('log')
     plt.ylabel('$\\Sigma_{\\rm disk}$')
-    plotser(plt.gca(), 'coldens_disk')
+    plotser(plt.gca(), 'coldens_below_tmin')
 
     plt.subplot(3,4,8)
     plt.title(u'column density $\\Sigma_{\\rm cor}$')
     plt.yscale('log')
     plt.ylabel('$\\Sigma_{\\rm cor}$')
-    plotser(plt.gca(), 'coldens_cor')
+    plotser(plt.gca(), 'coldens_tmin')
 
     plt.subplot(3,4,6)
     plt.title(u'$F_{\\rm mag} / F_{\\rm tot}$ at $T_{{\\rm min}}$')
     plt.ylim(0,1)
-    plotser(plt.gca(), 'fbfrac_cor')
+    plotser(plt.gca(), 'fbfrac_tmin')
 
     #--------------------------------------------------------------
 

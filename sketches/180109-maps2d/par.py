@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+
 from diskvert import *
 
 kv0 = [0, 3, 2, 0]
@@ -36,10 +39,11 @@ fn = lambda i,j: "R{:02d}B{:02d}".format(i+1, j+1)
 
 def DPA(D, k, mask = True):
     from numpy import vectorize
-    d0 = vectorize(lambda d: getattr(d,k) if d.converged else np.nan)(D)
+    okay = lambda d: d.converged and hasattr(d,k)
+    d0 = vectorize(lambda d: getattr(d,k) if okay(d) else np.nan)(D)
     if not mask: return d0
     from numpy.ma import masked_where
-    dm = vectorize(lambda d: not d.converged)(D)
+    dm = vectorize(lambda d: not okay(d))(D)
     return masked_where(dm, d0)
 
 #------------------------------------------------------------------------------#
@@ -50,8 +54,11 @@ def read2Ddataset(nx, ny, fnpath):
     D = ndarray((nx,ny), dtype = object)
     for i in range(nx):
         for j in range(ny):
-            with open('data.' + prefix + '/' + fnpath(i,j), 'r') as f:
-                D[i,j] = pyminiconf(f)
+            try:
+                with open('data.' + prefix + '/' + fnpath(i,j), 'r') as f:
+                    D[i,j] = pyminiconf(f)
+            except IOError:
+                pass
     return D
 
 #------------------------------------------------------------------------------#

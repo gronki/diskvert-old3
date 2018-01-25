@@ -8,7 +8,7 @@ for dset in ['W','C']:
 
     plt.subplot(231)
     plt.title(u'$\\tau_{\\rm es}$ of the corona')
-    plt.pcolor(radii, etas, DPA(D,'taues_cor').transpose(), cmap = 'CMRmap_r')
+    plt.pcolor(radii, etas, DPA(D,'taues_tmin').transpose(), cmap = 'CMRmap_r')
     plt.loglog()
     plt.xlim(min(radii), max(radii))
     plt.xlabel('radius [x Rschw]')
@@ -17,7 +17,7 @@ for dset in ['W','C']:
 
     plt.subplot(232)
     plt.title('$\\chi = F_{\\rm rad}^{\\rm cor} / F_{\\rm rad}^{\\rm tot}$')
-    plt.pcolor(radii, etas, DPA(D,'chicor').transpose(), vmin = 0.2, vmax = 0.8, cmap = 'RdBu_r')
+    plt.pcolor(radii, etas, DPA(D,'chi_tmin').transpose(), vmin = 0.2, vmax = 0.8, cmap = 'RdBu_r')
     plt.loglog()
     plt.xlim(min(radii), max(radii))
     plt.xlabel('radius [x Rschw]')
@@ -26,7 +26,7 @@ for dset in ['W','C']:
 
     plt.subplot(233)
     plt.title(u'$T_{\\rm av}$ in the corona [keV]')
-    plt.pcolor(radii, etas, DPA(D,'tcor_keV').transpose(), cmap = 'CMRmap')
+    plt.pcolor(radii, etas, DPA(D,'tavg_tmin_keV').transpose(), cmap = 'CMRmap')
     plt.loglog()
     plt.xlim(min(radii), max(radii))
     plt.xlabel('radius [x Rschw]')
@@ -38,7 +38,7 @@ for dset in ['W','C']:
     skip = 3
 
     plt.subplot(234)
-    dd = DPA(D, 'taues_cor', mask = False)
+    dd = DPA(D, 'taues_tmin', mask = False)
     for i in range(0,N2,skip):
         plt.plot(radii, dd[:,i], color = cm((i + 1.0) / N2), label = '$\\eta = {:.3f}, \\beta = {:.2e}$'.format(etas[i], betas[i]))
     plt.xscale('log')
@@ -47,7 +47,7 @@ for dset in ['W','C']:
     plt.ylabel('$\\tau_{\\rm es}$ of the corona')
 
     plt.subplot(235)
-    dd = DPA(D, 'chicor', mask = False)
+    dd = DPA(D, 'chi_tmin', mask = False)
     for i in range(0,N2,skip):
         plt.plot(radii, dd[:,i], color = cm((i + 1.0) / N2), label = '$\\eta = {:.3f}, \\beta = {:.2e}$'.format(etas[i], betas[i]))
     plt.xscale('log')
@@ -56,7 +56,7 @@ for dset in ['W','C']:
     plt.ylabel('$\\chi = F_{\\rm rad}^{\\rm cor} / F_{\\rm rad}^{\\rm tot}$')
 
     plt.subplot(236)
-    dd = DPA(D, 'tcor_keV', mask = False)
+    dd = DPA(D, 'tavg_tmin_keV', mask = False)
     for i in range(0,N2,skip):
         plt.plot(radii, dd[:,i], color = cm((i + 1.0) / N2), label = '$\\eta = {:.3f}, \\beta = {:.2e}$'.format(etas[i], betas[i]))
     plt.xscale('log')

@@ -1,7 +1,7 @@
 from par import *
 import matplotlib.pyplot as plt
 
-for dset in ['W','C']:
+for dset in ['W','Wp','C']:
     D = read2Ddataset(nrad, N2, lambda i,j: fn(i,j) + dset + '.txt')
 
     plt.figure(figsize = (16,11))
@@ -19,7 +19,7 @@ for dset in ['W','C']:
 
     plt.subplot(3,4,1)
     plt.title(u'$\\tau_{\\rm es}$ of the corona')
-    plt.pcolor(radii, etas, np.log10(DPA(D,'taues_cor')).transpose(), cmap = 'gist_earth_r')
+    plt.pcolor(radii, etas, DPA(D,'taues_tmin').transpose(), cmap = 'gist_earth_r', norm = LogNorm())
     plt.loglog()
     plt.xlim(min(radii), max(radii))
     plt.xlabel('radius [x Rschw]')
@@ -28,7 +28,7 @@ for dset in ['W','C']:
 
     plt.subplot(3,4,5)
     plt.title(u'$\\tau_{\\rm es}$ of the therm. surface')
-    plt.pcolor(radii, etas, np.log10(DPA(D,'taues_therm')).transpose(), cmap = 'gist_earth_r')
+    plt.pcolor(radii, etas, DPA(D,'taues_therm').transpose(), cmap = 'gist_earth_r', norm = LogNorm())
     plt.loglog()
     plt.xlim(min(radii), max(radii))
     plt.xlabel('radius [x Rschw]')
@@ -37,7 +37,7 @@ for dset in ['W','C']:
 
     plt.subplot(3,4,2)
     plt.title('$\\chi = F_{\\rm rad}^{\\rm cor} / F_{\\rm rad}^{\\rm tot}$')
-    plt.pcolor(radii, etas, DPA(D,'chicor').transpose(), vmin = 0.2, vmax = 0.8, cmap = 'RdBu_r')
+    plt.pcolor(radii, etas, DPA(D,'chi_tmin').transpose(), vmin = 0, vmax = 1, cmap = 'RdBu_r')
     plt.loglog()
     plt.xlim(min(radii), max(radii))
     plt.xlabel('radius [x Rschw]')
@@ -45,8 +45,8 @@ for dset in ['W','C']:
     plt.colorbar()
 
     plt.subplot(3,4,3)
-    plt.title(u'$T_{\\rm av}$ to temp. minimum [K]')
-    plt.pcolor(radii, etas, np.log10(DPA(D,'tcor')).transpose() / 11.6e6, cmap = 'CMRmap')
+    plt.title(u'$T_{\\rm av}$ to temp. minimum [keV]')
+    plt.pcolor(radii, etas, DPA(D,'tavg_tmin').transpose() / 11.6e6, cmap = 'CMRmap', norm = LogNorm())
     plt.loglog()
     plt.xlim(min(radii), max(radii))
     plt.xlabel('radius [x Rschw]')
@@ -55,7 +55,7 @@ for dset in ['W','C']:
 
     plt.subplot(3,4,7)
     plt.title(u'column density $\\Sigma_{\\rm disk}$')
-    plt.pcolor(radii, etas, (DPA(D,'coldens_disk').transpose()), cmap = 'CMRmap')
+    plt.pcolor(radii, etas, DPA(D,'coldens_below_tmin').transpose(), cmap = 'CMRmap')
     plt.loglog()
     plt.xlim(min(radii), max(radii))
     plt.xlabel('radius [x Rschw]')
@@ -65,7 +65,7 @@ for dset in ['W','C']:
     plt.subplot(3,4,8)
     plt.title(u'column density $\\Sigma_{\\rm cor}$')
     # plt.title(u'tau thermal')
-    plt.pcolor(radii, etas, DPA(D,'coldens_cor').transpose(), cmap = 'CMRmap')
+    plt.pcolor(radii, etas, DPA(D,'coldens_tmin').transpose(), cmap = 'CMRmap')
     # plt.pcolor(radii, etas, DPA(D,'frfrac_cor').transpose(), cmap = 'RdBu_r', vmin = 0.2, vmax = 0.8)
     plt.loglog()
     plt.xlim(min(radii), max(radii))
@@ -74,8 +74,8 @@ for dset in ['W','C']:
     plt.colorbar()
 
     plt.subplot(3,4,4)
-    plt.title(u'$T_{\\rm av}$ to thermaliz. depth [K]')
-    plt.pcolor(radii, etas, np.log10(DPA(D,'tavg_therm')).transpose() / 11.6e6, cmap = 'CMRmap')
+    plt.title(u'$T_{\\rm av}$ to thermaliz. depth [keV]')
+    plt.pcolor(radii, etas, DPA(D,'tavg_therm').transpose() / 11.6e6, cmap = 'CMRmap', norm = LogNorm())
     plt.loglog()
     plt.xlim(min(radii), max(radii))
     plt.xlabel('radius [x Rschw]')
@@ -85,7 +85,7 @@ for dset in ['W','C']:
 
     plt.subplot(3,4,6)
     plt.title(u'$F_{\\rm mag}^{\\rm min} / F_{\\rm tot}^{\\rm min}$')
-    plt.pcolor(radii, etas, DPA(D,'fbfrac_cor').transpose(), cmap = 'RdBu', vmin = 0.2, vmax = 0.8)
+    plt.pcolor(radii, etas, DPA(D,'fbfrac_tmin').transpose(), cmap = 'RdBu', vmin = 0.2, vmax = 0.8)
     plt.loglog()
     plt.xlim(min(radii), max(radii))
     plt.xlabel('radius [x Rschw]')
@@ -95,9 +95,9 @@ for dset in ['W','C']:
     #--------------------------------------------------------------
 
     plt.subplot(3,4,9)
-    plt.title(u'tavg_eqbc')
+    plt.title(u'tavg_eqbc [keV]')
     plt.yscale('log')
-    plt.pcolor(radii, etas, np.log10(DPA(D, 'tavg_eqbc')).transpose(), cmap = 'CMRmap')
+    plt.pcolor(radii, etas, DPA(D, 'tavg_eqbc').transpose() / 11.6e6, cmap = 'CMRmap', norm = LogNorm())
     plt.loglog()
     plt.xlim(min(radii), max(radii))
     plt.xlabel('radius [x Rschw]')
@@ -107,7 +107,7 @@ for dset in ['W','C']:
     plt.subplot(3,4,10)
     plt.title(u'taues_eqbc')
     plt.yscale('log')
-    plt.pcolor(radii, etas, np.log10(DPA(D, 'taues_eqbc')).transpose(), cmap = 'gist_earth_r')
+    plt.pcolor(radii, etas, DPA(D, 'taues_eqbc').transpose(), cmap = 'gist_earth_r', norm = LogNorm())
     plt.loglog()
     plt.xlim(min(radii), max(radii))
     plt.xlabel('radius [x Rschw]')

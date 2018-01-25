@@ -29,19 +29,19 @@ for dset in ['W','C']:
 
     plt.subplot(2,4,1)
     plt.title(u'$\\tau_{\\rm es}$ at $T_{{\\rm min}}$')
-    plotser(plt.gca(), 'taues_cor')
+    plotser(plt.gca(), 'taues_tmin')
     plt.yscale('log')
     plt.ylim(0.1,100)
 
     plt.subplot(2,4,3)
     plt.title('$\\chi = F_{\\rm rad}^{\\rm cor} / F_{\\rm rad}^{\\rm tot}$')
-    plotser(plt.gca(), 'chicor')
+    plotser(plt.gca(), 'chi_tmin')
     plt.ylim(0.2,0.8)
 
     plt.subplot(2,4,2)
     plt.title(u'$T_{\\rm av}$ at $T_{{\\rm min}}$')
     plt.ylim(3e5,5e8)
-    plotser(plt.gca(), 'tcor')
+    plotser(plt.gca(), 'tavg_tmin')
     plt.yscale('log')
 
     plt.subplot(2,4,4)
@@ -52,12 +52,12 @@ for dset in ['W','C']:
 
     plt.subplot(2,4,7)
     plt.title(u'column density $\\Sigma_{\\rm disk}$')
-    plotser(plt.gca(), 'coldens_disk')
+    plotser(plt.gca(), 'coldens_below_tmin')
     plt.yscale('log')
 
     plt.subplot(2,4,8)
     plt.title(u'column density $\\Sigma_{\\rm cor}$')
-    plotser(plt.gca(), 'coldens_cor')
+    plotser(plt.gca(), 'coldens_tmin')
     plt.yscale('log')
 
 

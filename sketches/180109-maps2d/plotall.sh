@@ -3,6 +3,7 @@ plot() {
   python plot2.py $@ &
   python plot3.py $@ &
   python plot4.py $@ &
+  python plot6.py $@ &
   wait
 }
 
