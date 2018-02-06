@@ -27,11 +27,11 @@ parser = ArgumentParser(description=u"Rysowanie wykresów 2D w poszukiwaniu nies
 # 1. Zakresy
 parser.add_argument('--Zmin', '--Z-min', type=float, default = 0,
         help=u"od jakiej wysokości rysować")
-parser.add_argument('--Zmax', '--Z-max', type=float,
+parser.add_argument('--Zmax', '--Z-max', type=float, default = 90,
         help=u"do jakiej wysokości rysować")
-parser.add_argument('--logT-max', type=float, default = 3.0,
+parser.add_argument('--logT-max', type=float, default = 2.4,
         help=u"logarytm maksymalnej temperatury")
-parser.add_argument('--logT-min', type=float, default = -1.5,
+parser.add_argument('--logT-min', type=float, default = -1.2,
         help=u"logarytm minimalnej temperatury")
 # 2. Wyświetlanie
 parser.add_argument('--display-range', type=float, default = 0.1,
@@ -106,7 +106,8 @@ if args.force:
     xax = filter(lambda x: x >= zmin and x <= zmax,d['h'])
     nx = len(xax)
 else:
-    nx = int(args.resolution / 96.0 * (args.dpi * 9))
+    nx = int(args.resolution / 96.0 * (args.dpi * 4))
+    # xax = logspace(log10(zlim[0]), log10(zlim[1]), nx)
     xax = linspace(zlim[0], zlim[1], nx)
 
 ny = int(args.resolution / 96.0 * (args.dpi * 3))
@@ -158,13 +159,14 @@ def thr(x,l1=1.0,l2=-1.0):
 
 # ustawienia strony
 lscale = 0.95
-fig = plt.figure(figsize=(1280.0 / 96, 720.0 / 96), dpi = args.dpi)
+fig = plt.figure(figsize=(1024 / 96.0, 720 / 96.0), dpi = args.dpi)
 rc('font', family='serif', size='10.5')
-plt.subplots_adjust(left=0.065, right=1.02, top=0.94, bottom=0.08)
+plt.subplots_adjust(left=0.075, right=1.015, top=0.935, bottom=0.085)
 # ustawienia strony koniec
 
 # tworzymy nasz wykres
 ax = plt.subplot()
+# ax.set_xscale('log')
 ax.set_yscale('log')
 ax.set_title(u"Cooling and heating")
 ax.set_xlim(zlim)
