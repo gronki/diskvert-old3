@@ -18,7 +18,7 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0, KL, KU
-  integer, dimension(3) :: niter = [ 24, 12, 30 ]
+  integer, dimension(3) :: niter = [ 18, 8, 26 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:), YY(:,:)
   real(dp), allocatable :: MB(:,:)
   real(dp), pointer :: yv(:,:)
@@ -35,7 +35,7 @@ program dv_mag_relax
 
   real(dp), parameter :: typical_hdisk = 15
 
-  integer, parameter :: ncols  = 28, &
+  integer, parameter :: ncols  = 30, &
       c_rho = 1, c_temp = 2, c_trad = 3, &
       c_pgas = 4, c_prad = 5, c_pmag = 6, &
       c_frad = 7, c_fmag = 8, c_fcnd = 9, &
@@ -43,8 +43,10 @@ program dv_mag_relax
       c_ksct = 12, c_kabs = 13, c_kabp = 14, &
       c_tau = 15, c_taues = 16, c_tauth = 17, &
       c_tavg = 18, c_beta = 19, c_coldens = 20, &
-      c_cool0 = 21, c_coolb = 22, c_coolc = 23, &
-      c_compy = 24, c_compfr = 25, c_fbfr = 26, c_instabil = 27, c_kcnd = 28
+      c_kcnd = 21, c_coolb = 22, c_coolc = 23, &
+      c_compy = 24, c_compfr = 25, c_fbfr = 26, &
+      c_instabil = 27, &
+      c_adiab1 = 28, c_gradad = 29, c_gradrd = 30
   character(8), dimension(ncols) :: labels
 
   labels(c_rho) = 'rho'
@@ -69,19 +71,21 @@ program dv_mag_relax
   labels(c_tavg) = 'tavg'
   labels(c_beta) = 'beta'
   labels(c_coldens) = 'coldens'
-  labels(c_cool0) = 'cool0'
   labels(c_coolb) = 'coolb'
   labels(c_coolc) = 'coolc'
   labels(c_compy) = 'compy'
   labels(c_compfr) = 'compfr'
   labels(c_fbfr) = 'fbfr'
   labels(c_instabil) = 'instabil'
+  labels(c_adiab1) = 'adiab1'
+  labels(c_gradad) = 'gradad'
+  labels(c_gradrd) = 'gradrd'
 
   !----------------------------------------------------------------------------!
   ! default values
 
   ngrid = -1
-  htop = 150
+  htop = 250
 
   !----------------------------------------------------------------------------!
   ! initialize the globals, read the config etc
@@ -116,11 +120,9 @@ program dv_mag_relax
   if (beta_0 < 0) error stop "MAGNETIC BETA cannot be negative! " &
         & // "zeta > alpha / 2!!!"
 
-  write (upar,fmpare) 'beta_0', beta_0
-
   if ((tgrid == GRID_LOG .or. tgrid == GRID_ASINH) &
       .and. cfg_adjust_height_beta) &
-    htop = htop * (1 + 1 / sqrt(beta_0)) * (hdisk / (3 * zscale))
+    htop = htop * (1 + 1 / beta_0) * max(0.4 * hdisk / zscale, 1.0_dp)
 
   !----------------------------------------------------------------------------!
   ! if the grid number has not been set, choose the default
@@ -311,7 +313,7 @@ program dv_mag_relax
     y_pmag  => Y(C_(5)::ny)
     YV(1:ny,1:ngrid) => Y
 
-    if (cfg_temperature_method == EQUATION_BALANCE) niter(3) = niter(3) + 6
+    if (cfg_temperature_method == EQUATION_BALANCE) niter(3) = niter(3) + 10
 
     if (use_conduction) then
       niter(3) = niter(3) + 12
@@ -406,17 +408,26 @@ program dv_mag_relax
   write (upar, fmparfc) "eta", zeta, "field rise parameter"
   write (upar, fmparfc) "zeta", zeta, "field rise parameter"
   write (upar, fmparfc) "nu", nu, "reconnection parameter"
+  write (upar, fmparfc) "xcor", 1 - alpha * (1 - nu) / zeta, "corona parameter"
+
   write (upar, fmpare) "radius", radius
   write (upar, fmpare) "zscale", zscale
   write (upar, fmpare) "facc", facc
+  teff = (yy(c_frad,ngrid) / cgs_stef)**(0.25_dp)
   write (upar, fmpare) "teff", teff
   write (upar, fmparf) "teff_keV", teff * keV_in_kelvin
+
   write (upar, fmpare) "rho_0", yy(c_rho,1)
   write (upar, fmpare) "temp_0", yy(c_temp,1)
+  write (upar,fmpare) 'beta_0', yy(c_pgas,1) / yy(c_pmag,1)
+  write (upar,fmpare) 'betakin_0', (yy(c_pgas,1) + yy(c_prad,1)) / yy(c_pmag,1)
+  write (upar,fmpare) 'betarad_0', yy(c_pgas,1) / yy(c_prad,1)
+
   write (upar, fmpare) "rho_0_ss73", rhoc
   write (upar, fmpare) "temp_0_ss73", Tc
   write (upar, fmparec) "zdisk_ss73", Hdisk, "Disk height [cm]"
   write (upar, fmparfc) "hdisk_ss73", Hdisk / zscale, "Disk height [cm]"
+
   write (upar, fmhdr)  "Model information"
   write (upar, fmpari) "model", model
   write (upar, fmpari) "niter", nitert
@@ -499,23 +510,44 @@ program dv_mag_relax
     ! compute the vertical disk scale and save it
 
     write (upar, fmhdr)  "column density and disk vertical scale"
+    write (upar, fmparec) 'coldens', yy(c_coldens,ngrid), 'column density'
 
-    associate (coldens => yy(c_coldens,ngrid))
-      write (upar, fmparec) 'coldens', coldens, 'column density'
-      diskscale = sqrt(integrate(yy(c_rho,:) * x**2, x) / coldens)
-      tavgr = integrate(yy(c_rho,:) * yy(c_temp,:), x) / coldens
+    ! vertical scale - weighted by density
+    diskscale = sqrt(integrate(yy(c_rho,:) * x**2, x) / yy(c_coldens,ngrid))
+    write (upar, fmparec) 'zdisk', diskscale, &
+    'disk vertical scale (second moment)'
+    write (upar, fmparf) 'hdisk', diskscale / zscale
+
+    ! schwarzchild radius and disk ratio d = H / R
+    associate (rschw => 2 * cgs_graw * (mbh * sol_mass) / cgs_c**2)
+      write (upar, fmparec) 'rschw', rschw, 'Schwarzschild radius'
+      write (upar, fmparf) 'ddisk', diskscale / (radius * rschw)
     end associate
 
-    write (upar, fmparec) 'zdisk', diskscale, &
-          'disk vertical scale (second moment)'
-    write (upar, fmparfc) 'hdisk', diskscale / zscale, &
-          'same but in scale heights'
-    write (upar, fmpare) 'tavgr', tavgr
+    ! average disk temperature
+    tavgr = integrate(yy(c_rho,:) * yy(c_temp,:), x) / yy(c_coldens,ngrid)
+    write (upar, fmparec) 'tavgr', tavgr, 'average temperature (by mass)'
 
-    !--------------------------------------------------------------------------!
-    ! escaping flux - magnetic vs. radiative
+    ! vertical scale - weighted by gas pressure
+    diskscale = sqrt(integrate(yy(c_pgas,:) * x**2, x) &
+                  /  integrate(yy(c_pgas,:),        x))
+    write (upar, fmparec) 'zdisk_pgas', diskscale, &
+         'disk height weighted by gas pressure'
+    write (upar, fmparf) 'hdisk_pgas', diskscale / zscale
 
+    ! vertical scale - weighted by magnetic pressure
+    diskscale = sqrt(integrate(yy(c_pmag,:) * x**2, x) &
+                  /  integrate(yy(c_pmag,:),        x))
+    write (upar, fmparec) 'zdisk_pmag', diskscale, &
+         'disk height weighted by magnetic pressure'
+    write (upar, fmparf) 'hdisk_pmag', diskscale / zscale
 
+    ! vertical scale - weighted by radiation pressure
+    diskscale = sqrt(integrate(yy(c_prad,:) * x**2, x) &
+                  /  integrate(yy(c_prad,:),        x))
+    write (upar, fmparec) 'zdisk_prad', diskscale, &
+         'disk height weighted by radiation pressure'
+    write (upar, fmparf) 'hdisk_prad', diskscale / zscale
 
   end block write_disk_globals
 
@@ -621,7 +653,7 @@ contains
 
   subroutine fillcols(yv,c_,yy)
     procedure(funout_t), pointer :: fout
-    real(dp) :: kabs,ksct,rhom,tempm,tradm,dx, coolcrit(ngrid)
+    real(dp) :: kabs,ksct,kabp,rhom,tempm,tradm,tcomptm,dx, coolcrit(ngrid)
     real(dp), dimension(:,:), intent(in) :: yv
     integer, dimension(:), intent(in) :: c_
     real(dp), dimension(:,:), intent(inout) :: yy
@@ -655,11 +687,21 @@ contains
       yy(c_kcnd,i) = fkcnd(yy(c_rho,i), yy(c_temp,i))
     end forall
 
-    yy(c_cool0,:) = 4 * cgs_stef * yy(c_rho,:) * yy(c_trad,:)**3 * (yy(c_temp,:) - yy(c_trad,:))
-    yy(c_coolb,:) = yy(c_kabp,:) * (1 + (yy(c_temp,:) / yy(c_trad,:))   )  &
-                                 * (1 + (yy(c_temp,:) / yy(c_trad,:))**2)
-    yy(c_coolc,:) = 4 * yy(c_ksct,:) * cgs_k_over_mec2 * yy(c_trad,:)
-    yy(c_compfr,:) = yy(c_coolc,:) / (yy(c_coolc,:) + yy(c_coolb,:))
+
+    cooling: block
+      real(dp), dimension(ngrid) :: cb, cc !, tcompt
+      yy(c_coolb,:) = 4 * cgs_stef * yy(c_rho,:) * yy(c_kabp,:)   &
+            * (yy(c_temp,:)**4 - yy(c_trad,:)**4)
+      ! tcompt(:) = sqrt((yy(c_temp,:))**2 &
+      !   + (4 * cgs_k_over_mec2 * yy(c_temp,:)**2)**2)
+      yy(c_coolc,:) = 4 * cgs_stef * yy(c_rho,:) * yy(c_ksct,:)   &
+          * yy(c_trad,:)**4 * cgs_k_over_mec2                   &
+          * 4 * (yy(c_temp,:) - yy(c_trad,:))
+      cb(:) = yy(c_kabp,:) * yy(c_temp,:)**4
+      cc(:) = yy(c_ksct,:) * yy(c_trad,:)**4 * cgs_k_over_mec2 * 4 * yy(c_temp,:)
+      yy(c_compfr,:) = cc / (cb + cc)
+    end block cooling
+
 
     ! radiative / total flux fraction
     yy(c_fbfr,1) = 0
@@ -680,16 +722,18 @@ contains
       dx = x(i+1) - x(i)
 
       kabs = merge(fkabs(rhom,tempm), 0.0_dp, tempm > 0)
+      kabp = merge(fkabp(rhom,tempm), 0.0_dp, tempm > 0)
       ksct = merge(fksct(rhom,tempm), 0.0_dp, tempm > 0)
 
       yy(c_tau,  i) = yy(c_tau,  i+1) + dx * rhom * (kabs + ksct)
       yy(c_taues,i) = yy(c_taues,i+1) + dx * rhom * ksct
-      yy(c_tauth,i) = yy(c_tauth,i+1) + dx * rhom * sqrt(kabs * (kabs + ksct))
+      yy(c_tauth,i) = yy(c_tauth,i+1) + dx * rhom * sqrt(kabp * (kabp + ksct))
 
       yy(c_tavg, i) = yy(c_tavg, i+1) + dx * rhom * (kabs + ksct) * tempm
 
+      ! tcomptm = sqrt((tempm)**2 + (4 * cgs_k_over_mec2 * tempm**2)**2)
       yy(c_compy, i) = yy(c_compy, i+1) + dx * rhom * ksct &
-            * 4 * cgs_k_over_mec2 * (tempm - tradm)
+      * 4 * cgs_k_over_mec2 * (tempm - tradm)
     end do integrate_tau
 
     ! average tempearture
@@ -701,6 +745,15 @@ contains
     * (   yy(c_kabp,:) * (9 - (yy(c_temp,:) / yy(c_trad,:))**4) &
     + 8 * yy(c_ksct,:) * cgs_k_over_mec2 * yy(c_temp,:))
     yy(c_instabil,:) = 1 - yy(c_heat,:) / coolcrit(:)
+
+    gradients: block
+      real(dp), dimension(ngrid) :: pgpt
+      pgpt(:) = yy(c_pgas,:) / (yy(c_pgas,:) + yy(c_prad,:))
+      yy(c_adiab1,:) = (32 - 24 * pgpt - 3 * pgpt**2) / (24 - 21 * pgpt)
+      yy(c_gradad,:) = 2 * (4 - 3 * pgpt) / (32 - 24 * pgpt - 3 * pgpt**2)
+      call deriv(log(yy(c_temp,:)), log(yy(c_pgas,:) + yy(c_prad,:)), &
+            yy(c_gradrd,:))
+    end block gradients
 
     ! column density
     yy(c_coldens,1) = 0

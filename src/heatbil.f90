@@ -57,9 +57,9 @@ contains
     real(r64), intent(in) :: trad, heat
     real(r64), intent(inout) :: rho, tgas
     logical, intent(in) :: isobar
-    real(r64) :: rhotemp, kabsv(3), ksctv(3), cool, cool_dT, cool_dr
+    real(r64) :: rhotemp, kabpv(3), ksctv(3), cool, cool_dT, cool_dr
     integer :: i
-    integer, parameter :: niter = 16
+    integer, parameter :: niter = 24
 
     rhotemp = rho * tgas
 
@@ -71,22 +71,19 @@ contains
     do i = 1,niter
 
       call kappsct(rho, tgas, ksctv(1), ksctv(2), ksctv(3))
-      call kappabp(rho, tgas, kabsv(1), kabsv(2), kabsv(3))
+      call kappabp(rho, tgas, kabpv(1), kabpv(2), kabpv(3))
 
-      cool = 4 * cgs_stef * rho * (tgas - trad) * (           &
-              kabsv(1) * (tgas + trad) * (tgas**2 + trad**2)  &
-            + ksctv(1) * 4 * cgs_k_over_mec2 * trad**4        )
+      cool = 4*cgs_stef*rho*(4*cgs_k_over_mec2*trad**4*(tgas - trad)*ksctv(1) &
+            + (tgas**4 - trad**4)*kabpv(1))
 
-      cool_dT = 4 * cgs_stef * rho * ( &
-        4 * cgs_k_over_mec2  * trad**4 * ((tgas - trad) * ksctv(3) + ksctv(1)) &
-        + (tgas**4 - trad**4) * kabsv(3) + 4 * tgas**3 * kabsv(1))
+      cool_dT = 4*cgs_stef*rho*(4*cgs_k_over_mec2*trad**4*(tgas - trad)*ksctv( &
+            3) + 4*cgs_k_over_mec2*trad**4*ksctv(1) + 4*tgas**3*kabpv(1) + ( &
+            tgas**4 - trad**4)*kabpv(3))
 
       if (isobar) then
-        cool_dr = 4 * cgs_stef * (tgas - trad) * (              &
-            4 * cgs_k_over_mec2 * trad**4 * ksctv(1)            &
-            + rho * (4 * cgs_k_over_mec2 * trad**4 * ksctv(2)   &
-            + (tgas + trad) * (tgas**2 + trad**2) * kabsv(2))   &
-            + (tgas + trad) * (tgas**2 + trad**2) * kabsv(1))
+        cool_dr = 4*cgs_stef*(4*cgs_k_over_mec2*trad**4*(tgas - trad)*ksctv(1) &
+            + rho*(4*cgs_k_over_mec2*trad**4*(tgas - trad)*ksctv(2) + (tgas**4 &
+            - trad**4)*kabpv(2)) + (tgas**4 - trad**4)*kabpv(1))
         cool_dT = cool_dT - rho / tgas * cool_dr
       end if
 

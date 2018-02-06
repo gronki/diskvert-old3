@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq, symbols, Integer, Rational, Matrix, MatrixSymbol, Wild, simplify
+from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq, symbols, Integer, Rational, Matrix, MatrixSymbol, Wild, simplify, sqrt
 from numpy import ndarray, zeros, linspace, logspace, meshgrid
 from sys import stdin, stdout, stderr
 from StringIO import StringIO
@@ -257,11 +257,10 @@ for balance, bilfull, magnetic, conduction in choices:
     # Funkcja zrodlowa
     #
     if balance:
-        # sdyf = 4 * T_rad**3
-        sdyf = (T_gas + T_rad) * (T_gas**2 + T_rad**2)
-        ssct = 4 * kboltz * T_rad**4 / ( m_el * c**2 )
-        radcool = 4 * sigma * rho * (T_gas - T_rad) \
-            * (kabp * (sdyf if bilfull else 0) + ksct * ssct)
+        sdyf = kabp * (T_gas**4 - T_rad**4)
+        # T_compt = sqrt(T_gas**2 + (4 * kboltz / (m_el * c**2) * T_gas**2)**2)
+        ssct = ksct * T_rad**4 * kboltz / (m_el * c**2) * 4 * (T_gas - T_rad)
+        radcool = 4 * sigma * rho * ((sdyf if bilfull else 0) + ssct)
 
         if conduction:
             eq1ord.append(radcool - Derivative(F_rad,z))
