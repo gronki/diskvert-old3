@@ -4,7 +4,7 @@ from matplotlib.colors import LogNorm
 
 from diskvert import *
 
-kv0 = [0, 3, 2, 0]
+kv0 = [1, 4, 3, 1]
 
 from sys import argv
 if len(argv) == 5:
@@ -12,20 +12,20 @@ if len(argv) == 5:
 else: kv = kv0
 #------------------------------------------------------------------------------#
 
-mbh     = [10.0, 1e7, 1e8][kv[0]]
-mdot    = [0.0003, 0.0010, 0.0031, 0.0100, 0.0310, 0.1000, 0.3000][kv[1]]
-alpha   = [0.001, 0.003, 0.010, 0.031, 0.100, 0.300][kv[2]]
-nu      = [0.0, 1.0, 3.0, 9.0, 27.0][kv[3]]
+mbh     = [10.0, 1e7, 1e8][kv[0] - 1]
+mdot    = [0.0003, 0.0010, 0.0030, 0.0100, 0.0300, 0.1000, 0.3000][kv[1] - 1]
+alpha   = [0.003, 0.010, 0.030, 0.100, 0.300][kv[2] - 1]
+nu      = [0.0, 1.0, 3.0, 9.0][kv[3] - 1]
 
 print u"mbh = {:.2e}, mdot = {}, alpha = {}, nu = {}".format(mbh, mdot, alpha, nu)
 #------------------------------------------------------------------------------#
 
-nrad = 54
+nrad = 40
 N2 = nrad
 
 #------------------------------------------------------------------------------#
 
-radii = np.logspace(0.5, 2.4, nrad)
+radii = np.logspace(np.log10(4.0), np.log10(200.0), nrad)
 etas = np.logspace(np.log10(alpha), 0, N2)
 betas = 2 * etas / alpha + nu - 1
 
@@ -39,7 +39,7 @@ fn = lambda i,j: "R{:02d}B{:02d}".format(i+1, j+1)
 
 def DPA(D, k, mask = True):
     from numpy import vectorize
-    okay = lambda d: d.converged and hasattr(d,k)
+    okay = lambda d: d != None and hasattr(d,k) and d.converged
     d0 = vectorize(lambda d: getattr(d,k) if okay(d) else np.nan)(D)
     if not mask: return d0
     from numpy.ma import masked_where
@@ -58,7 +58,7 @@ def read2Ddataset(nx, ny, fnpath):
                 with open('data.' + prefix + '/' + fnpath(i,j), 'r') as f:
                     D[i,j] = pyminiconf(f)
             except IOError:
-                pass
+                D[i,j] = None
     return D
 
 #------------------------------------------------------------------------------#
