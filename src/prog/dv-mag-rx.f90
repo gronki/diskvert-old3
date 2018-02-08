@@ -27,7 +27,7 @@ program dv_mag_relax
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, y_pmag, &
         & y_Trad, y_fcnd
   real(dp), allocatable, dimension(:) :: tau, heat
-  real(dp) :: rhoc, Tc, Hdisk, err, err0, ramp, beta_0
+  real(dp) :: rhoc, Tc, Hdisk, err, err0, ramp, beta_0, rschw
   character(*), parameter :: fmiter = '(I5,2X,ES9.2,2X,F5.1,"%")'
   logical :: user_ff, user_bf, converged, has_corona
   integer, dimension(6) :: c_
@@ -85,7 +85,7 @@ program dv_mag_relax
   ! default values
 
   ngrid = -1
-  htop = 250
+  htop = 200
 
   !----------------------------------------------------------------------------!
   ! initialize the globals, read the config etc
@@ -110,6 +110,7 @@ program dv_mag_relax
   ! calculate the global parameters
 
   call cylinder(mbh, mdot, radius, omega, facc, teff, zscale)
+  rschw = 2 * cgs_graw * (mbh * sol_mass) / cgs_c**2
 
   ! calculate the SS73 solution to obtain the initial profile for iteration
   call apx_estim(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
@@ -118,7 +119,10 @@ program dv_mag_relax
   beta_0 = 2 * zeta / alpha + nu - 1
 
   if (beta_0 < 0) error stop "MAGNETIC BETA cannot be negative! " &
-        & // "zeta > alpha / 2!!!"
+        & // "zeta > alpha / 2 !!!"
+
+  if (1 - alpha * (1 - nu) / zeta < 0) error stop "I refuse to compute the disk&
+          & where 1 - alpha * (1 - nu) / eta < 0 !!!!"
 
   if ((tgrid == GRID_LOG .or. tgrid == GRID_ASINH) &
       .and. cfg_adjust_height_beta) &
@@ -402,6 +406,7 @@ program dv_mag_relax
   ! write some global information
 
   call wpar_gl(upar)
+  write (upar, fmparec) 'rschw', rschw, 'Schwarzschild radius'
 
   write (upar, fmhdr)  "disk information"
   write (upar, fmparfc) "alpha", alpha, "alpha parameter"
@@ -519,10 +524,7 @@ program dv_mag_relax
     write (upar, fmparf) 'hdisk', diskscale / zscale
 
     ! schwarzchild radius and disk ratio d = H / R
-    associate (rschw => 2 * cgs_graw * (mbh * sol_mass) / cgs_c**2)
-      write (upar, fmparec) 'rschw', rschw, 'Schwarzschild radius'
-      write (upar, fmparf) 'ddisk', diskscale / (radius * rschw)
-    end associate
+    write (upar, fmparf) 'ddisk', diskscale / (radius * rschw)
 
     ! average disk temperature
     tavgr = integrate(yy(c_rho,:) * yy(c_temp,:), x) / yy(c_coldens,ngrid)

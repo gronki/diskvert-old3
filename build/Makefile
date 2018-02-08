@@ -24,7 +24,7 @@ FFLAGS += -fno-unsafe-math-optimizations -Wall -Warray-temporaries -Wrealloc-lhs
 endif
 
 ifeq ($(FC),ifort)
-FFLAGS += -fp-model precise -Winline
+FFLAGS = -fp-model precise -warn all
 endif
 
 #------------------------------------------------------------------------------#
