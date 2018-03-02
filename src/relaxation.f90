@@ -46,6 +46,9 @@ module relaxation
   real(r64) :: alpha = 0, zeta = 0, nu = 0
   real(r64) :: omega, radius, facc, teff, zscale
 
+  logical :: use_precise_balance = .false.
+  logical :: use_quench_mri = .false.
+
 contains
 
   !----------------------------------------------------------------------------!

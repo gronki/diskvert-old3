@@ -32,7 +32,7 @@ contains
     radius = r
     alpha = alph
     zeta = zet
-    call cylinder(mbh, mdot, radius, omega, facc, teff, zscale)
+    call cylinder(mbh, mdot, radius, rschw, omega, facc, teff, zscale)
   end subroutine
 
 

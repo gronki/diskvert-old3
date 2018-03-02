@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq, symbols, Integer, Rational, Matrix, MatrixSymbol, Wild, simplify, sqrt
+from sympy import Symbol, Function, Lambda, Derivative, IndexedBase, Eq, symbols, Integer, Rational, Matrix, MatrixSymbol, Wild, simplify, sqrt, exp, log, Piecewise
 from numpy import ndarray, zeros, linspace, logspace, meshgrid
 from sys import stdin, stdout, stderr
 from StringIO import StringIO
@@ -21,10 +21,13 @@ m_el  = RPS('m_el')
 m_H   = RPS('m_H')
 c     = RPS('c')
 sigma = RPS('sigma')
+radius = RPS('radius')
+rschw = RPS('rschw')
 kboltz     = RPS('k_B')
+use_qmri = Symbol('use_quench_mri')
+use_exbil = Symbol('use_precise_balance')
 
 global_variables = {
-    omega:  'omega',
     F_acc:  'facc',
     m_el:   'cgs_mel',
     m_H:    'cgs_mhydr',
@@ -47,6 +50,7 @@ global_expressions = [
 from sympy.printing.fcode import FCodePrinter
 from sympy.printing.precedence import precedence, precedence
 
+# this class is to fix some issues with FCodePrinter from sympy
 class F90CodePrinter(FCodePrinter):
     def __init__(self, settings = {}):
         settings['source_format'] = 'free'
@@ -54,9 +58,18 @@ class F90CodePrinter(FCodePrinter):
         super(F90CodePrinter, self).__init__(settings)
 
     def _print_MatrixElement(self, expr):
+        # if we have a vector (second dimension = 1), print only one index
         if expr.parent.shape[1] <= 1:
             return "{0}({1})".format(expr.parent, expr.i + 1)
         return "{0}({1},{2})".format(expr.parent, expr.i + 1, expr.j + 1)
+
+    def _print_Piecewise(self, expr):
+        from sympy import RealNumber
+        # this fix is to prevent sympy from printing constructs like
+        # merge(x,0,condition) which are illegal in Fortran
+        newargs = ((RealNumber(x) if x.is_Integer else x \
+            for x in y) for y in expr.args)
+        return super(F90CodePrinter, self)._print_Piecewise(Piecewise(*newargs))
 
 fprinter = F90CodePrinter()
 
@@ -125,8 +138,8 @@ choices = [
     (False, False, True,  False),
     (True,  False, True,  False),
     (True,  True,  True,  False),
-    (True,  True,  True,  True ),
-    (True,  False, True,  True ),
+    # (True,  True,  True,  True ),
+    # (True,  False, True,  True ),
 ]
 
 for balance, bilfull, magnetic, conduction in choices:
@@ -188,6 +201,8 @@ for balance, bilfull, magnetic, conduction in choices:
     vrise = Lambda(z, eta * omega * z)
     # cisnienie gazu
     P_gas = kboltz * rho * T_gas / ( mu * m_H )
+    # predkosc dzwieko
+    csound = sqrt(P_gas / rho)
     # cisnienie promieniowania
     P_rad = 4 * sigma / (3 * c) * T_rad**4
     # plasma beta
@@ -200,6 +215,11 @@ for balance, bilfull, magnetic, conduction in choices:
     F_mag = 2 * P_mag * vrise(z)
     # strumien calkowity
     F_tot = F_rad + F_mag + F_cond
+
+    thr = lambda x: 1 / ( 1 + exp(-4*x) )
+    betamri = 2 * csound / (omega * radius * rschw)
+    qmri0 = thr(2 * (beta - betamri) / (beta + betamri))
+    qmri = Piecewise((qmri0, use_qmri), (1.0, True))
 
     #--------------------------------------------------------------------------#
 
@@ -228,7 +248,7 @@ for balance, bilfull, magnetic, conduction in choices:
     #
     if magnetic:
         heat = 2 * P_mag * vrise(z).diff(z) \
-            - alpha * omega * (P_tot - 2 * nu * P_mag)
+            - alpha * omega * (P_tot * qmri - 2 * nu * P_mag)
     else:
         heat = alpha * omega * P_tot
 
@@ -248,7 +268,7 @@ for balance, bilfull, magnetic, conduction in choices:
         eq1ord.append(
             2 * P_mag * vrise(z).diff(z)        \
             + vrise(z) * Derivative(P_mag,z)    \
-            - alpha * omega * (P_tot - nu * P_mag)
+            - alpha * omega * (P_tot * qmri - nu * P_mag)
         )
         boundL.append(  2 * P_mag * vrise(z).diff(z)            \
                         - alpha * omega * (P_tot - nu * P_mag)  )
@@ -258,8 +278,10 @@ for balance, bilfull, magnetic, conduction in choices:
     #
     if balance:
         sdyf = kabp * (T_gas**4 - T_rad**4)
-        # T_compt = sqrt(T_gas**2 + (4 * kboltz / (m_el * c**2) * T_gas**2)**2)
-        ssct = ksct * T_rad**4 * kboltz / (m_el * c**2) * 4 * (T_gas - T_rad)
+        relcor = sqrt(1 + (4 * kboltz * T_gas / (m_el * c**2))**2)
+        relcor = Piecewise((relcor, use_exbil), (1.0, True))
+        ssct = ksct * T_rad**4 * kboltz / (m_el * c**2) \
+            * 4 * (relcor * T_gas - T_rad)
         radcool = 4 * sigma * rho * ((sdyf if bilfull else 0) + ssct)
 
         if conduction:
@@ -301,7 +323,7 @@ for balance, bilfull, magnetic, conduction in choices:
             eq = eq.subs(k,Symbol(v, real = True, positive = k.is_positive))
         for k,v in global_expressions:
             eq = eq.subs(k,v)
-        return simplify(Function_derivatives(eq))
+        return Function_derivatives(eq)
 
     #--------------------------------------------------------------------------#
 

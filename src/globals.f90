@@ -22,7 +22,7 @@ module globals
     logical :: use_opacity_planck = .true.
     logical :: use_conduction = .false.
 
-    real(r64) :: mbh, mdot
+    real(r64) :: mbh, mdot, rschw
 
     real(r64) :: cndredu = 1e-1
 
@@ -36,10 +36,10 @@ module globals
 
 contains !-----------------------------------------------------------------!
 
-    elemental subroutine cylinder(mbh, mdot, r, omega, facc, teff, zscale)
+    elemental subroutine cylinder(mbh, mdot, r, rschw, omega, facc, teff, zscale)
         real(r64), intent(in) :: mbh, mdot, r
-        real(r64), intent(out) :: omega, facc, teff, zscale
-        real(r64) :: GM, rschw, mdot_crit, mdot_edd
+        real(r64), intent(out) :: rschw, omega, facc, teff, zscale
+        real(r64) :: GM, mdot_crit, mdot_edd
 
         GM = cgs_graw * mbh * sol_mass
 
@@ -57,14 +57,14 @@ contains !-----------------------------------------------------------------!
 
     elemental function fzscale(mbh, mdot, r) result(zscale)
         real(r64), intent(in) :: mbh, mdot, r
-        real(r64) :: omega, facc, teff, zscale
-        call cylinder(mbh, mdot, r, omega, facc, teff, zscale)
+        real(r64) :: omega, facc, teff, zscale, rschw
+        call cylinder(mbh, mdot, r, rschw, omega, facc, teff, zscale)
     end function
 
     elemental function fTeff(mbh, mdot, r) result(teff)
       real(r64), intent(in) :: mbh, mdot, r
-      real(r64) :: omega, facc, teff, zscale
-      call cylinder(mbh, mdot, r, omega, facc, teff, zscale)
+      real(r64) :: omega, facc, teff, zscale, rschw
+      call cylinder(mbh, mdot, r, rschw, omega, facc, teff, zscale)
     end function
 
 !--------------------------------------------------------------------------!

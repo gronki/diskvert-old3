@@ -13,7 +13,8 @@ module settings
                         &   GRID_ASINH  = 3, &
                         &   GRID_POW2   = 4
     integer :: tgrid = GRID_LOG
-    real(r64) :: htop = 60
+    real(r64) :: htop = 100
+    logical :: cfg_auto_htop = .true.
 
 contains
 
@@ -67,6 +68,7 @@ contains
           error stop "top must be followed by an argument " &
           & // "(the upper boundary of computation interval)"
         end if
+        cfg_auto_htop = .false.
 
       case ("-N","-n","-ngrid")
         call get_command_argument(i+1,nextarg)
@@ -122,16 +124,18 @@ contains
 !--------------------------------------------------------------------------!
 
   subroutine wpar_gl(u)
-    use fileunits, only: fmpare, fmparf, fmparl
+    use fileunits, only: fmpare, fmparec, fmparf, fmparl
     integer, intent(in) :: u
     write (u, fmparf) "X", abuX
     write (u, fmparf) "Z", abuZ
     write (u, fmpare) "kappa_abs_0", kapabs0(abuX,abuZ)
     write (u, fmpare) "kabs0", kapabs0(abuX,abuZ)
     write (u, fmpare) "kabp0", kapabp0(abuX,abuZ)
+    write (u, fmpare) "htop", htop
     write (u, fmpare) "kappa_es", kapes0(abuX,abuZ)
-    write (u, fmpare) "mbh", mbh
-    write (u, fmpare) "mdot", mdot
+    write (u, fmparec) "mbh", mbh, "black hole mass (x Msun)"
+    write (u, fmparec) "mdot", mdot, "accretion rate (x Ledd)"
+    write (u, fmparec) "rschw", rschw, 'Schwarzschild radius'
     write (u, fmparl) "use_opacity_ff", use_opacity_ff
     write (u, fmparl) "use_opacity_bf", use_opacity_bf
     write (u, fmparl) "use_planck", use_opacity_planck

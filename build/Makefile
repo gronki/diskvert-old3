@@ -1,4 +1,4 @@
-VERSION = 180118
+VERSION = 180302
 
 #------------------------------------------------------------------------------#
 
@@ -17,14 +17,14 @@ LDFLAGS = -L.
 #------------------------------------------------------------------------------#
 
 FC = gfortran
-FFLAGS ?= -g -O2
+FFLAGS ?= -O2 -march=native
 
 ifeq ($(FC),gfortran)
-FFLAGS += -fno-unsafe-math-optimizations -Wall -Warray-temporaries -Wrealloc-lhs-all
+FFLAGS += -g -Wall -Warray-temporaries -Wrealloc-lhs-all
 endif
 
 ifeq ($(FC),ifort)
-FFLAGS = -fp-model precise -warn all
+FFLAGS += -g -warn all
 endif
 
 #------------------------------------------------------------------------------#
@@ -95,32 +95,31 @@ install-user: install
 #------------------------------------------------------------------------------#
 
 %.o %.mod: %.F90
-	$(FC) $(INCLUDE) $(FFLAGS) $(CPPFLAGS) -c -fPIC $< -o $@
+	$(FC) $(INCLUDE) $(FFLAGS) -fPIC $(CPPFLAGS) -c $< -o $@
 %.o %.mod: %.f90
-	$(FC) $(INCLUDE) $(FFLAGS) -c -fPIC $< -o $@
+	$(FC) $(INCLUDE) $(FFLAGS) -fPIC -c $< -o $@
 %.o: %.F
-	$(FC) $(INCLUDE) $(FFLAGS) $(CPPFLAGS) -c -fPIC $< -o $@
+	$(FC) $(INCLUDE) $(FFLAGS) -fPIC $(CPPFLAGS) -c $< -o $@
 %.o: %.f
-	$(FC) $(INCLUDE) $(FFLAGS) -c -fPIC $< -o $@
+	$(FC) $(INCLUDE) $(FFLAGS) -fPIC -c $< -o $@
 
 include deps.inc
 
 relaxation.o    : mrxcoeff.fi mrxdims.fi mrxhash.fi mrxptrs.fi
-settings.o      : libconfort.a
+settings.o      : ../libconfort/libconfort.a
 
 #------------------------------------------------------------------------------#
 
 libdiskvert.so: $(objects)
 	$(FC) $(LDFLAGS) -shared $^ $(LDLIBS) -o $@
 
-libconfort.a:
-	$(MAKE) -C ../libconfort libconfort.a
-	ln -sf ../libconfort/libconfort.a $@
+../libconfort/libconfort.a:
+	$(MAKE) -C ../libconfort libconfort.a CFLAGS="-g -O2" FFLAGS="-g -O2"
 
 #------------------------------------------------------------------------------#
 
-$(programs): %: $(objects_util) %.o libconfort.a | libdiskvert.so
-	$(FC) $(LDFLAGS) $^ -ldiskvert $(LDLIBS) -o $@
+$(programs): %: $(objects_util) $(objects) %.o ../libconfort/libconfort.a
+	$(FC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 #------------------------------------------------------------------------------#
 

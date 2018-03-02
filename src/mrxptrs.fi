@@ -24,16 +24,6 @@ case(8)
   feq1 => mrx_coeff1_mc
   fbl  => mrx_coeffbl_mc
   fbr  => mrx_coeffbr_mc
-case(16)
-  feq0 => NULL()
-  feq1 => mrx_coeff1_mct
-  fbl  => mrx_coeffbl_mct
-  fbr  => mrx_coeffbr_mct
-case(14)
-  feq0 => NULL()
-  feq1 => mrx_coeff1_mwt
-  fbl  => mrx_coeffbl_mwt
-  fbr  => mrx_coeffbr_mwt
 case default
   error stop
 end select

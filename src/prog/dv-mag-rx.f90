@@ -18,16 +18,17 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0, KL, KU
-  integer, dimension(3) :: niter = [ 18, 8, 26 ]
+  integer, dimension(3) :: niter = [ 22, 8, 28 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:), YY(:,:)
   real(dp), allocatable :: MB(:,:)
   real(dp), pointer :: yv(:,:)
   integer, dimension(:), allocatable :: ipiv
+  real(dp) :: zphot, ztherm, zhard, zeqbc, ztmin, zcor
   logical, dimension(:), allocatable :: errmask
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, y_pmag, &
         & y_Trad, y_fcnd
   real(dp), allocatable, dimension(:) :: tau, heat
-  real(dp) :: rhoc, Tc, Hdisk, err, err0, ramp, beta_0, rschw
+  real(dp) :: rho_0_ss73, temp_0_ss73, zdisk_ss73, err, err0, ramp, beta_0, xcor
   character(*), parameter :: fmiter = '(I5,2X,ES9.2,2X,F5.1,"%")'
   logical :: user_ff, user_bf, converged, has_corona
   integer, dimension(6) :: c_
@@ -35,7 +36,7 @@ program dv_mag_relax
 
   real(dp), parameter :: typical_hdisk = 15
 
-  integer, parameter :: ncols  = 30, &
+  integer, parameter :: ncols  = 31, &
       c_rho = 1, c_temp = 2, c_trad = 3, &
       c_pgas = 4, c_prad = 5, c_pmag = 6, &
       c_frad = 7, c_fmag = 8, c_fcnd = 9, &
@@ -46,7 +47,7 @@ program dv_mag_relax
       c_kcnd = 21, c_coolb = 22, c_coolc = 23, &
       c_compy = 24, c_compfr = 25, c_fbfr = 26, &
       c_instabil = 27, &
-      c_adiab1 = 28, c_gradad = 29, c_gradrd = 30
+      c_adiab1 = 28, c_gradad = 29, c_gradrd = 30, c_betamri = 31
   character(8), dimension(ncols) :: labels
 
   labels(c_rho) = 'rho'
@@ -70,6 +71,7 @@ program dv_mag_relax
   labels(c_tauth) = 'tauth'
   labels(c_tavg) = 'tavg'
   labels(c_beta) = 'beta'
+  labels(c_betamri) = 'betamri'
   labels(c_coldens) = 'coldens'
   labels(c_coolb) = 'coolb'
   labels(c_coolc) = 'coolc'
@@ -85,7 +87,7 @@ program dv_mag_relax
   ! default values
 
   ngrid = -1
-  htop = 200
+  htop = 180
 
   !----------------------------------------------------------------------------!
   ! initialize the globals, read the config etc
@@ -107,26 +109,41 @@ program dv_mag_relax
         .or. cfg_post_corona
 
   !----------------------------------------------------------------------------!
-  ! calculate the global parameters
+  ! check the magnetic parameters
 
-  call cylinder(mbh, mdot, radius, omega, facc, teff, zscale)
-  rschw = 2 * cgs_graw * (mbh * sol_mass) / cgs_c**2
-
-  ! calculate the SS73 solution to obtain the initial profile for iteration
-  call apx_estim(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
-  call apx_refin(mbh, mdot, radius, alpha, rhoc, Tc, Hdisk)
+  if (zeta <= 0 .or. zeta > 1) &
+    error stop "zeta must be positive and less than 1"
+  if (alpha <= 0) error stop "alpha must be positive"
 
   beta_0 = 2 * zeta / alpha + nu - 1
+  xcor = 2 + alpha * (nu - 1) / zeta
 
   if (beta_0 < 0) error stop "MAGNETIC BETA cannot be negative! " &
         & // "zeta > alpha / 2 !!!"
 
-  if (1 - alpha * (1 - nu) / zeta < 0) error stop "I refuse to compute the disk&
-          & where 1 - alpha * (1 - nu) / eta < 0 !!!!"
+  if (xcor < 1) error stop "I refuse to compute the disk where xcor < 1 !!!!"
 
-  if ((tgrid == GRID_LOG .or. tgrid == GRID_ASINH) &
-      .and. cfg_adjust_height_beta) &
-    htop = htop * (1 + 1 / beta_0) * max(0.4 * hdisk / zscale, 1.0_dp)
+  !----------------------------------------------------------------------------!
+  ! some initial computation
+
+  ! calculate the global parameters
+  call cylinder(mbh, mdot, radius, rschw, omega, facc, teff, zscale)
+
+  ! calculate the SS73 solution to obtain the initial profile for iteration
+  call apx_estim(mbh, mdot, radius, alpha, rho_0_ss73, temp_0_ss73, zdisk_ss73)
+  call apx_refin(mbh, mdot, radius, alpha, rho_0_ss73, temp_0_ss73, zdisk_ss73)
+
+  !----------------------------------------------------------------------------!
+  ! estimate the interval height
+
+  if (cfg_auto_htop) then
+    htop = (zdisk_ss73 / zscale) * sqrt((4 + alpha * nu / zeta) &
+          * (1d-6**(-2 / (xcor + 2)) - 1))
+    htop = min(max(htop, 90.0_dp), 900.0_dp)
+  end if
+
+  ! old method:
+  ! htop = htop * (1 + 1 / beta_0) * max(0.4 * zdisk_ss73 / zscale, 1.0_dp)
 
   !----------------------------------------------------------------------------!
   ! if the grid number has not been set, choose the default
@@ -134,11 +151,11 @@ program dv_mag_relax
   if (ngrid .eq. -1) then
     select case (tgrid)
     case (grid_linear)
-      ngrid = ceiling(8 * htop)
+      ngrid = ceiling(80 * sqrt(htop))
     case (grid_log, grid_asinh)
-      ngrid = ceiling(300 * log(1 + htop / typical_hdisk))
+      ngrid = ceiling(320 * log(1 + htop / typical_hdisk))
     case (grid_pow2)
-      ngrid = ceiling(4 * htop)
+      ngrid = ceiling(70 * sqrt(htop))
     case default
       error stop "this grid is not supported"
     end select
@@ -205,11 +222,11 @@ program dv_mag_relax
 
   forall (i = 1:ngrid)
     y_frad(i) = x0(i) * facc
-    y_temp(i) = (1 - x0(i)) * (Tc - 0.841 * Teff) + 0.841 * Teff
-    y_rho(i) =  rhoc * (exp(-0.5*(x(i)/Hdisk)**2) + 1e-6)
+    y_temp(i) = (1 - x0(i)) * (temp_0_ss73 - 0.841 * Teff) + 0.841 * Teff
+    y_rho(i) =  rho_0_ss73 * (exp(-0.5*(x(i)/zdisk_ss73)**2) + 1e-6)
 
     y_pmag(i) = 2 * cgs_k_over_mh * y_rho(i) * y_temp(i)   &
-          & / (beta_0 * exp(- 0.5 * (x(i) / Hdisk)**2 ) + 1e-2)
+          & / (beta_0 * exp(- 0.5 * (x(i) / zdisk_ss73)**2 ) + 1e-2)
   end forall
 
   !----------------------------------------------------------------------------!
@@ -366,8 +383,8 @@ program dv_mag_relax
 
       where (y_trad < teff * 0.80) y_trad = teff * 0.80
       where (y_temp < teff * 0.80) y_temp = teff * 0.80
-      where (.not.ieee_is_normal(y_rho) .or. y_rho < epsilon(1d0)*rhoc) &
-            y_rho = epsilon(1d0)*rhoc
+      where (.not.ieee_is_normal(y_rho) .or. y_rho < epsilon(1d0)*rho_0_ss73) &
+            y_rho = epsilon(1d0)*rho_0_ss73
 
       nitert = nitert + 1
       if (cfg_write_all_iters) call saveiter(nitert)
@@ -406,18 +423,18 @@ program dv_mag_relax
   ! write some global information
 
   call wpar_gl(upar)
-  write (upar, fmparec) 'rschw', rschw, 'Schwarzschild radius'
 
   write (upar, fmhdr)  "disk information"
   write (upar, fmparfc) "alpha", alpha, "alpha parameter"
   write (upar, fmparfc) "eta", zeta, "field rise parameter"
   write (upar, fmparfc) "zeta", zeta, "field rise parameter"
   write (upar, fmparfc) "nu", nu, "reconnection parameter"
-  write (upar, fmparfc) "xcor", 1 - alpha * (1 - nu) / zeta, "corona parameter"
+  write (upar, fmparfc) "xcor", xcor, "corona parameter"
 
   write (upar, fmpare) "radius", radius
   write (upar, fmpare) "zscale", zscale
   write (upar, fmpare) "facc", facc
+  write (upar, fmpare) "omega", omega
   teff = (yy(c_frad,ngrid) / cgs_stef)**(0.25_dp)
   write (upar, fmpare) "teff", teff
   write (upar, fmparf) "teff_keV", teff * keV_in_kelvin
@@ -428,10 +445,10 @@ program dv_mag_relax
   write (upar,fmpare) 'betakin_0', (yy(c_pgas,1) + yy(c_prad,1)) / yy(c_pmag,1)
   write (upar,fmpare) 'betarad_0', yy(c_pgas,1) / yy(c_prad,1)
 
-  write (upar, fmpare) "rho_0_ss73", rhoc
-  write (upar, fmpare) "temp_0_ss73", Tc
-  write (upar, fmparec) "zdisk_ss73", Hdisk, "Disk height [cm]"
-  write (upar, fmparfc) "hdisk_ss73", Hdisk / zscale, "Disk height [cm]"
+  write (upar, fmpare) "rho_0_ss73", rho_0_ss73
+  write (upar, fmpare) "temp_0_ss73", temp_0_ss73
+  write (upar, fmparec) "zdisk_ss73", zdisk_ss73, "Disk height [cm]"
+  write (upar, fmparfc) "hdisk_ss73", zdisk_ss73 / zscale, "Disk height [cm]"
 
   write (upar, fmhdr)  "Model information"
   write (upar, fmpari) "model", model
@@ -468,22 +485,21 @@ program dv_mag_relax
 
     use slf_interpol
     use slf_integrate
-    real(dp) :: zphot, ztherm, zhard, zeqbc, ztmin, zcor
     real(dp) :: diskscale, tavgr
     logical :: has_eqbc = .false., has_tmin = .false.
 
-    call interpol(yy(c_tau,:), x, 1d0, zphot)
+    call interpol(yy(c_tau,:), x, 1.0_dp, zphot)
     call save_interpolated(zphot, 'phot', 'photosphere (tau = 1)')
 
-    call interpol(yy(c_tau,:), x, 0.5d0, zhard)
+    call interpol(yy(c_tau,:), x, 0.5_dp, zhard)
     call save_interpolated(zhard, 'hard', 'hard corona (tau = 0.5)')
 
-    call interpol(yy(c_tauth,:), x, 1d0, ztherm)
+    call interpol(yy(c_tauth,:), x, 1.0_dp, ztherm)
     call save_interpolated(ztherm, 'therm', 'thermalization depth (tau* = 1)')
 
     if ( has_corona ) then
       zeqbc = -1
-      call tabzero(x(ngrid:1:-1), yy(c_compfr,ngrid:1:-1), 0.5d0, zeqbc)
+      call tabzero(x(ngrid:1:-1), yy(c_compfr,ngrid:1:-1), 0.5_dp, zeqbc)
       has_eqbc = zeqbc > 0
       write (upar, fmparl) 'has_eqbc', has_eqbc
       if (has_eqbc) then
@@ -498,8 +514,9 @@ program dv_mag_relax
         call save_interpolated(ztmin, 'tmin', 'temperature minimum')
       end if
 
-      zcor = max(ztherm, ztmin, zeqbc)
-      call save_interpolated(zcor, 'cor', 'max(ztherm, ztmin, zeqbc)')
+      zcor = max(ztherm, ztmin)
+      call save_interpolated(zcor, 'cor', 'max(ztherm, ztmin)')
+
     end if
 
 
@@ -551,6 +568,9 @@ program dv_mag_relax
          'disk height weighted by radiation pressure'
     write (upar, fmparf) 'hdisk_prad', diskscale / zscale
 
+    write (upar, fmparf) 'hheat', integrate(yy(c_heat,:) * x, x) &
+        / integrate(yy(c_heat,:), x) / zscale
+
   end block write_disk_globals
 
   !----------------------------------------------------------------------------!
@@ -583,11 +603,35 @@ contains
     write (upar,fmparec) 'temp_' // keyword, yz, 'temperature in ' // comment
     write (upar,fmparf) 'temp_' // keyword // '_keV', yz * keV_in_kelvin
 
+    call interpol(x, yy(c_trad,:), z, yz)
+    write (upar,fmparec) 'trad_' // keyword, yz, 'rad temp in ' // comment
+    write (upar,fmparf) 'trad_' // keyword // '_keV', yz * keV_in_kelvin
+
     ! average temperature of the corona
-    call interpol(x, yy(c_tavg,:), z, yz)
+    yz = interpolf(x, yy(c_tavg,:), z) / interpolf(x, yy(c_tau,:), z)
     write (upar,fmparec) 'tavg_' // keyword, yz, 'average temperature in ' // comment
     write (upar,fmparf) 'tavg_' // keyword // '_keV', yz * keV_in_kelvin
 
+
+    if (z < zhard) then
+      write (upar, *) 'tavg_' // trim(keyword) // '_nohard',  &
+              (interpolf(x, yy(c_tavg,:), z) &
+              - interpolf(x, yy(c_tavg,:), zhard)) &
+              / (interpolf(x, yy(c_tau,:), z) &
+              - interpolf(x, yy(c_tau,:), zhard))
+      write (upar, *) 'compy_' // trim(keyword) // '_nohard',  &
+              interpolf(x, yy(c_compy,:), z) &
+              - interpolf(x, yy(c_compy,:), zhard)
+      write (upar, *) 'taues_' // trim(keyword) // '_nohard',  &
+              interpolf(x, yy(c_taues,:), z) &
+              - interpolf(x, yy(c_taues,:), zhard)
+    else
+      write (upar, *) 'tavg_' // trim(keyword) // '_nohard', &
+              interpolf(x, yy(c_temp,:), zhard)
+      write (upar, *) 'compy_' // trim(keyword) // '_nohard', 0
+      write (upar, *) 'taues_' // trim(keyword) // '_nohard', 0
+    end if
+    
     ! optical depth of the corona
     call interpol(x, yy(c_tau,:), z, yz)
     write (upar,fmparf) "tau_" // keyword, yz
@@ -628,6 +672,10 @@ contains
         (coldens - yz) / coldens, "mass fraction in " // comment
     end associate
 
+    write (upar, *) 'kapsct_' // keyword, interpolf(x, yy(c_ksct,:), z)
+    write (upar, *) 'kapabs_' // keyword, interpolf(x, yy(c_kabs,:), z)
+    write (upar, *) 'kapabp_' // keyword, interpolf(x, yy(c_kabp,:), z)
+
   end subroutine
 
   !----------------------------------------------------------------------------!
@@ -655,7 +703,7 @@ contains
 
   subroutine fillcols(yv,c_,yy)
     procedure(funout_t), pointer :: fout
-    real(dp) :: kabs,ksct,kabp,rhom,tempm,tradm,tcomptm,dx, coolcrit(ngrid)
+    real(dp) :: kabs,ksct,kabp,rhom,tempm,tradm,tcorrm,dx, coolcrit(ngrid)
     real(dp), dimension(:,:), intent(in) :: yv
     integer, dimension(:), intent(in) :: c_
     real(dp), dimension(:,:), intent(inout) :: yy
@@ -673,6 +721,7 @@ contains
       block
         use heatbalance, only: heatbil2
         real(dp) :: temp_old
+        integer :: i
         do i = 1,ngrid
           temp_old = yy(c_temp,i)
           call heatbil2(yy(c_rho,i), yy(c_temp,i), yy(c_trad,i), &
@@ -691,16 +740,16 @@ contains
 
 
     cooling: block
-      real(dp), dimension(ngrid) :: cb, cc !, tcompt
+      real(dp), dimension(ngrid) :: cb, cc, tcorr
       yy(c_coolb,:) = 4 * cgs_stef * yy(c_rho,:) * yy(c_kabp,:)   &
             * (yy(c_temp,:)**4 - yy(c_trad,:)**4)
-      ! tcompt(:) = sqrt((yy(c_temp,:))**2 &
-      !   + (4 * cgs_k_over_mec2 * yy(c_temp,:)**2)**2)
+      tcorr(:) = sqrt(1 + (4 * cgs_k_over_mec2 * yy(c_temp,:))**2)
       yy(c_coolc,:) = 4 * cgs_stef * yy(c_rho,:) * yy(c_ksct,:)   &
-          * yy(c_trad,:)**4 * cgs_k_over_mec2                   &
-          * 4 * (yy(c_temp,:) - yy(c_trad,:))
+          * yy(c_trad,:)**4 * cgs_k_over_mec2 * 4 * (yy(c_temp,:) &
+          * merge(tcorr(:), 1d0, use_precise_balance) - yy(c_trad,:))
       cb(:) = yy(c_kabp,:) * yy(c_temp,:)**4
-      cc(:) = yy(c_ksct,:) * yy(c_trad,:)**4 * cgs_k_over_mec2 * 4 * yy(c_temp,:)
+      cc(:) = yy(c_ksct,:) * yy(c_trad,:)**4 * cgs_k_over_mec2 &
+          * 4 * yy(c_temp,:) * merge(tcorr(:), 1d0, use_precise_balance)
       yy(c_compfr,:) = cc / (cb + cc)
     end block cooling
 
@@ -733,20 +782,24 @@ contains
 
       yy(c_tavg, i) = yy(c_tavg, i+1) + dx * rhom * (kabs + ksct) * tempm
 
-      ! tcomptm = sqrt((tempm)**2 + (4 * cgs_k_over_mec2 * tempm**2)**2)
+      tcorrm = merge(sqrt(1 + (4 * cgs_k_over_mec2 * tempm)**2), 1.0_dp, &
+        use_precise_balance)
       yy(c_compy, i) = yy(c_compy, i+1) + dx * rhom * ksct &
-      * 4 * cgs_k_over_mec2 * (tempm - tradm)
+           * 4 * cgs_k_over_mec2 * (tempm * tcorrm - tradm)
     end do integrate_tau
 
     ! average tempearture
-    yy(c_tavg,:) = yy(c_tavg,:) / yy(c_tau,:)
+    ! yy(c_tavg,:) = yy(c_tavg,:) / yy(c_tau,:)
+    ! yy(c_tavg,ngrid) = yy(c_temp,ngrid)
+
     yy(c_beta,:) = yy(c_pgas,:) / yy(c_pmag,:)
-    yy(c_tavg,ngrid) = yy(c_temp,ngrid)
+    yy(c_betamri,:) = 2 * sqrt(yy(c_pgas,:) / yy(c_rho,:)) &
+          / (omega * radius * rschw)
 
     coolcrit(:) = 2 * cgs_stef * yy(c_rho,:) * yy(c_trad,:)**4  &
     * (   yy(c_kabp,:) * (9 - (yy(c_temp,:) / yy(c_trad,:))**4) &
     + 8 * yy(c_ksct,:) * cgs_k_over_mec2 * yy(c_temp,:))
-    yy(c_instabil,:) = 1 - yy(c_heat,:) / coolcrit(:)
+    yy(c_instabil,:) = coolcrit(:) / yy(c_heat,:) - 1
 
     gradients: block
       real(dp), dimension(ngrid) :: pgpt

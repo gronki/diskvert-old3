@@ -9,10 +9,6 @@ case(6)
   fout => mrx_output_mw
 case(8)
   fout => mrx_output_mc
-case(16)
-  fout => mrx_output_mct
-case(14)
-  fout => mrx_output_mwt
 case default
   error stop
 end select

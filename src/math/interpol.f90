@@ -6,7 +6,7 @@ module slf_interpol
 contains
 
 
-    subroutine interpol(x_in, y_in, x_out, y_out)
+    pure subroutine interpol(x_in, y_in, x_out, y_out)
         real(r64), dimension(:), intent(in) :: x_in, y_in
         real(r64), intent(in) :: x_out
         real(r64), intent(out) :: y_out
@@ -60,6 +60,13 @@ contains
 
 
     end subroutine
+
+
+    pure function interpolf(x,y,x0) result(y0)
+      real(r64), intent(in) :: x(:), y(:), x0
+      real(r64) :: y0
+      call interpol(x,y,x0,y0)
+    end function
 
 
 end module

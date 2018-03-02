@@ -20,7 +20,7 @@ module modelmag
   implicit none
 
   real(r64), private :: radius, alpha, zeta
-  real(r64), private :: omega, Facc, Teff, zscale, rschw
+  real(r64), private :: omega, Facc, Teff, zscale
 
   integer, parameter :: n_vals = 7, &
   v_taues =     1, &
@@ -81,7 +81,7 @@ contains
     alpha = alph
     zeta = zet
     rschw = sol_rschw * mb
-    call cylinder(mbh, mdot, radius, omega, Facc, Teff, zscale)
+    call cylinder(mbh, mdot, radius, rschw, omega, Facc, Teff, zscale)
   end subroutine
 
   subroutine run_m1(z,val,der,par,nmax)

@@ -1,9 +1,9 @@
 module rxsettings
 
+  use relaxation
   implicit none
 
   logical :: cfg_write_all_iters = .FALSE.
-  logical :: cfg_adjust_height_beta = .TRUE.
   character, parameter :: EQUATION_SIMPBALANCE = 'D'
   logical :: cfg_post_corona = .false.
 
@@ -19,18 +19,20 @@ contains
       case ("-write-all","-all")
         cfg_write_all_iters = .TRUE.
 
-      case ("-adjust-height","-adjust")
-        cfg_adjust_height_beta = .TRUE.
-      case ("-no-adjust-height","-no-adjust")
-        cfg_adjust_height_beta = .FALSE.
-
       case ("-post-corona")
         cfg_post_corona = .TRUE.
       case ("-no-post-corona")
         cfg_post_corona = .FALSE.
 
-      ! case ("-balance-simple","-corona2")
-      !   cfg_temperature_method = EQUATION_SIMPBALANCE
+      case ("-relativistic", "-rel", "-relcompt")
+        use_precise_balance = .TRUE.
+      case ("-no-relativistic", "-no-rel", "-no-relcompt")
+        use_precise_balance = .FALSE.
+
+      case ("-quench","-quench-mri","-qmri")
+        use_quench_mri = .TRUE.
+      case ("-no-quench","-no-quench-mri","-no-qmri")
+        use_quench_mri = .FALSE.
 
       end select
     end do

@@ -9,10 +9,6 @@ case(6)
   ihash(:) = [1, 2, 3, 4, 5, 0]
 case(8)
   ihash(:) = [1, 2, 3, 4, 5, 0]
-case(16)
-  ihash(:) = [1, 2, 3, 4, 6, 5]
-case(14)
-  ihash(:) = [1, 2, 3, 4, 6, 5]
 case default
   error stop
 end select

@@ -29,18 +29,6 @@ case(8)
   neq1 = 4
   nbl  = 2
   nbr  = 2
-case(16)
-  ny   = 6
-  neq0 = 0
-  neq1 = 6
-  nbl  = 4
-  nbr  = 2
-case(14)
-  ny   = 6
-  neq0 = 0
-  neq1 = 6
-  nbl  = 4
-  nbr  = 2
 case default
   error stop
 end select

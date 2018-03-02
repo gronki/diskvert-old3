@@ -41,7 +41,7 @@ contains
         mdot = md
         radius = r
         alpha = alph
-        call cylinder(mbh, mdot, radius, omega, Facc, Teff, zscale)
+        call cylinder(mbh, mdot, radius, rschw, omega, Facc, Teff, zscale)
         call apx_estim(mbh, mdot, radius, alpha, rhoc, tempc, hdisk)
         call apx_refin(mbh, mdot, radius, alpha, rhoc, tempc, hdisk)
     end subroutine
