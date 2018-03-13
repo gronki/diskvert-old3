@@ -19,5 +19,6 @@ relaxation.o    : fileunits.o globals.o cgs.o ramps.o
 relaxation_c.o  : relaxation.o 
 relaxutils.o    : globals.o 
 rk4settings.o   : globals.o 
+rxsettings.o    : relaxation.o 
 settings.o      : fileunits.o globals.o 
 ss73solution.o  : cgs.o globals.o 

@@ -11,21 +11,28 @@ fmoddir = $(libdir)/gfortran/modules
 
 #------------------------------------------------------------------------------#
 
-INCLUDE = -I../libconfort
-LDFLAGS = -L.
+override INCLUDE += -I../libconfort
+override LDFLAGS += -L.
 
 #------------------------------------------------------------------------------#
 
+CC = gcc
 FC = gfortran
-FFLAGS ?= -O2 -march=native
+FFLAGS = -O2
+# FFLAGS = -mieee-fp -Og -g -fcheck=all
+FFLAGS += -Wall -Wno-unused -Warray-temporaries -Wrealloc-lhs-all
 
-ifeq ($(FC),gfortran)
-FFLAGS += -g -Wall -Warray-temporaries -Wrealloc-lhs-all
-endif
+# CC = icc
+# FC = ifort
+# FFLAGS = -O2 -xhost
+# # FFLAGS = -mieee-fp -Og -g -C
+# FFLAGS += -warn all,nounused
 
-ifeq ($(FC),ifort)
-FFLAGS += -g -warn all
-endif
+# # PGI compiler suite is behind on standard and doesn't really compile
+# CC = pgcc
+# FC = pgf90
+# FFLAGS = -O2 -ta=host
+# # FFLAGS = -Kieee-fp -O -g -C
 
 #------------------------------------------------------------------------------#
 
@@ -45,12 +52,7 @@ objects_util = results.o settings.o summary.o
 ifeq ($(FC),ifort)
 LDLIBS += -mkl=sequential
 else
-# openblas is much faster than standard BLAS and allows
-# parallel processing, just like ifort and MKL
-LDLIBS += -lopenblas
-# compile lapack from source. for unknown reasons, this works faster on PSK
-objects += dgbsv.o dgbtf2.o dgbtrf.o dgbtrs.o dgesv.o dgetf2.o dgetrf2.o dgetrf.o dgetrs.o dlamch.o dlaswp.o ieeeck.o ilaenv.o iparam2stage.o iparmq.o
-VPATH := $(VPATH):../src/lapack
+LDLIBS += -llapack
 endif
 
 #------------------------------------------------------------------------------#
@@ -59,16 +61,19 @@ programs = dv-alpha dv-alpha-rx dv-mag dv-mag-rx dv-rad1
 
 #------------------------------------------------------------------------------#
 
-all: $(programs) libdiskvert.so
+all: $(programs)
+
+lib: libdiskvert.so
 
 #------------------------------------------------------------------------------#
 
 install: all
-	install -d $(libdir)
-	install libdiskvert.so $(libdir)
 	install -d $(bindir)
 	install $(programs) $(bindir)
 
+install-lib: lib
+	install -d $(libdir)
+	install libdiskvert.so $(libdir)
 	install -d $(fmoddir)/diskvert
 	install -m 644 slf_{cgs,rk4integr,threshold}.mod \
 	 	{globals,settings,fileunits,grid,rk4settings}.mod \
@@ -77,31 +82,16 @@ install: all
 
 install-user: prefix = $(HOME)/.local
 install-user: install
-	@echo
-	@echo "export PATH=\"$(bindir):\$$PATH\"" | tee diskvert-paths.sh
-	@echo "export LD_LIBRARY_PATH=\"$(libdir):\$$LD_LIBRARY_PATH\"" | tee -a diskvert-paths.sh
-	@echo
-	@echo "Program installed in $(bindir) and $(libdir). Invoke one of the following:"
-	@echo
-	@echo "# activate for the current session"
-	@echo ". diskvert-paths.sh"
-	@echo "# activate for the current user"
-	@echo "cat diskvert-paths.sh | tee -a ~/.bashrc"
-	@echo
-	@echo "You might want to install Python scripts as well:"
-	@echo "cd ../python && python setup.py install --user"
-	@echo
+
+install-lib-user: prefix = $(HOME)/.local
+install-lib-user: install-lib
 
 #------------------------------------------------------------------------------#
 
 %.o %.mod: %.F90
-	$(FC) $(INCLUDE) $(FFLAGS) -fPIC $(CPPFLAGS) -c $< -o $@
+	$(FC) $(INCLUDE) $(CPPFLAGS) $(FFLAGS) -c $< -o $@
 %.o %.mod: %.f90
-	$(FC) $(INCLUDE) $(FFLAGS) -fPIC -c $< -o $@
-%.o: %.F
-	$(FC) $(INCLUDE) $(FFLAGS) -fPIC $(CPPFLAGS) -c $< -o $@
-%.o: %.f
-	$(FC) $(INCLUDE) $(FFLAGS) -fPIC -c $< -o $@
+	$(FC) $(INCLUDE) $(FFLAGS) -c $< -o $@
 
 include deps.inc
 
@@ -110,16 +100,21 @@ settings.o      : ../libconfort/libconfort.a
 
 #------------------------------------------------------------------------------#
 
-libdiskvert.so: $(objects)
-	$(FC) $(LDFLAGS) -shared $^ $(LDLIBS) -o $@
-
-../libconfort/libconfort.a:
-	$(MAKE) -C ../libconfort libconfort.a CFLAGS="-g -O2" FFLAGS="-g -O2"
+$(programs): %: $(objects_util) $(objects) %.o ../libconfort/libconfort.a
+	$(FC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 #------------------------------------------------------------------------------#
 
-$(programs): %: $(objects_util) $(objects) %.o ../libconfort/libconfort.a
-	$(FC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+libdiskvert.so: override FFLAGS += -fPIC
+libdiskvert.so: $(objects)
+	$(FC) $(LDFLAGS) -shared $^ $(LDLIBS) -o $@
+
+#------------------------------------------------------------------------------#
+
+../libconfort/libconfort.a:
+	$(MAKE) -C ../libconfort libconfort.a 			\
+						CC="$(CC)" CFLAGS="-g -O2" 				\
+						FC="$(FC)" FFLAGS="-g -O2"
 
 #------------------------------------------------------------------------------#
 

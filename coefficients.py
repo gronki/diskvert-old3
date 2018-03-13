@@ -209,12 +209,15 @@ for balance, bilfull, magnetic, conduction in choices:
     beta = P_gas / P_mag
     # radiative beta
     betarad = P_gas / P_rad
-    # cisnienie calkowite
-    P_tot = P_gas + P_rad + P_mag
     # strumien Poyntinga
     F_mag = 2 * P_mag * vrise(z)
     # strumien calkowity
     F_tot = F_rad + F_mag + F_cond
+
+    # cisnienie calkowite w alpha-prescription
+    # P_tot_gen = P_gas + P_mag
+    P_tot_gen = P_gas + P_rad + P_mag
+    # P_tot_gen = sqrt(P_gas * P_rad) + P_mag
 
     thr = lambda x: 1 / ( 1 + exp(-4*x) )
     betamri = 2 * csound / (omega * radius * rschw)
@@ -248,9 +251,9 @@ for balance, bilfull, magnetic, conduction in choices:
     #
     if magnetic:
         heat = 2 * P_mag * vrise(z).diff(z) \
-            - alpha * omega * (P_tot * qmri - 2 * nu * P_mag)
+            - alpha * omega * (P_tot_gen * qmri - 2 * nu * P_mag)
     else:
-        heat = alpha * omega * P_tot
+        heat = alpha * omega * P_tot_gen
 
     eq1ord.append(
         Derivative(F_rad,z) + Derivative(F_cond,z) - heat
@@ -268,10 +271,10 @@ for balance, bilfull, magnetic, conduction in choices:
         eq1ord.append(
             2 * P_mag * vrise(z).diff(z)        \
             + vrise(z) * Derivative(P_mag,z)    \
-            - alpha * omega * (P_tot * qmri - nu * P_mag)
+            - alpha * omega * (P_tot_gen * qmri - nu * P_mag)
         )
         boundL.append(  2 * P_mag * vrise(z).diff(z)            \
-                        - alpha * omega * (P_tot - nu * P_mag)  )
+                        - alpha * omega * (P_tot_gen - nu * P_mag)  )
 
     #--------------------------------------------------------------------------#
     # Funkcja zrodlowa
