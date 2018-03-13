@@ -137,8 +137,10 @@ program dv_mag_relax
   ! estimate the interval height
 
   if (cfg_auto_htop) then
+    ! estimate the disk top from approximate solution from B15
     htop = (zdisk_ss73 / zscale) * sqrt((4 + alpha * nu / zeta) &
           * (1d-6**(-2 / (xcor + 2)) - 1))
+    ! keep the disk dimention between 90H and 900H
     htop = min(max(htop, 90.0_dp), 900.0_dp)
   end if
 
@@ -631,7 +633,7 @@ contains
       write (upar, *) 'compy_' // trim(keyword) // '_nohard', 0
       write (upar, *) 'taues_' // trim(keyword) // '_nohard', 0
     end if
-    
+
     ! optical depth of the corona
     call interpol(x, yy(c_tau,:), z, yz)
     write (upar,fmparf) "tau_" // keyword, yz

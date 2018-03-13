@@ -112,9 +112,9 @@ libdiskvert.so: $(objects)
 #------------------------------------------------------------------------------#
 
 ../libconfort/libconfort.a:
-	$(MAKE) -C ../libconfort libconfort.a 			\
-						CC="$(CC)" CFLAGS="-g -O2" 				\
-						FC="$(FC)" FFLAGS="-g -O2"
+	$(MAKE) -C ../libconfort libconfort.a  \
+				CC="$(CC)" CFLAGS="-g -O2" \
+				FC="$(FC)" FFLAGS="-g -O2"
 
 #------------------------------------------------------------------------------#
 

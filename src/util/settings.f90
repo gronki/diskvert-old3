@@ -68,6 +68,7 @@ contains
           error stop "top must be followed by an argument " &
           & // "(the upper boundary of computation interval)"
         end if
+        ! if the height has been given, do not estimate
         cfg_auto_htop = .false.
 
       case ("-N","-n","-ngrid")
@@ -77,6 +78,7 @@ contains
           error stop "ngrid must be followed by an argument " &
           & // "(number of bins)"
         end if
+        
       case ("-output","-o")
         call get_command_argument(i+1,outfn)
         if ( len_trim(outfn) .eq. 0 ) then
