@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from matplotlib.ticker import LogLocator
 from symresults import *
 from itertools import product as cartproduct
 
@@ -21,23 +22,23 @@ for ds in dsets:
 
     #--------------------------------------------------------------------------#
 
-    fig, axes = plt.subplots(2, 3, figsize = (15,8), sharex = True, sharey = True)
+    fig, axes = plt.subplots(2, 3, figsize = (figw_lg, figw_lg * 0.6), sharex = True, sharey = True)
 
     for ax in axes.ravel():
-        ax.set_xlabel(xl)
-        ax.set_ylabel(yl)
         ax.set_xscale(xs)
         ax.set_yscale(ys)
+    for ax in axes[-1,:]: ax.set_xlabel(xl)
+    for ax in axes[:,0]:  ax.set_ylabel(yl)
 
     def overplot_contours(ax, color = 'white'):
         cs = ax.contour(xx, yy, DPA(dset3, 'taues_cor'), 11,
             linewidths = np.linspace(0.2, 1.8, 11),
             colors = color)
         ax.clabel(cs, inline = True, fontsize = 9, color = color, fmt = '%.1f')
-        if ds == 'NA':
-            ax.scatter(sym_alphas, sym_nus, color = color)
-            for i,l in enumerate(sym_labels):
-                ax.annotate(l, xy = (sym_alphas[i] + 0.01, sym_nus[i]), color = color)
+        # if ds == 'NA':
+        #     ax.scatter(sym_alphas, sym_nus, color = color)
+        #     for i,l in enumerate(sym_labels):
+        #         ax.annotate(l, xy = (sym_alphas[i] + 0.01, sym_nus[i]), color = color)
         ax.set_xlim(np.min(xx), np.max(xx))
         ax.set_ylim(np.min(yy), np.max(yy))
 
@@ -47,7 +48,7 @@ for ds in dsets:
     ax.set_title('$T_{{\\rm avg}}$ [keV] (warm)')
     zz = DPA(dset3, 'tavg_cor_nohard')
     cs = ax.contourf(xx, yy, zz / 11.6e6, cmap = 'CMRmap', levels = np.linspace(0.1,1.3,16), extend = 'both')
-    plt.colorbar(cs, ax = ax) #, ticks = [1e6, 3e6, 1e7, 3e7, 1e8])
+    plt.colorbar(cs, ax = ax, ticks = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
     overplot_contours(ax, color = 'white')
 
     #--------------------------------------------------------------------------#
@@ -55,9 +56,8 @@ for ds in dsets:
     ax = axes[1,0]
     ax.set_title('$T_{{\\rm avg}}$ [keV] (hot)')
     zz = DPA(dset3, 'tavg_hard')
-    cs = ax.contourf(xx, yy, zz / 11.6e6, cmap = 'CMRmap', levels = np.linspace(1,60,16), extend = 'both') # , norm = LogNorm(), levels = np.logspace(6.6, 8.0, 17)
-    plt.colorbar(cs, ax = ax) #, ticks = [1e6, 3e6, 1e7, 3e7, 1e8])
-    # overplot_contours(ax, color = 'white')
+    cs = ax.contourf(xx, yy, zz / 11.6e6, np.logspace(-0.5,1.5,16), cmap = 'CMRmap', norm = LogNorm())
+    plt.colorbar(cs, ax = ax, ticks = [1,3,10,30,100], format = '%.1f')
 
     #--------------------------------------------------------------------------#
 
@@ -70,7 +70,7 @@ for ds in dsets:
 
     cs = ax.contour(xx, yy, DPA(dset3, 'xcor'),
         levels = np.linspace(1,3,9),
-        linewidths = np.linspace(0.2, 1.8, 9),
+        linewidths = np.linspace(0.5, 1.8, 9),
         colors = 'black')
     ax.clabel(cs, inline = True, fontsize = 9, color = 'black', fmt = 'x = %.2f')
 
@@ -89,11 +89,12 @@ for ds in dsets:
     ax.set_title('$\\epsilon$ and $\\tau_{{\\rm es}}$ at $\\tau* = 1$')
     kes = DPA(dset3, 'kapsct_therm')
     kabp = DPA(dset3, 'kapabp_therm')
-    cs = ax.contourf(xx, yy, kabp / (kes + kabp) , 13, vmin = 0,
-        cmap = 'RdYlGn')
-    plt.colorbar(cs, ax = ax)
+
+    zz = kabp / (kes + kabp)
+    cs = ax.contourf(xx, yy, zz, np.logspace(-4.0,-0.5,13), norm = LogNorm(),  cmap = 'RdYlGn')
+    plt.colorbar(cs, ax = ax, ticks = [1e-4, 1e-3, 1e-2, 1e-1])
     cs = ax.contour(xx, yy, DPA(dset3, 'taues_therm'), 11,
-        linewidths = np.linspace(0.2, 1.8, 11),
+        linewidths = np.linspace(0.5, 1.8, 11),
         colors = 'black')
     ax.clabel(cs, inline = True, fontsize = 9, color = 'black', fmt = '%.1f')
 
@@ -104,13 +105,12 @@ for ds in dsets:
     cm = plt.cm.get_cmap('PiYG')
     cmx = lambda lvl: [ cm(x) for x in np.linspace(0, 1, len(lvl)) ]
     cs = ax.contourf(xx, yy, DPA(dset3, 'instabil'),
-        levels = [-2.0, -1.0, -0.5, -0.2, -0.1, -0.05, -0.02, -0.01, -0.005, 0, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02],
-        # linewidths = [ 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 2.0, 1.4, 1.2, 0.02 ],
+        levels = [-2.0, -1.0, -0.5, -0.2, -0.1, -0.05, -0.02, -0.01, -0.005, 0, 0.001, 0.002, 0.005, 0.010, 0.020, 0.050],
         colors = [cm(x) for x in [0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.47, 0.53, 0.6, 0.67, 0.8, 0.9, 0.95, 1.0]],
         extend = 'both')
     ax.contour(xx, yy, DPA(dset3, 'instabil'), levels = [0], linewidths = 0.8, colors = 'black', alpha = 0.4, linestyles = ':')
     # ax.clabel(cs, fontsize = 9)
-    plt.colorbar(cs, ax = ax)
+    plt.colorbar(cs, ax = ax, ticks = [-1, -0.2, -0.05, -0.01, 0, 0.002, 0.01, 0.05])
     # cs = ax.contour(xx, yy, DPA(dset3, 'taues_therm'), 11,
     #     linewidths = np.linspace(0.2, 1.8, 11),
     #     colors = 'black')
@@ -119,4 +119,6 @@ for ds in dsets:
     #--------------------------------------------------------------------------#
 
     plt.tight_layout()
+    plt.subplots_adjust(wspace = 0.11, hspace = 0.15)
     plt.savefig('maps-{}.{}'.format(ds, figext))
+    plt.close(fig)

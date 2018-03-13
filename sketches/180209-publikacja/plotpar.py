@@ -5,7 +5,7 @@ from par import *
 
 beta = np.logspace(-0.5,2.5)
 
-plt.figure()
+plt.figure(figsize = (figw_sm, figw_sm * 0.8))
 
 # plt.plot(beta, 0.25 * beta**-0.55)
 plt.plot(beta, 2 * 0.1 / (1 + beta), color = '#F9CEB9', label = '$\\eta = 0.1$')
@@ -45,7 +45,8 @@ plt.ylabel('$\\alpha_{{\\rm B}}$')
 # print 'etas -> ', sym_etas
 # print ' eta_m = ', np.mean(sym_etas), np.std(sym_etas)
 
-plt.savefig('3.{}'.format(figext))
+plt.tight_layout()
+plt.savefig('params.{}'.format(figext))
 
 exit()
 

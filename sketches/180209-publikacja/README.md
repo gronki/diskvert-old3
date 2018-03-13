@@ -18,6 +18,9 @@ parallel --eta cat {} \| dv-mag-rx -compton -post-corona -o {.} ::: *.par
 cd ..
 # make plots
 python maps.py
+python modelpar.py
+python cooling.py
+python instabil.py
 ```
 
 To clear the data directory, invoke:

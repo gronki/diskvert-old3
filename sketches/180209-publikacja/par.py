@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import product as cartproduct
@@ -9,8 +11,13 @@ alpha, eta, nu = 0.1, 0.1, 1.0
 
 #------------------------------------------------------------------------------#
 
-figext = 'pdf'
 figext = 'png'
+figext = 'pdf'
+
+figsc = 0.65
+figw_sm = figsc * 8.8
+figw_md = figsc * 12.0
+figw_lg = figsc * 17.0
 
 #------------------------------------------------------------------------------#
 
@@ -48,7 +55,7 @@ for i in range(len(alphas_2)):
 
 NN = 40
 mdots = np.logspace(-2.5, -0.5, NN)
-alphas = np.linspace(0.3 / NN, 0.3, NN)
+alphas = np.linspace(0.4 / NN, 0.4, NN)
 radii = np.logspace(0.5, 2, NN)
 zets = np.linspace(0, 0.7, NN)
 nus = np.logspace(-1, 1, NN)

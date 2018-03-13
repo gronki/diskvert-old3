@@ -27,7 +27,7 @@ def georan(n):
 
 #------------------------------------------------------------------------------#
 
-fig, axes = plt.subplots(nn5, 3, figsize = (11.7,13.5), sharex = 'all', sharey = 'row')
+fig, axes = plt.subplots(nn5, 3, figsize = (figw_lg, figw_lg * 1.15), sharex = 'all', sharey = 'row')
 
 for it, mdot_ in enumerate(mdots_5):
 
@@ -37,7 +37,7 @@ for it, mdot_ in enumerate(mdots_5):
     Thi = p.teff * 60
 
     a1 = (11.0 / 3)**0.25
-    a2 = (8 * p.kappa_es * cgs_boltz )**2 / (3 * p.kabp0 * cgs_mel * cgs_c**2)**2 * 1e60
+    a2 = (8 * p.kappa_es * cgs_boltz)**2 / (3 * p.kabp0 * cgs_mel * cgs_c**2)**2 * (1e6)**10
     a3 = 8.0 / 3.0 * (3.0 / 11.0)**0.125 * p.kappa_es / p.kabp0 * cgs_boltz / (cgs_mel * cgs_c**2) * (1e6)**4.5
 
     #--------------------------------------------------------------------------#
@@ -73,14 +73,14 @@ for it, mdot_ in enumerate(mdots_5):
             * cgs_boltz / (cgs_mel * cgs_c**2)
         bil[i,j] = 1 - (Lff + Les) / heat[j]
         LT[i,j] = (LTff + LTes) * T[i] / (Lff + Les)
-        BC[i,j] = Lff / (Lff + Les)
+        BC[i,j] = Les / (Lff + Les)
         if T[i] <= Trad[j]: LT[i,j] = np.ma.masked
 
     #--------------------------------------------------------------------------#
 
     ax = axes[it,0]
 
-    cs1 = ax.contourf(h, T, BC, levels = np.linspace(0,1,13), cmap = 'RdBu', extend = 'both')
+    cs1 = ax.contourf(h, T, BC, levels = np.linspace(0,1,13), cmap = 'RdBu_r', extend = 'both')
 
     # all balance solutions and solutions for gas and radiation temp
     ax.plot(d['h'], d['trad'], color = '#EEE5C2', linewidth = 1)
@@ -124,12 +124,12 @@ for it, mdot_ in enumerate(mdots_5):
     # ax.plot(d['h'], d['rho'] * d['temp'] / (a3 * (d['trad'] / 1e6)**4.5))
 #------------------------------------------------------------------------------#
 
-axes[0,0].set_title(u'$\\Lambda_B / (\\Lambda_B + \\Lambda_C)$')
+axes[0,0].set_title(u'$\\Lambda_C / (\\Lambda_B + \\Lambda_C)$')
 axes[0,1].set_title(u'$1 - \\Lambda_{{\\rm net}} \\  / \\  \\Gamma_{{\\rm mag}}$')
-axes[0,2].set_title(u'$d \\ln \\Lambda_{{\\rm net}} \\ / \\ d \\ln T_{{\\rm gas}}$')
+axes[0,2].set_title(u'$d \\ln \\Lambda_{{\\rm net}} \\ / \\ d \\ln T$')
 
 for ax in axes[-1,:]: ax.set_xlabel('$z / H$')
-for ax in axes[:,0]: ax.set_ylabel('$T_{{\\rm gas}}$ [keV]')
+for ax in axes[:,0]: ax.set_ylabel('$T$ [K]')
 
 for ax, mdot_ in zip(axes[:,0], mdots_5):
     ax.annotate('$\\dot{{m}} = {:.3f}$'.format(mdot_), (0.05, 0.87), xycoords = 'axes fraction', color = 'white', fontsize = 11)
