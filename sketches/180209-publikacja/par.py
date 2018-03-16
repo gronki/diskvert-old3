@@ -2,6 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 from itertools import product as cartproduct
 
 #------------------------------------------------------------------------------#
@@ -11,8 +12,8 @@ alpha, eta, nu = 0.1, 0.1, 1.0
 
 #------------------------------------------------------------------------------#
 
-figext = 'png'
 figext = 'pdf'
+figext = 'png'
 
 figsc = 0.65
 figw_sm = figsc * 8.8
@@ -37,72 +38,69 @@ dict2cfg = lambda **kw: u''.join('{} {}\n'.format(k,v) for k,v in kw.items())
 
 #------------------------------------------------------------------------------#
 
-mdots_1 = np.logspace(-2.5,-0.5,12)
-for i in range(len(mdots_1)):
-    with open('data/01-' + ix2fn('M',(i,)) + '.par','w') as f:
-        f.write(dict2cfg(mbh = mbh, mdot = mdots_1[i], radius = radius,
+NN1 = 8
+
+mdots_1 = np.logspace(-2.5, -0.5, NN1)
+for i,x in enumerate(mdots_1):
+    with open('data.1/01-' + ix2fn('M', (i,)) + '.par','w') as f:
+        f.write(dict2cfg(mbh = mbh, mdot = x, radius = radius,
             alpha = alpha, zeta = eta, nu = nu))
 
-#------------------------------------------------------------------------------#
-
-alphas_2 = np.logspace(-2,np.log10(eta),12)
-for i in range(len(alphas_2)):
-    with open('data/02-' + ix2fn('A',(i,)) + '.par','w') as f:
+alphas_1 = np.logspace(-2, 0, NN1) * eta
+for i,x in enumerate(alphas_1):
+    with open('data.1/01-' + ix2fn('A', (i,)) + '.par','w') as f:
         f.write(dict2cfg(mbh = mbh, mdot = mdot, radius = radius,
-            alpha = alphas_2[i], zeta = eta, nu = nu))
+            alpha = x, zeta = eta, nu = nu))
+
+nus_1 = np.logspace(-1, 2, NN1)
+for i,x in enumerate(alphas_1):
+    with open('data.1/01-' + ix2fn('N', (i,)) + '.par','w') as f:
+        f.write(dict2cfg(mbh = mbh, mdot = mdot, radius = radius,
+            alpha = alpha, zeta = eta, nu = x))
 
 #------------------------------------------------------------------------------#
 
-NN = 40
-mdots = np.logspace(-2.5, -0.5, NN)
-alphas = np.linspace(0.4 / NN, 0.4, NN)
-radii = np.logspace(0.5, 2, NN)
-zets = np.linspace(0, 0.7, NN)
-nus = np.logspace(-1, 1, NN)
-betas = np.logspace(0, 1.5, NN)
+NN4 = 40
+mdots = np.logspace(-2.5, -0.5, NN4)
+alphas = np.linspace(0.4 / NN4, 0.4, NN4)
+radii = np.logspace(0.5, 2, NN4)
+zets = np.linspace(0, 0.7, NN4)
+nus = np.logspace(-1, 1, NN4)
+betas = np.logspace(0, 1.5, NN4)
 
 dsets = []
 
 #------------------------------------------------------------------------------#
 
 dsets.append('MR')
-for i,j in cartproduct(range(NN), range(NN)):
-    with open('data/04-' + ix2fn('MR',(i,j)) + '.par','w') as f:
+for i,j in cartproduct(range(NN4), range(NN4)):
+    with open('data.0/04-' + ix2fn('MR',(i,j)) + '.par','w') as f:
         f.write(dict2cfg(mbh = mbh, mdot = mdots[i], radius = radii[j],
             alpha = alpha, zeta = eta, nu = nu))
 
 #------------------------------------------------------------------------------#
 
 dsets.append('MA')
-for i,j in cartproduct(range(NN), range(NN)):
-    with open('data/04-' + ix2fn('MA',(i,j)) + '.par','w') as f:
+for i,j in cartproduct(range(NN4), range(NN4)):
+    with open('data.0/04-' + ix2fn('MA',(i,j)) + '.par','w') as f:
         f.write(dict2cfg(mbh = mbh, mdot = mdots[i], radius = radius,
             alpha = alphas[j], zeta = alphas[j], nu = nu))
 
 #------------------------------------------------------------------------------#
 
 dsets.append('MN')
-for i,j in cartproduct(range(NN), range(NN)):
-    with open('data/04-' + ix2fn('MN',(i,j)) + '.par','w') as f:
+for i,j in cartproduct(range(NN4), range(NN4)):
+    with open('data.0/04-' + ix2fn('MN',(i,j)) + '.par','w') as f:
         f.write(dict2cfg(mbh = mbh, mdot = mdots[i], radius = radius,
             alpha = alpha, zeta = eta, nu = nus[j]))
 
 #------------------------------------------------------------------------------#
 
 dsets.append('NA')
-for i,j in cartproduct(range(NN), range(NN)):
-    with open('data/04-' + ix2fn('NA',(i,j)) + '.par','w') as f:
+for i,j in cartproduct(range(NN4), range(NN4)):
+    with open('data.0/04-' + ix2fn('NA',(i,j)) + '.par','w') as f:
         f.write(dict2cfg(mbh = mbh, mdot = mdot, radius = radius,
             alpha = alphas[j], zeta = alphas[j], nu = nus[i]))
-
-#------------------------------------------------------------------------------#
-#
-# dsets.append('BA')
-# for i,j in cartproduct(range(NN), range(NN)):
-#     with open('data/04-' + ix2fn('BA',(i,j)) + '.par','w') as f:
-#         f.write(dict2cfg(mbh = mbh, mdot = mdot, radius = radius,
-#             alpha = alphas[j], zeta = alphas[j] * (betas[i] + 1 - nu) / 2,
-#             nu = nu))
 
 #------------------------------------------------------------------------------#
 
@@ -118,9 +116,9 @@ meta = {
 #------------------------------------------------------------------------------#
 
 mdots_5 = np.round(np.logspace(np.log10(0.018), np.log10(0.040), 5), 4)
-for i,mdot_ in enumerate(mdots_5):
-    with open('data/05-' + ix2fn('M', (i,)) + '.par','w') as f:
-        f.write(dict2cfg(mbh = mbh, mdot = mdot_, radius = radius,
+for i,x in enumerate(mdots_5):
+    with open('data.1/05-' + ix2fn('M', (i,)) + '.par','w') as f:
+        f.write(dict2cfg(mbh = mbh, mdot = x, radius = radius,
             alpha = alpha, zeta = eta, nu = nu))
 
 #------------------------------------------------------------------------------#

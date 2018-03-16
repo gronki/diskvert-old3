@@ -1,10 +1,12 @@
 
-find data -type f -delete
+mkdir -p data.{0,1}
+
+find data.0 -type f -delete
+find data.1 -type f -delete
+
 python par.py
 
-cd data
-parallel --eta cat {} \| dv-mag-rx -compton -post-corona -o {.} ::: {01,02,03,05}-*.par
-parallel --eta cat {} \| dv-mag-rx          -post-corona -o {.} ::: 04-*.par
-cd ..
+find data.1 -name \*.par | parallel --eta cat {} \| dv-mag-rx -compton -post-corona -o {.}
+find data.0 -name \*.par | parallel --eta cat {} \| dv-mag-rx -post-corona -o {.}
 
-parallel python ::: cooling.py maps.py plotpar.py instabil.py
+parallel python ::: cooling.py maps.py plotpar.py instabil.py multi.py
