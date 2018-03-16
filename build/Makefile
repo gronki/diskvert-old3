@@ -19,20 +19,20 @@ override LDFLAGS += -L.
 CC = gcc
 FC = gfortran
 FFLAGS = -O2
-# FFLAGS = -mieee-fp -Og -g -fcheck=all
+# FFLAGS = -g -Og -mieee-fp -fcheck=all
 FFLAGS += -Wall -Wno-unused -Warray-temporaries -Wrealloc-lhs-all
 
 # CC = icc
 # FC = ifort
-# FFLAGS = -O2 -xhost
-# # FFLAGS = -mieee-fp -Og -g -C
+# FFLAGS = -O2 -xhost -fp-model precise
+# # FFLAGS = -g -Og -mieee-fp -C
 # FFLAGS += -warn all,nounused
 
 # # PGI compiler suite is behind on standard and doesn't really compile
 # CC = pgcc
 # FC = pgf90
 # FFLAGS = -O2 -ta=host
-# # FFLAGS = -Kieee-fp -O -g -C
+# # FFLAGS = -g -Kieee-fp -C
 
 #------------------------------------------------------------------------------#
 
