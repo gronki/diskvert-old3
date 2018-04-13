@@ -117,10 +117,10 @@ contains
         character(len=2048) :: buf
         integer :: i
 
-        call mincf_get(cfg, "zeta", buf, errno)
+        call mincf_get(cfg, "eta", buf, errno)
         if ( iand(errno, mincf_not_found) .ne. 0 )  then
-            error stop "Zeta parameter between 0 and 1 " &
-                & // "(key: zeta) is REQUIRED!"
+            error stop "eta parameter between 0 and 1 " &
+                & // "(key: eta) is REQUIRED!"
         end if
         read (buf,*) zeta
 

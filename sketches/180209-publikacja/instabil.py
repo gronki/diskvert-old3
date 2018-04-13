@@ -12,7 +12,7 @@ from par import *
 #------------------------------------------------------------------------------#
 
 nn5 = len(mdots_5)
-dp = [ col2python('data/05-' + ix2fn('M', (i,)) + '.dat') for i in range(nn5) ]
+dp = [ col2python('data.1/05-' + ix2fn('M', (i,)) + '.dat') for i in range(nn5) ]
 zmax = 90
 
 uli = lambda n: np.linspace(-1,1,n)

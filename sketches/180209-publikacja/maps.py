@@ -12,17 +12,23 @@ from par import *
 
 #------------------------------------------------------------------------------#
 
-for ds in dsets:
+contw = lambda n: np.logspace(np.log10(0.6), np.log10(1.3), n)
 
-    yy, yl, ys = meta[ds[0]]
-    xx, xl, xs = meta[ds[1]]
+#------------------------------------------------------------------------------#
 
-    dset3 = read2Ddataset(lambda i,j: 'data/04-' + ix2fn(ds,(i,j)) + '.txt',
+for ds, M1, M2 in dsets:
+
+    print ds
+    yy, yl, ys = M1
+    xx, xl, xs = M2
+
+    dset3 = read2Ddataset(lambda i,j: 'data.0/' + ix2fn(ds,(i,j)) + '.txt',
         len(yy), len(xx))
 
     #--------------------------------------------------------------------------#
 
-    fig, axes = plt.subplots(2, 3, figsize = (figw_lg, figw_lg * 0.6), sharex = True, sharey = True)
+    fig, axes = plt.subplots(2, 3, figsize = (figw_lg, figw_lg * 0.6),
+        sharex = True, sharey = True)
 
     for ax in axes.ravel():
         ax.set_xscale(xs)
@@ -32,9 +38,8 @@ for ds in dsets:
 
     def overplot_contours(ax, color = 'white'):
         cs = ax.contour(xx, yy, DPA(dset3, 'taues_cor'), 11,
-            linewidths = np.linspace(0.2, 1.8, 11),
-            colors = color)
-        ax.clabel(cs, inline = True, fontsize = 9, color = color, fmt = '%.1f')
+            linewidths = contw(11), colors = color)
+        ax.clabel(cs, inline = True, fontsize = 8.5, color = color, fmt = '%.1f')
         # if ds == 'NA':
         #     ax.scatter(sym_alphas, sym_nus, color = color)
         #     for i,l in enumerate(sym_labels):
@@ -70,14 +75,13 @@ for ds in dsets:
 
     cs = ax.contour(xx, yy, DPA(dset3, 'xcor'),
         levels = np.linspace(1,3,9),
-        linewidths = np.linspace(0.5, 1.8, 9),
-        colors = 'black')
-    ax.clabel(cs, inline = True, fontsize = 9, color = 'black', fmt = 'x = %.2f')
+        linewidths = contw(9), colors = 'black')
+    ax.clabel(cs, inline = True, fontsize = 8.5, color = 'black', fmt = 'x = %.2f')
 
     #--------------------------------------------------------------------------#
 
     ax = axes[0,1]
-    ax.set_title('$Y_{{\\rm avg}}$')
+    ax.set_title('$Y_{{\\rm avg}}$ (total)')
     cs = ax.contourf(xx, yy, DPA(dset3, 'compy_therm'), 13,
         cmap = 'magma', vmin = 0)
     plt.colorbar(cs, ax = ax)
@@ -94,9 +98,8 @@ for ds in dsets:
     cs = ax.contourf(xx, yy, zz, np.logspace(-4.0,-0.5,13), norm = LogNorm(),  cmap = 'RdYlGn')
     plt.colorbar(cs, ax = ax, ticks = [1e-4, 1e-3, 1e-2, 1e-1])
     cs = ax.contour(xx, yy, DPA(dset3, 'taues_therm'), 11,
-        linewidths = np.linspace(0.5, 1.8, 11),
-        colors = 'black')
-    ax.clabel(cs, inline = True, fontsize = 9, color = 'black', fmt = '%.1f')
+        linewidths = contw(11), colors = 'black')
+    ax.clabel(cs, inline = True, fontsize = 8.5, color = 'black', fmt = '%.1f')
 
     #--------------------------------------------------------------------------#
 

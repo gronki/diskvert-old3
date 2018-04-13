@@ -7,13 +7,14 @@ from itertools import product as cartproduct
 
 #------------------------------------------------------------------------------#
 
-mbh, mdot, radius = 10.0, 0.05, 6.0
-alpha, eta, nu = 0.1, 0.1, 1.0
+mbh, mdot, radius = 10.0, 0.05, 10.0
+alpha, eta, nu = 0.1, 0.1, 0.5
+# alpha, eta, nu = 0.1, 0.3, 0.0
 
 #------------------------------------------------------------------------------#
 
 figext = 'pdf'
-figext = 'png'
+# figext = 'png'
 
 figsc = 0.65
 figw_sm = figsc * 8.8
@@ -33,7 +34,7 @@ lbl_beta = u'$\\beta_0$'
 
 #------------------------------------------------------------------------------#
 
-ix2fn = lambda s,ix: ''.join([ '{}{:02d}'.format(a,i+1) for a,i in zip(s,ix) ])
+ix2fn = lambda s,ix: s[:-len(ix)] + ''.join([ '{}{:02d}'.format(a,i+1) for a,i in zip(s[-len(ix):],ix) ])
 dict2cfg = lambda **kw: u''.join('{} {}\n'.format(k,v) for k,v in kw.items())
 
 #------------------------------------------------------------------------------#
@@ -41,85 +42,118 @@ dict2cfg = lambda **kw: u''.join('{} {}\n'.format(k,v) for k,v in kw.items())
 NN1 = 8
 
 mdots_1 = np.logspace(-2.5, -0.5, NN1)
-for i,x in enumerate(mdots_1):
+for i,mdot_ in enumerate(mdots_1):
     with open('data.1/01-' + ix2fn('M', (i,)) + '.par','w') as f:
-        f.write(dict2cfg(mbh = mbh, mdot = x, radius = radius,
-            alpha = alpha, zeta = eta, nu = nu))
+        f.write(dict2cfg(mbh = mbh, mdot = mdot_, radius = radius,
+            alpha = alpha, eta = eta, nu = nu))
 
 alphas_1 = np.logspace(-2, 0, NN1) * eta
-for i,x in enumerate(alphas_1):
+for i,alpha_ in enumerate(alphas_1):
     with open('data.1/01-' + ix2fn('A', (i,)) + '.par','w') as f:
         f.write(dict2cfg(mbh = mbh, mdot = mdot, radius = radius,
-            alpha = x, zeta = eta, nu = nu))
+            alpha = alpha_, eta = eta, nu = nu))
 
-nus_1 = np.logspace(-1, 2, NN1)
-for i,x in enumerate(alphas_1):
+nus_1 = np.logspace(-1, 1, NN1)
+for i,nu_ in enumerate(alphas_1):
     with open('data.1/01-' + ix2fn('N', (i,)) + '.par','w') as f:
         f.write(dict2cfg(mbh = mbh, mdot = mdot, radius = radius,
-            alpha = alpha, zeta = eta, nu = x))
+            alpha = alpha, eta = eta, nu = nu_))
 
 #------------------------------------------------------------------------------#
 
-NN4 = 40
-mdots = np.logspace(-2.5, -0.5, NN4)
-alphas = np.linspace(0.4 / NN4, 0.4, NN4)
-radii = np.logspace(0.5, 2, NN4)
-zets = np.linspace(0, 0.7, NN4)
+NN4 = 64
+mdots = np.logspace(-2.0, -0.5, NN4)
+alphas = np.linspace(1.0 / NN4, 1.0, NN4) * 0.3
+radii = np.logspace(0.5, 2.0, NN4)
 nus = np.logspace(-1, 1, NN4)
-betas = np.logspace(0, 1.5, NN4)
+
+#------------------------------------------------------------------------------#
 
 dsets = []
-
-#------------------------------------------------------------------------------#
-
-dsets.append('MR')
-for i,j in cartproduct(range(NN4), range(NN4)):
-    with open('data.0/04-' + ix2fn('MR',(i,j)) + '.par','w') as f:
-        f.write(dict2cfg(mbh = mbh, mdot = mdots[i], radius = radii[j],
-            alpha = alpha, zeta = eta, nu = nu))
-
-#------------------------------------------------------------------------------#
-
-dsets.append('MA')
-for i,j in cartproduct(range(NN4), range(NN4)):
-    with open('data.0/04-' + ix2fn('MA',(i,j)) + '.par','w') as f:
-        f.write(dict2cfg(mbh = mbh, mdot = mdots[i], radius = radius,
-            alpha = alphas[j], zeta = alphas[j], nu = nu))
-
-#------------------------------------------------------------------------------#
-
-dsets.append('MN')
-for i,j in cartproduct(range(NN4), range(NN4)):
-    with open('data.0/04-' + ix2fn('MN',(i,j)) + '.par','w') as f:
-        f.write(dict2cfg(mbh = mbh, mdot = mdots[i], radius = radius,
-            alpha = alpha, zeta = eta, nu = nus[j]))
-
-#------------------------------------------------------------------------------#
-
-dsets.append('NA')
-for i,j in cartproduct(range(NN4), range(NN4)):
-    with open('data.0/04-' + ix2fn('NA',(i,j)) + '.par','w') as f:
-        f.write(dict2cfg(mbh = mbh, mdot = mdot, radius = radius,
-            alpha = alphas[j], zeta = alphas[j], nu = nus[i]))
-
-#------------------------------------------------------------------------------#
 
 meta = {
     'M': (mdots, lbl_mdot, 'log'),
     'A': (alphas, lbl_alpha, 'linear'),
-    'Z': (zets, lbl_zet, 'linear'),
+#    'Z': (zets, lbl_zet, 'linear'),
     'N': (nus, lbl_nu, 'log'),
     'R': (radii, lbl_radius, 'log'),
-    'B': (betas, lbl_beta, 'log'),
+#    'B': (betas, lbl_beta, 'log'),
 }
+
+# MR MA MN NA
+
+#------------------------------------------------------------------------------#
+#
+# ds = 'MR'
+# dsets.append((ds, meta['M'], meta['R']))
+# for i, mdot_ in enumerate(mdots):
+#     for j, radius_ in enumerate(radii):
+#         with open('data.0/' + ix2fn(ds,(i,j)) + '.par','w') as f:
+#             f.write(dict2cfg(mbh = mbh, mdot = mdot_, radius = radius_,
+#                 alpha = alpha, eta = eta, nu = nu))
+#
+# ds = 'MA'
+# dsets.append((ds, meta['M'], meta['A']))
+# for i, mdot_ in enumerate(mdots):
+#     for j, alpha_ in enumerate(alphas):
+#         with open('data.0/' + ix2fn(ds,(i,j)) + '.par','w') as f:
+#             f.write(dict2cfg(mbh = mbh, mdot = mdot_, radius = radius,
+#                 alpha = alpha_, eta = alpha_, nu = nu))
+#
+# ds = 'cMA'
+# dsets.append((ds, meta['M'], meta['A']))
+# for i, mdot_ in enumerate(mdots):
+#     for j, alpha_ in enumerate(alphas):
+#         with open('data.0/' + ix2fn(ds,(i,j)) + '.par','w') as f:
+#             f.write(dict2cfg(mbh = mbh, mdot = mdot_, radius = radius,
+#                 alpha = alpha_, eta = np.max(alphas), nu = nu))
+#
+# ds = 'NA'
+# dsets.append((ds, meta['N'], meta['A']))
+# for i, nu_ in enumerate(nus):
+#     for j, alpha_ in enumerate(alphas):
+#         with open('data.0/' + ix2fn(ds,(i,j)) + '.par','w') as f:
+#             f.write(dict2cfg(mbh = mbh, mdot = mdot, radius = radius,
+#                 alpha = alpha_, eta = alpha_, nu = nu_))
+#
+# ds = 'cNA'
+# dsets.append((ds, meta['N'], meta['A']))
+# for i, nu_ in enumerate(nus):
+#     for j, alpha_ in enumerate(alphas):
+#         with open('data.0/' + ix2fn(ds,(i,j)) + '.par','w') as f:
+#             f.write(dict2cfg(mbh = mbh, mdot = mdot, radius = radius,
+#                 alpha = alpha_, eta = np.max(alphas), nu = nu_))
+#ds = 'NR'
+#dsets.append((ds, meta['N'], meta['R']))
+#for i, nu_ in enumerate(nus):
+#    for j, radius_ in enumerate(radii):
+#        with open('data.0/' + ix2fn(ds,(i,j)) + '.par','w') as f:
+#            f.write(dict2cfg(mbh = mbh, mdot = mdot, radius = radius_,
+#                alpha = alpha, eta = eta, nu = nu_))
+
+#ds = 'AR'
+#dsets.append((ds, meta['A'], meta['R']))
+#for i, alpha_ in enumerate(alphas):
+#    for j, radius_ in enumerate(radii):
+#        with open('data.0/' + ix2fn(ds,(i,j)) + '.par','w') as f:
+#            f.write(dict2cfg(mbh = mbh, mdot = mdot, radius = radius_,
+#                alpha = alpha_, eta = alpha_, nu = nu))
+
+ds = 'MN'
+dsets.append((ds, meta['M'], meta['N']))
+for i, mdot_ in enumerate(mdots):
+    for j, nu_ in enumerate(nus):
+        with open('data.0/' + ix2fn(ds,(i,j)) + '.par','w') as f:
+            f.write(dict2cfg(mbh = mbh, mdot = mdot_, radius = radius,
+                alpha = alpha, eta = eta, nu = nu_))
 
 #------------------------------------------------------------------------------#
 
-mdots_5 = np.round(np.logspace(np.log10(0.018), np.log10(0.040), 5), 4)
-for i,x in enumerate(mdots_5):
+mdots_5 = np.round(np.logspace(np.log10(0.02), np.log10(0.06), 5), 4)
+for i,mdot_ in enumerate(mdots_5):
     with open('data.1/05-' + ix2fn('M', (i,)) + '.par','w') as f:
-        f.write(dict2cfg(mbh = mbh, mdot = x, radius = radius,
-            alpha = alpha, zeta = eta, nu = nu))
+        f.write(dict2cfg(mbh = mbh, mdot = mdot_, radius = radius,
+            alpha = alpha, eta = eta, nu = nu))
 
 #------------------------------------------------------------------------------#
 

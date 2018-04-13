@@ -882,9 +882,9 @@ contains
     end if
     read (buf,*) radius
 
-    call mincf_get(cfg, "zeta", buf, errno)
+    call mincf_get(cfg, "eta", buf, errno)
     if ( iand(errno, mincf_not_found) .ne. 0 )  then
-      error stop "Magnetic field parameter (key: zeta) is REQUIRED!"
+      error stop "Field rise speed (key: eta) is REQUIRED!"
     end if
     read (buf,*) zeta
 

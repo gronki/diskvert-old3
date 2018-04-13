@@ -35,7 +35,7 @@ for sn, sl, sv in figs:
         ax.plot(d['h'], d['temp'], color = cm(i / 8.0), label = '{} = {:.2g}'.format(sl, x))
         ax = axes[1]
         ax.plot(d['h'], d['rho'], color = cm(i / 8.0), label = '{} = {:.2g}'.format(sl, x))
-    
+
     for ax in axes.ravel(): ax.legend(fontsize = 9)
 
     # ax = axes[1,0]
@@ -44,9 +44,9 @@ for sn, sl, sv in figs:
     #     d,p = dp
     #     ax.plot(d['z'], d['temp'])
 
-    # plt.savefig('multi-{}.{}'.format(sn, figext))
+    plt.savefig('multi-{}.{}'.format(sn, figext))
 #------------------------------------------------------------------------------#
 
-plt.show()
+# plt.show()
 
 #------------------------------------------------------------------------------#
