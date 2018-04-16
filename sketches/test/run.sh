@@ -5,7 +5,7 @@ mbh    10
 mdot   0.05
 radius 6
 alpha  0.1
-zeta   0.5
+eta   0.5
 nu     0.0
 EOF
 

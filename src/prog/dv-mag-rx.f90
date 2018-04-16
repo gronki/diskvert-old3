@@ -141,7 +141,7 @@ program dv_mag_relax
     htop = (zdisk_ss73 / zscale) * sqrt((4 + alpha * nu / zeta) &
           * (1d-6**(-2 / (xcor + 2)) - 1))
     ! keep the disk dimention between 90H and 900H
-    htop = min(max(htop, 90.0_dp), 900.0_dp)
+    htop = min(max(htop, 60.0_dp), 900.0_dp)
   end if
 
   ! old method:

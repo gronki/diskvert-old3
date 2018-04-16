@@ -9,4 +9,4 @@ python par.py
 find data.1 -name \*.par | parallel --eta cat {} \| dv-mag-rx -compton -post-corona -o {.}
 find data.0 -name \*.par | parallel --eta cat {} \| dv-mag-rx -post-corona -o {.}
 
-parallel python ::: cooling.py maps.py plotpar.py instabil.py multi.py
+bash plot.sh

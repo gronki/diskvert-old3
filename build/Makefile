@@ -28,12 +28,6 @@ FFLAGS += -Wall -Wno-unused -Warray-temporaries -Wrealloc-lhs-all
 # # FFLAGS = -g -Og -mieee-fp -C
 # FFLAGS += -warn all,nounused
 
-# # PGI compiler suite is behind on standard and doesn't really compile
-# CC = pgcc
-# FC = pgf90
-# FFLAGS = -O2 -ta=host
-# # FFLAGS = -g -Kieee-fp -C
-
 #------------------------------------------------------------------------------#
 
 # search for sources in these directories

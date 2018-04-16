@@ -2,4 +2,4 @@
   mdot         0.05
   radius       6.00
   alpha        0.02
-  zeta         0.20
+  eta          0.20
