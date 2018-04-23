@@ -18,9 +18,10 @@ override LDFLAGS += -L.
 
 CC = gcc
 FC = gfortran
-FFLAGS = -O2
+FFLAGS ?= -O3 -march=native
 # FFLAGS = -g -Og -mieee-fp -fcheck=all
-FFLAGS += -Wall -Wno-unused -Warray-temporaries -Wrealloc-lhs-all
+FFLAGS += -fimplicit-none -ffree-line-length-none -pedantic
+FFLAGS += -Wall -Wno-unused-dummy-argument -Warray-temporaries -Wrealloc-lhs
 
 # CC = icc
 # FC = ifort
