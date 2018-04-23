@@ -6,7 +6,6 @@ program dv_mag_relax
   use iso_fortran_env, only: sp => real32, dp => real64
   use fileunits
   use relaxation
-  use relaxutils
   use slf_deriv, only: deriv
   use rxsettings
   use ss73solution, only: apxdisk, apx_estim, apx_refin
@@ -18,7 +17,7 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0, KL, KU
-  integer, dimension(3) :: niter = [ 22, 8, 28 ]
+  integer, dimension(3) :: niter = [ 20, 8, 24 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:), YY(:,:)
   real(dp), allocatable :: MB(:,:)
   real(dp), pointer :: yv(:,:)
@@ -683,7 +682,7 @@ contains
   !----------------------------------------------------------------------------!
 
   subroutine saveiter(iter)
-    use relaxutils
+
     integer, intent(in) :: iter
     character(256) :: fn
     integer :: i

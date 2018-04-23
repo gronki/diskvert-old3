@@ -5,7 +5,6 @@ program dv_alpha_relax
   use settings
   use iso_fortran_env, only: sp => real32, dp => real64
   use ieee_arithmetic, only: ieee_is_normal, ieee_is_nan
-  use relaxutils
   use fileunits
   use relaxation
   use rxsettings
@@ -187,6 +186,20 @@ contains
     end if
     read (buf,*) radius
 
+  end subroutine
+
+  subroutine mktaues(z, rho, T, tau)
+    real(dp), intent(in), dimension(:) :: z, rho,T
+    real(dp), intent(out), dimension(:) :: tau
+    real(dp) :: dz, rhom, Tm
+    integer :: i
+    tau(size(tau)) = 1e-12
+    do i = size(tau)-1, 1, -1
+      rhom = (rho(i+1) + rho(i)) / 2
+      Tm = (T(i+1) + T(i)) / 2
+      dz = z(i) - z(i+1)
+      tau(i) = tau(i+1) - kapes0(abuX,abuZ) * rhom * dz
+    end do
   end subroutine
 
 end program dv_alpha_relax
