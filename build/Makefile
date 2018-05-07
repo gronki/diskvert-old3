@@ -4,8 +4,6 @@ VERSION = 180302
 
 prefix = /usr/local
 bindir = $(prefix)/bin
-datadir = $(prefix)/share
-includedir = $(prefix)/include
 libdir = $(prefix)/lib
 fmoddir = $(libdir)/gfortran/modules
 
@@ -16,18 +14,16 @@ override LDFLAGS += -L.
 
 #------------------------------------------------------------------------------#
 
-CC = gcc
 FC = gfortran
-FFLAGS ?= -O3 -march=native
-# FFLAGS = -g -Og -mieee-fp -fcheck=all
+FFLAGS ?= -march=native
+
+# release
+FFLAGS += -g -O3 -flto
+# debug
+# FFLAGS = -g -Og -fcheck=all -fbacktrace -mieee-fp
+
 FFLAGS += -fimplicit-none -ffree-line-length-none -pedantic
 FFLAGS += -Wall -Wno-unused-dummy-argument -Warray-temporaries -Wrealloc-lhs
-
-# CC = icc
-# FC = ifort
-# FFLAGS = -O2 -xhost -fp-model precise
-# # FFLAGS = -g -Og -mieee-fp -C
-# FFLAGS += -warn all,nounused
 
 #------------------------------------------------------------------------------#
 
@@ -58,22 +54,23 @@ programs = dv-alpha dv-alpha-rx dv-mag dv-mag-rx dv-rad1
 
 all: $(programs)
 
-lib: libdiskvert.so
+lib: override FFLAGS += -fPIC
+lib: libdiskvert.so all
 
 #------------------------------------------------------------------------------#
 
 install: all
-	install -d $(bindir)
-	install $(programs) $(bindir)
+	install -d $(DESTDIR)$(bindir)
+	install $(programs) $(DESTDIR)$(bindir)
 
-install-lib: lib
-	install -d $(libdir)
-	install libdiskvert.so $(libdir)
-	install -d $(fmoddir)/diskvert
+install-lib: lib install
+	install -d $(DESTDIR)$(libdir)
+	install libdiskvert.so $(DESTDIR)$(libdir)
+	install -d $(DESTDIR)$(fmoddir)/diskvert
 	install -m 644 slf_{cgs,rk4integr,threshold}.mod \
 	 	{globals,settings,fileunits,grid,rk4settings}.mod \
 		{alphadisk,modelmag,relaxation,ss73solution}.mod \
-		$(fmoddir)/diskvert
+		$(DESTDIR)$(fmoddir)/diskvert
 
 install-user: prefix = $(HOME)/.local
 install-user: install
@@ -100,19 +97,17 @@ $(programs): %: $(objects_util) $(objects) %.o ../libconfort/libconfort.a
 
 #------------------------------------------------------------------------------#
 
-libdiskvert.so: override FFLAGS += -fPIC
 libdiskvert.so: $(objects)
 	$(FC) $(LDFLAGS) -shared $^ $(LDLIBS) -o $@
 
 #------------------------------------------------------------------------------#
 
 ../libconfort/libconfort.a:
-	$(MAKE) -C ../libconfort libconfort.a  \
-				CC="$(CC)" CFLAGS="-g -O2" \
-				FC="$(FC)" FFLAGS="-g -O2"
+	$(MAKE) -C ../libconfort libconfort.a
 
 #------------------------------------------------------------------------------#
 
 clean:
-	$(RM) *.mod *.smod *.a *.o $(programs) *.so diskvert-paths.sh
+	$(RM) *.mod *.smod *.a *.o
+	$(RM) $(programs) *.so
 	$(MAKE) -C ../libconfort distclean
