@@ -7,7 +7,6 @@ module modelmag
   use slf_cgs
 
   use slf_threshold
-  use slf_findzer
 
   use slf_rk4integr
   use globals

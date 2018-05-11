@@ -6,7 +6,6 @@ module ss73solution
 
     implicit none
 
-    ! f is for internal use only
     private :: f
 
 contains

@@ -3,9 +3,9 @@ alphadisk.o     : rk4integr.o eulerintegr.o ss73solution.o globals.o grid.o    \
 balance.o       : threshold.o globals.o 
 globals.o       : cgs.o 
 heatbil.o       : cgs.o globals.o 
-modelmag.o      : balance.o findzer.o settings.o eulerintegr.o ss73solution.o  \
-    globals.o rk4settings.o threshold.o heatbil.o fileunits.o cgs.o            \
-    rk4integr.o 
+modelmag.o      : balance.o settings.o rk4integr.o eulerintegr.o               \
+    ss73solution.o globals.o rk4settings.o threshold.o heatbil.o fileunits.o   \
+    cgs.o 
 dv-alpha.o      : fileunits.o alphadisk.o globals.o results.o settings.o 
 dv-alpha-rx.o   : ss73solution.o globals.o grid.o settings.o fileunits.o       \
     relaxation.o rxsettings.o 

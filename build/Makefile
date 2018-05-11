@@ -18,7 +18,7 @@ FC = gfortran
 FFLAGS ?= -march=native
 
 # release
-FFLAGS += -g -O3 -flto
+FFLAGS += -O3 -flto
 # debug
 # FFLAGS = -g -Og -fcheck=all -fbacktrace -mieee-fp
 
@@ -31,11 +31,12 @@ FFLAGS += -Wall -Wno-unused-dummy-argument -Warray-temporaries -Wrealloc-lhs
 VPATH = ../src:../src/util:../src/prog:../src/math
 
 # objects that go into the shared library
-objects = alphadisk.o balance.o fileunits.o globals.o grid.o heatbil.o modelmag.o relaxation_c.o relaxation.o rk4settings.o rxsettings.o ss73solution.o
+objects = balance.o fileunits.o globals.o grid.o heatbil.o ss73solution.o
+objects += rk4settings.o modelmag.o alphadisk.o
+objects += relaxation.o rxsettings.o
 # various math utilities
-objects += bisect.o cgs.o deriv.o eulerintegr.o findzer.o findzer_multi.o histogram.o integrate.o interpol.o linsect.o random.o rk4integr.o threshold.o ramps.o
-# objects that are needed for binary programs only
-objects_util = results.o settings.o
+objects += cgs.o threshold.o rk4integr.o eulerintegr.o ramps.o integrate.o interpol.o deriv.o
+# objects += bisect.o findzer.o findzer_multi.o histogram.o linsect.o random.o
 
 #------------------------------------------------------------------------------#
 
@@ -92,12 +93,12 @@ settings.o      : ../libconfort/libconfort.a
 
 #------------------------------------------------------------------------------#
 
-$(programs): %: $(objects_util) $(objects) %.o ../libconfort/libconfort.a
+$(programs): %: $(objects) results.o settings.o %.o ../libconfort/libconfort.a
 	$(FC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 #------------------------------------------------------------------------------#
 
-libdiskvert.so: $(objects)
+libdiskvert.so: $(objects) relaxation_c.o
 	$(FC) $(LDFLAGS) -shared $^ $(LDLIBS) -o $@
 
 #------------------------------------------------------------------------------#

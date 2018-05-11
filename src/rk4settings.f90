@@ -33,9 +33,9 @@ contains
     iterate_cmdline_arguments: do i = 1, command_argument_count()
       call get_command_argument(i, arg)
       select case (arg)
-      case ("-dynamo-shutdown","-shutdown")
+      case ("-dynamo-shutdown","-shutdown","-quench")
         cfg_allow_mri_shutdown = .TRUE.
-      case ("-no-dynamo-shutdown","-no-shutdown")
+      case ("-no-dynamo-shutdown","-no-shutdown","-no-quench")
         cfg_allow_mri_shutdown = .FALSE.
       case ("-single")
         cfg_single_run = .TRUE.
