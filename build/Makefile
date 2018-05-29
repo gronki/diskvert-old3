@@ -14,16 +14,28 @@ override LDFLAGS += -L.
 
 #------------------------------------------------------------------------------#
 
+CC = gcc
 FC = gfortran
-FFLAGS ?= -march=native
 
 # release
-FFLAGS += -O3 -flto
+FFLAGS := -O3 -flto
 # debug
-# FFLAGS = -g -Og -fcheck=all -fbacktrace -mieee-fp
+# FFLAGS := -g -Og -fcheck=all -fbacktrace -mieee-fp
 
 FFLAGS += -fimplicit-none -ffree-line-length-none -pedantic
 FFLAGS += -Wall -Wno-unused-dummy-argument -Warray-temporaries -Wrealloc-lhs
+
+#------------------------------------------------------------------------------#
+
+# CC = icc
+# FC = ifort
+#
+# # release
+# FFLAGS := -O3 -ipo
+# # debug
+# # FFLAGS := -g -Og -C -mieee-fp
+#
+# FFLAGS += -warn
 
 #------------------------------------------------------------------------------#
 
@@ -104,7 +116,7 @@ libdiskvert.so: $(objects) relaxation_c.o
 #------------------------------------------------------------------------------#
 
 ../libconfort/libconfort.a:
-	$(MAKE) -C ../libconfort libconfort.a
+	$(MAKE) -C ../libconfort CC=$(CC) FC=$(FC) CFLAGS='-g -O2' FFLAGS='-g -O2' libconfort.a
 
 #------------------------------------------------------------------------------#
 
