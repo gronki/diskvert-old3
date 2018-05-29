@@ -604,6 +604,11 @@ contains
     write (upar,fmparec) 'temp_' // keyword, yz, 'temperature in ' // comment
     write (upar,fmparf) 'temp_' // keyword // '_keV', yz * keV_in_kelvin
 
+    call interpol(x, yy(c_rho,:), z, yz)
+    write (upar,fmparec) 'rho_' // keyword, yz, 'density in ' // comment
+    write (upar,fmparec) 'rho_' // keyword // '_nh', yz / cgs_mhydr, &
+      'density in ' // trim(comment) // ' (nH)'
+
     call interpol(x, yy(c_trad,:), z, yz)
     write (upar,fmparec) 'trad_' // keyword, yz, 'rad temp in ' // comment
     write (upar,fmparf) 'trad_' // keyword // '_keV', yz * keV_in_kelvin
@@ -615,22 +620,22 @@ contains
 
 
     if (z < zhard) then
-      write (upar, *) 'tavg_' // trim(keyword) // '_nohard',  &
+      write (upar, *) 'tavg_' // keyword // '_nohard',  &
               (interpolf(x, yy(c_tavg,:), z) &
               - interpolf(x, yy(c_tavg,:), zhard)) &
               / (interpolf(x, yy(c_tau,:), z) &
               - interpolf(x, yy(c_tau,:), zhard))
-      write (upar, *) 'compy_' // trim(keyword) // '_nohard',  &
+      write (upar, *) 'compy_' // keyword // '_nohard',  &
               interpolf(x, yy(c_compy,:), z) &
               - interpolf(x, yy(c_compy,:), zhard)
-      write (upar, *) 'taues_' // trim(keyword) // '_nohard',  &
+      write (upar, *) 'taues_' // keyword // '_nohard',  &
               interpolf(x, yy(c_taues,:), z) &
               - interpolf(x, yy(c_taues,:), zhard)
     else
-      write (upar, *) 'tavg_' // trim(keyword) // '_nohard', &
+      write (upar, *) 'tavg_' // keyword // '_nohard', &
               interpolf(x, yy(c_temp,:), zhard)
-      write (upar, *) 'compy_' // trim(keyword) // '_nohard', 0
-      write (upar, *) 'taues_' // trim(keyword) // '_nohard', 0
+      write (upar, *) 'compy_' // keyword // '_nohard', 0
+      write (upar, *) 'taues_' // keyword // '_nohard', 0
     end if
 
     ! optical depth of the corona
