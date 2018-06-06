@@ -724,7 +724,7 @@ contains
 
     if ( cfg_temperature_method /= EQUATION_BALANCE &
             .and. cfg_post_corona ) then
-      block
+      post_corona: block
         use heatbalance, only: heatbil2
         real(dp) :: temp_old
         integer :: i
@@ -734,7 +734,7 @@ contains
                 yy(c_heat,i), .false.)
           yy(c_pgas,i) = yy(c_pgas,i) * yy(c_temp,i) / temp_old
         end do
-      end block
+      end block post_corona
     end if
 
     forall (i = 1:ngrid)
@@ -752,10 +752,10 @@ contains
       tcorr(:) = sqrt(1 + (4 * cgs_k_over_mec2 * yy(c_temp,:))**2)
       yy(c_coolc,:) = 4 * cgs_stef * yy(c_rho,:) * yy(c_ksct,:)   &
           * yy(c_trad,:)**4 * cgs_k_over_mec2 * 4 * (yy(c_temp,:) &
-          * merge(tcorr(:), 1d0, use_precise_balance) - yy(c_trad,:))
+          * merge(tcorr(:), 1.0_dp, use_precise_balance) - yy(c_trad,:))
       cb(:) = yy(c_kabp,:) * yy(c_temp,:)**4
       cc(:) = yy(c_ksct,:) * yy(c_trad,:)**4 * cgs_k_over_mec2 &
-          * 4 * yy(c_temp,:) * merge(tcorr(:), 1d0, use_precise_balance)
+          * 4 * yy(c_temp,:) * merge(tcorr(:), 1.0_dp, use_precise_balance)
       yy(c_compfr,:) = cc / (cb + cc)
     end block cooling
 
@@ -839,7 +839,7 @@ contains
       dtemp(i) = temp(i+1) - temp(i)
     end do
 
-    search_for_minimum : do i = 1,size(dtemp) - 1
+    search_for_minimum: do i = 1, size(dtemp) - 1
       if (dtemp(i) .le. 0 .and. dtemp(i+1) .ge. 0) then
         xtmin = (dtemp(i+1)*xm(i) - dtemp(i)*xm(i+1)) / (dtemp(i+1) - dtemp(i))
         exit search_for_minimum
@@ -858,7 +858,7 @@ contains
 
     if (size(x) /= size(y)) error stop "tabzero: size(x) /= size(y)"
 
-    search_for_zero : do i = 1, size(y)-1
+    search_for_zero: do i = 1, size(y) - 1
       if ((y(i) - y0) * (y(i+1) - y0) .le. 0) then
         x0 = ((y(i+1) - y0) * x(i) - (y(i) - y0) * x(i+1)) / (y(i+1) - y(i))
         exit search_for_zero
