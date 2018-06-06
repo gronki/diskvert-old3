@@ -18,7 +18,7 @@ CC = gcc
 FC = gfortran
 
 # release
-FFLAGS := -O3 -flto
+FFLAGS += -O3 -flto
 # debug
 # FFLAGS := -g -Og -fcheck=all -fbacktrace -mieee-fp
 
@@ -31,7 +31,7 @@ FFLAGS += -Wall -Wno-unused-dummy-argument -Warray-temporaries -Wrealloc-lhs
 # FC = ifort
 #
 # # release
-# FFLAGS := -O3 -ipo
+# FFLAGS := -O3 -xhost -ipo
 # # debug
 # # FFLAGS := -g -Og -C -mieee-fp
 #
