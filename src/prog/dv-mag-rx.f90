@@ -737,13 +737,10 @@ contains
       end block post_corona
     end if
 
-    forall (i = 1:ngrid)
-      yy(c_ksct,i) = fksct(yy(c_rho,i), yy(c_temp,i))
-      yy(c_kabs,i) = fkabs(yy(c_rho,i), yy(c_temp,i))
-      yy(c_kabp,i) = fkabp(yy(c_rho,i), yy(c_temp,i))
-      yy(c_kcnd,i) = fkcnd(yy(c_rho,i), yy(c_temp,i))
-    end forall
-
+    yy(c_ksct,:) = fksct(yy(c_rho,:), yy(c_temp,:))
+    yy(c_kabs,:) = fkabs(yy(c_rho,:), yy(c_temp,:))
+    yy(c_kabp,:) = fkabp(yy(c_rho,:), yy(c_temp,:))
+    yy(c_kcnd,:) = fkcnd(yy(c_rho,:), yy(c_temp,:))
 
     cooling: block
       real(dp), dimension(ngrid) :: cb, cc, tcorr
