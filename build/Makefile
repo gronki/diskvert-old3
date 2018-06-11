@@ -14,13 +14,16 @@ override LDFLAGS += -L.
 
 #------------------------------------------------------------------------------#
 
+BUILD := release
+
+#------------------------------------------------------------------------------#
+
 CC = gcc
 FC = gfortran
 
-# release
-FFLAGS += -O3 -flto
-# debug
-# FFLAGS := -g -Og -fcheck=all -fbacktrace -mieee-fp
+FFLAGS_release := $(FFLAGS) -O3 -flto
+FFLAGS_debug   := -g -Og -fcheck=all -fbacktrace -mieee-fp
+FFLAGS := $(FFLAGS_$(BUILD))
 
 FFLAGS += -fimplicit-none -ffree-line-length-none -pedantic
 FFLAGS += -Wall -Wno-unused-dummy-argument -Warray-temporaries -Wrealloc-lhs
@@ -30,10 +33,9 @@ FFLAGS += -Wall -Wno-unused-dummy-argument -Warray-temporaries -Wrealloc-lhs
 # CC = icc
 # FC = ifort
 #
-# # release
-# FFLAGS := -O3 -xhost -ipo
-# # debug
-# # FFLAGS := -g -Og -C -mieee-fp
+# FFLAGS_release := -O3 -xhost -ipo
+# FFLAGS_debug   := -g -Og -C -mieee-fp
+# FFLAGS := $(FFLAGS_$(BUILD))
 #
 # FFLAGS += -warn
 
