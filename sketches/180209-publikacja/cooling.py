@@ -69,7 +69,7 @@ c3 = plt.contour(rho, T, dL, colors = 'white', levels = [0.0], linewidths = 3.0,
 #------------------------------------------------------------------------------#
 # rysujemy 5 modeli
 nn5 = len(mdots_5)
-dp = [ col2python('data.1/05-' + ix2fn('M', (i,)) + '.dat') for i in range(nn5) ]
+dp = [ col2python('data.1/' + ix2fn('instabil-M', (i,)) + '.dat') for i in range(nn5) ]
 rho_ref_0 = 5.576e-35 * T_rad**4.5
 cm = plt.get_cmap('Purples')
 for i,dp_ in enumerate(dp):

@@ -12,7 +12,7 @@ from par import *
 #------------------------------------------------------------------------------#
 
 nn5 = len(mdots_5)
-dp = [ col2python('data.1/05-' + ix2fn('M', (i,)) + '.dat') for i in range(nn5) ]
+dp = [ col2python('data.1/' + ix2fn('instabil-M', (i,)) + '.dat') for i in range(nn5) ]
 zmax = 90
 
 uli = lambda n: np.linspace(-1,1,n)
@@ -27,7 +27,7 @@ def georan(n):
 
 #------------------------------------------------------------------------------#
 
-fig, axes = plt.subplots(nn5, 3, figsize = (figw_lg, figw_lg * 1.15), sharex = 'all', sharey = 'row')
+fig, axes = plt.subplots(nn5, 3, figsize = (figw_lg, figw_lg * 0.95), sharex = 'all', sharey = 'row')
 
 for it, mdot_ in enumerate(mdots_5):
 
@@ -80,23 +80,21 @@ for it, mdot_ in enumerate(mdots_5):
 
     ax = axes[it,0]
 
-    cs1 = ax.contourf(h, T, BC, levels = np.linspace(0,1,13), cmap = 'RdBu_r', extend = 'both')
+    cs1 = ax.contourf(h, T, BC, levels = np.linspace(0,1,11), cmap = 'RdBu_r', extend = 'both')
 
     # all balance solutions and solutions for gas and radiation temp
     ax.plot(d['h'], d['trad'], color = '#EEE5C2', linewidth = 1)
-    ax.contour(h, T, bil, [0], linewidths = 2.5, colors = '#071803')
-    cs = ax.contour(h, T, bil, 0.2 * georan(7), linewidths = lilg(0.2, 1.5, 7), colors = '#071803')
-    # ax.clabel(cs, fontsize = 8)
-    ax.plot(d['h'], d['temp'], ':', color = '#AFAFAF', linewidth = 2.5)
 
-    # ax.plot(d['h'], a1 * d['trad'], color = '#9516BB', linewidth = 1)
-    # ax.plot(d['h'], a2 * (d['trad'] / 1e6)**10 / d['rho']**2, '--', color = '#9516BB', linewidth = 1)
+    ax.contour(h, T, bil, [0], linewidths = 2.5, colors = '#071803')
+    ax.contour(h, T, bil, 0.2 * georan(7), linewidths = lilg(0.4, 1.3, 7), colors = '#071803')
+
+    ax.plot(d['h'], d['temp'], ':', color = '#AFAFAF', linewidth = 2.5)
 
     #--------------------------------------------------------------------------#
 
     ax = axes[it,1]
 
-    cs2 = ax.contourf(h, T, bil, 0.2 * es3(uli(19), 0.3), extend = 'both', cmap = 'bil1')
+    cs2 = ax.contourf(h, T, bil, 0.2 * es3(uli(17), 0.3), extend = 'both', cmap = 'bil1')
 
     # all balance solutions and solutions for gas and radiation temp
     ax.plot(d['h'], d['trad'], color = '#B2BEBF', linewidth = 1)
@@ -104,13 +102,13 @@ for it, mdot_ in enumerate(mdots_5):
     ax.plot(d['h'], d['temp'], ':', color = '#AFAFAF', linewidth = 2.5)
 
     # the contours of dL / dT
-    ax.contour(h, T, LT, georan(7) * 0.1, linewidths = lilg(0.2, 1.3, 7), colors = '#E3FFE8')
+    ax.contour(h, T, LT, georan(7) * 0.1, linewidths = lilg(0.4, 1.3, 7), colors = '#E3FFE8')
 
     #--------------------------------------------------------------------------#
 
     ax = axes[it,2]
 
-    cs3 = ax.contourf(h, T, LT, es3(uli(15), 0.5) * 0.2, cmap = 'PiYG', extend = 'both', intervals = 'equal')
+    cs3 = ax.contourf(h, T, LT, es3(uli(13), 0.5) * 0.2, cmap = 'PiYG', extend = 'both')
     ax.contour(h, T, LT, [0], colors = '#070E1F', linewidths = 1.0)
 
     # all balance solutions and solutions for gas and radiation temp
@@ -118,15 +116,13 @@ for it, mdot_ in enumerate(mdots_5):
     ax.contour(h, T, bil, [0], linewidths = 2.5, colors = '#071803')
     ax.plot(d['h'], d['temp'], ':', color = '#AFAFAF', linewidth = 2.5)
 
-    # ax.plot(d['h'], a2 * (d['trad'] / 1e6)**10 / d['rho']**2, '--', color = '#CAB9CF', linewidth = 0.7)
     ax.plot(d['h'], a1 * d['trad'], '-.', color = '#F18023', linewidth = 1.3)
     ax.plot(d['h'], d['rho']**2 * d['temp']**2 / (a2 * (d['trad'] / 1e6)**10), '--', color = '#F18023', linewidth = 1.3)
-    # ax.plot(d['h'], d['rho'] * d['temp'] / (a3 * (d['trad'] / 1e6)**4.5))
 #------------------------------------------------------------------------------#
 
 axes[0,0].set_title(u'$\\Lambda_C / (\\Lambda_B + \\Lambda_C)$')
-axes[0,1].set_title(u'$1 - \\Lambda_{{\\rm net}} \\  / \\  \\Gamma_{{\\rm mag}}$')
-axes[0,2].set_title(u'$d \\ln \\Lambda_{{\\rm net}} \\ / \\ d \\ln T$')
+axes[0,1].set_title(u'$1 - \\Lambda_{{\\rm rad}} \\  / \\  {{\\cal H}}$')
+axes[0,2].set_title(u'$d \\ln \\Lambda_{{\\rm rad}} \\ / \\ d \\ln T$')
 
 for ax in axes[-1,:]: ax.set_xlabel('$z / H$')
 for ax in axes[:,0]: ax.set_ylabel('$T$ [K]')
@@ -135,12 +131,12 @@ for ax, mdot_ in zip(axes[:,0], mdots_5):
     ax.annotate('$\\dot{{m}} = {:.3f}$'.format(mdot_), (0.05, 0.87), xycoords = 'axes fraction', color = 'white', fontsize = 11)
 
 plt.tight_layout()
-plt.subplots_adjust(bottom = 0.076)
+plt.subplots_adjust(bottom = 0.092)
 plt.draw()
 
 def globar(cs, ax, **kwargs):
     p0 = ax.get_position().get_points().flatten()
-    cax = fig.add_axes([p0[0], 0.020, p0[2] - p0[0], 0.012])
+    cax = fig.add_axes([p0[0], 0.027, p0[2] - p0[0], 0.013])
     fig.colorbar(cs, cax = cax, orientation = 'horizontal', **kwargs)
 
 globar(cs1, axes[-1,0], ticks = [0.0, 0.25, 0.5, 0.75, 1.0])
