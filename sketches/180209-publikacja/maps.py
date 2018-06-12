@@ -75,7 +75,7 @@ for ds, yl, yy, ys, xl, xx, xs in dsets:
     #--------------------------------------------------------------------------#
 
     ax = axes[0,1]
-    ax.set_title('$\\beta_{{\\rm cor}}$ and $\\beta_0$')
+    ax.set_title('$\\beta$ at $\\tau = \\tau_{{\\rm cor}}$ and $\\beta_0$')
     cs = ax.contourf(xx, yy, DPA(dset3, 'beta_cor'),
          cmap = 'RdBu_r', norm = LogNorm(), levels = np.logspace(-4.0,-1.0,17))
     plt.colorbar(cs, ax = ax, ticks = [1e-4, 1e-3, 1e-2, 1e-1])
