@@ -25,6 +25,7 @@ radius = RPS('radius')
 rschw = RPS('rschw')
 kboltz     = RPS('k_B')
 use_qmri = Symbol('use_quench_mri')
+use_prad_in_alpha = Symbol('use_prad_in_alpha')
 use_exbil = Symbol('use_precise_balance')
 
 global_variables = {
@@ -215,9 +216,8 @@ for balance, bilfull, magnetic, conduction in choices:
     F_tot = F_rad + F_mag + F_cond
 
     # cisnienie calkowite w alpha-prescription
-    # P_tot_gen = P_gas + P_mag
-    P_tot_gen = P_gas + P_rad + P_mag
-    # P_tot_gen = sqrt(P_gas * P_rad) + P_mag
+    P_tot_gen = P_gas + P_mag \
+        + Piecewise((P_rad, use_prad_in_alpha), (0.0, True))
 
     thr = lambda x: 1 / ( 1 + exp(-4*x) )
     betamri = 2 * csound / (omega * radius * rschw)

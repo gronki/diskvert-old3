@@ -41,6 +41,12 @@ contains
       case ("-no-quench","-no-quench-mri","-no-qmri")
         use_quench_mri = .FALSE.
 
+      ! use P_rad in alpha prescription?
+      case ("-prad-alpha", "-alphaprad")
+        use_prad_in_alpha = .TRUE.
+      case ("-no-prad-alpha","-no-alphaprad")
+        use_prad_in_alpha = .FALSE.
+
       end select
     end do
   end subroutine
