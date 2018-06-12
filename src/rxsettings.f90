@@ -42,9 +42,9 @@ contains
         use_quench_mri = .FALSE.
 
       ! use P_rad in alpha prescription?
-      case ("-prad-alpha", "-alphaprad")
+      case ("-prad-alpha", "-alpha-prad")
         use_prad_in_alpha = .TRUE.
-      case ("-no-prad-alpha","-no-alphaprad")
+      case ("-no-prad-alpha", "-no-alpha-prad")
         use_prad_in_alpha = .FALSE.
 
       end select
