@@ -32,7 +32,7 @@ for fn in argv[1:]:
     ax.set_title(u'Temperature')
 
     ax.plot(d['h'], d['trad'], label = '$T_{\\rm rad}$', color = '#B6BBBF')
-    ax.plot(d['h'], d['tavg'], label = '$T_{\\rm avg}$', color = '#ABC897', linestyle = '--')
+    ax.plot(d['h'], d['tavg'] / d['tau'], label = '$T_{\\rm avg}$', color = '#ABC897', linestyle = '--')
     ax.plot(d['h'], d['temp'], label = '$T_{\\rm gas}$', color = '#DB4024')
 
     ax.axvline(p.zphot  / p.zscale,  linewidth = 0.7, color = '#4664D0', label = '$\\tau = 1$')
