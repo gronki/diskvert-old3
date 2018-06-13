@@ -709,7 +709,7 @@ contains
 
   subroutine fillcols(yv,c_,yy)
     procedure(funout_t), pointer :: fout
-    real(dp) :: kabs,ksct,kabp,rhom,tempm,tradm,tcorrm,dx, coolcrit(ngrid)
+    real(dp) :: kabs,ksct,kabp,rhom,tempm,tradm,tcorrm,dx
     real(dp), dimension(:,:), intent(in) :: yv
     integer, dimension(:), intent(in) :: c_
     real(dp), dimension(:,:), intent(inout) :: yy
@@ -799,10 +799,13 @@ contains
     yy(c_betamri,:) = 2 * sqrt(yy(c_pgas,:) / yy(c_rho,:)) &
           / (omega * radius * rschw)
 
-    coolcrit(:) = 2 * cgs_stef * yy(c_rho,:) * yy(c_trad,:)**4  &
-    * (   yy(c_kabp,:) * (9 - (yy(c_temp,:) / yy(c_trad,:))**4) &
-    + 8 * yy(c_ksct,:) * cgs_k_over_mec2 * yy(c_temp,:))
-    yy(c_instabil,:) = coolcrit(:) / yy(c_heat,:) - 1
+    instability: block
+      real(dp) :: coolcrit(ngrid)
+      coolcrit(:) = 2 * cgs_stef * yy(c_rho,:) * yy(c_trad,:)**4  &
+      * (   yy(c_kabp,:) * (9 - (yy(c_temp,:) / yy(c_trad,:))**4) &
+      + 8 * yy(c_ksct,:) * cgs_k_over_mec2 * yy(c_temp,:))
+      yy(c_instabil,:) = coolcrit(:) / yy(c_heat,:) - 1
+    end block instability
 
     gradients: block
       real(dp), dimension(ngrid) :: pgpt
