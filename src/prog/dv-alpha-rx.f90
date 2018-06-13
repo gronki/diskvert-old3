@@ -7,7 +7,6 @@ program dv_alpha_relax
   use ieee_arithmetic, only: ieee_is_normal, ieee_is_nan
   use fileunits
   use relaxation
-  use rxsettings
   use ss73solution, only: apxdisk, apx_estim, apx_refin
   use grid, only: space_linear, space_linlog
 
@@ -31,9 +30,33 @@ program dv_alpha_relax
   htop = 5
 
   !----------------------------------------------------------------------------!
+  ! read command line
 
-  call rdargvgl
-  call rdargvrx
+  parse_command_line: block
+
+    integer :: i,errno
+    character(2**8) :: arg
+
+    call rdargvgl
+
+    do i = 1, command_argument_count()
+      call get_command_argument(i, arg)
+      select case (arg)
+
+      ! use P_rad in alpha prescription?
+      case ("-prad-alpha", "-alpha-prad")
+        use_prad_in_alpha = .TRUE.
+      case ("-no-prad-alpha", "-no-alpha-prad")
+        use_prad_in_alpha = .FALSE.
+
+      end select
+    end do
+
+  end block parse_command_line
+
+  !----------------------------------------------------------------------------!
+  ! read config
+
   call mincf_read(cfg)
   call rdconfgl(cfg)
   call rdconf(cfg)
@@ -169,6 +192,7 @@ contains
   end subroutine
 
   !----------------------------------------------------------------------------!
+
   subroutine rdconf(cfg)
     integer :: errno
     type(config), intent(inout) :: cfg
@@ -187,6 +211,8 @@ contains
     read (buf,*) radius
 
   end subroutine
+  
+  !----------------------------------------------------------------------------!
 
   subroutine mktaues(z, rho, T, tau)
     real(dp), intent(in), dimension(:) :: z, rho,T

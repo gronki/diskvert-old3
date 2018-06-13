@@ -7,7 +7,6 @@ program dv_mag_relax
   use fileunits
   use relaxation
   use slf_deriv, only: deriv
-  use rxsettings
   use ss73solution, only: apxdisk, apx_estim, apx_refin
   use grid
 
@@ -32,6 +31,11 @@ program dv_mag_relax
   logical :: user_ff, user_bf, converged, has_corona
   integer, dimension(6) :: c_
   integer, parameter :: upar = 92
+  !----------------------------------------------------------------------------!
+  logical :: cfg_write_all_iters = .FALSE.
+  character, parameter :: EQUATION_SIMPBALANCE = 'D'
+  logical :: cfg_post_corona = .false.
+  !----------------------------------------------------------------------------!
 
   real(dp), parameter :: typical_hdisk = 15
 
@@ -480,7 +484,7 @@ program dv_mag_relax
   end block write_columns
 
   !----------------------------------------------------------------------------!
-  ! determine and save the photosphere location
+  ! determine and save the photosphere location and other important values
 
   write_disk_globals: block
 
@@ -490,13 +494,13 @@ program dv_mag_relax
     logical :: has_eqbc = .false., has_tmin = .false.
 
     call interpol(yy(c_tau,:), x, 1.0_dp, zphot)
-    call save_interpolated(zphot, 'phot', 'photosphere (tau = 1)')
+    call save_interpolated(zphot, 'phot', 'tau = 1')
 
     call interpol(yy(c_tau,:), x, 0.5_dp, zhard)
-    call save_interpolated(zhard, 'hard', 'hard corona (tau = 0.5)')
+    call save_interpolated(zhard, 'hard', 'tau = 0.5')
 
     call interpol(yy(c_tauth,:), x, 1.0_dp, ztherm)
-    call save_interpolated(ztherm, 'therm', 'thermalization depth (tau* = 1)')
+    call save_interpolated(ztherm, 'therm', 'tau* = 1')
 
     if ( has_corona ) then
       zeqbc = -1
@@ -504,7 +508,7 @@ program dv_mag_relax
       has_eqbc = zeqbc > 0
       write (upar, fmparl) 'has_eqbc', has_eqbc
       if (has_eqbc) then
-        call save_interpolated(zeqbc, 'eqbc', 'compton cooling dominance')
+        call save_interpolated(zeqbc, 'eqbc', 'compt. == brehms.')
       end if
 
       ztmin = -1
@@ -527,6 +531,10 @@ program dv_mag_relax
     write (upar, fmpare) 'fmag_top', yy(c_fmag, ngrid)
     write (upar, fmparf) 'fbfrac_top', yy(c_fbfr, ngrid)
     write (upar, fmpare) 'betarad_0', yy(c_pgas,1) / yy(c_prad,1)
+
+    !--------------------------------------------------------------------------!
+    ! instability location
+
     write(upar, fmparf) 'instabil', minval(yy(c_instabil,:))
 
     !--------------------------------------------------------------------------!
@@ -587,6 +595,9 @@ program dv_mag_relax
 contains
 
   !----------------------------------------------------------------------------!
+  ! save some important parameters, interpolated at given height.
+  ! the results go to the .txt file
+  ! usually, used to save properties at photosphere, base of the corona etc.
 
   subroutine save_interpolated(z, keyword, comment)
 
@@ -685,6 +696,7 @@ contains
   end subroutine
 
   !----------------------------------------------------------------------------!
+  ! save each relaxation iteration to a numbered file (001, 002, 003 etc)
 
   subroutine saveiter(iter)
 
@@ -715,13 +727,16 @@ contains
     real(dp), dimension(:,:), intent(inout) :: yy
     integer :: i
 
-    ! select the function appropriate for this model
+    ! select the output function appropriate for this model
     call mrx_sel_fout(model, fout)
 
+    ! evaluate the function for each point
     do i = 1,ngrid
       call fout(x(i), yv(:,i), yy(:,i))
     end do
 
+    ! solve the exact balance after relaxation
+    ! warning: this breaks strict hydrostatic equilibrium (but not much)
     if ( cfg_temperature_method /= EQUATION_BALANCE &
             .and. cfg_post_corona ) then
       post_corona: block
@@ -737,11 +752,13 @@ contains
       end block post_corona
     end if
 
+    ! opacities
     yy(c_ksct,:) = fksct(yy(c_rho,:), yy(c_temp,:))
     yy(c_kabs,:) = fkabs(yy(c_rho,:), yy(c_temp,:))
     yy(c_kabp,:) = fkabp(yy(c_rho,:), yy(c_temp,:))
     yy(c_kcnd,:) = fkcnd(yy(c_rho,:), yy(c_temp,:))
 
+    ! cooling components: brehmstrahlung and compton
     cooling: block
       real(dp), dimension(ngrid) :: cb, cc, tcorr
       yy(c_coolb,:) = 4 * cgs_stef * yy(c_rho,:) * yy(c_kabp,:)   &
@@ -756,12 +773,11 @@ contains
       yy(c_compfr,:) = cc / (cb + cc)
     end block cooling
 
-
     ! radiative / total flux fraction
     yy(c_fbfr,1) = 0
     yy(c_fbfr,2:) = yy(c_frad,2:) / (yy(c_frad,2:) + yy(c_fmag,2:))
 
-    ! compute the optical depths and averaged temperature
+    ! integrate the optical depths and averaged temperature
     yy(c_tau,ngrid) = 0
     yy(c_taues,ngrid) = 0
     yy(c_tauth,ngrid) = 0
@@ -792,13 +808,15 @@ contains
     end do integrate_tau
 
     ! average tempearture
-    ! yy(c_tavg,:) = yy(c_tavg,:) / yy(c_tau,:)
     ! yy(c_tavg,ngrid) = yy(c_temp,ngrid)
+    ! yy(c_tavg,:ngrid-1) = yy(c_tavg,:ngrid-1) / yy(c_tau,:ngrid-1)
 
+    ! magnetic beta parameter
     yy(c_beta,:) = yy(c_pgas,:) / yy(c_pmag,:)
     yy(c_betamri,:) = 2 * sqrt(yy(c_pgas,:) / yy(c_rho,:)) &
           / (omega * radius * rschw)
 
+    ! here we compute d ln (cooling) / d ln T
     instability: block
       real(dp) :: coolcrit(ngrid)
       coolcrit(:) = 2 * cgs_stef * yy(c_rho,:) * yy(c_trad,:)**4  &
@@ -807,6 +825,7 @@ contains
       yy(c_instabil,:) = coolcrit(:) / yy(c_heat,:) - 1
     end block instability
 
+    ! adiabatic gradients, according to Dalsgaard (book)
     gradients: block
       real(dp), dimension(ngrid) :: pgpt
       pgpt(:) = yy(c_pgas,:) / (yy(c_pgas,:) + yy(c_prad,:))
@@ -900,6 +919,50 @@ contains
       nu = 0
     end if
 
+  end subroutine
+
+  !----------------------------------------------------------------------------!
+
+  subroutine rdargvrx
+    integer :: i,errno
+    character(2**8) :: arg
+
+    do i = 1, command_argument_count()
+      call get_command_argument(i, arg)
+      select case (arg)
+
+      ! write every iteration to another file? useful to demonstrate relaxation
+      case ("-write-all","-all")
+        cfg_write_all_iters = .TRUE.
+
+      ! recalculate the cooling-heating balance after relaxation? works best
+      ! with -compton switch or alone (not much sense with -corona switch)
+      case ("-post-corona")
+        cfg_post_corona = .TRUE.
+      case ("-no-post-corona")
+        cfg_post_corona = .FALSE.
+
+      ! include relativictic term in Compton source function? may cause
+      ! some inconsistencies.
+      case ("-relativistic", "-rel", "-relcompt")
+        use_precise_balance = .TRUE.
+      case ("-no-relativistic", "-no-rel", "-no-relcompt")
+        use_precise_balance = .FALSE.
+
+      ! enable PP condition for MRI shutdown? can cause trouble for convergence
+      case ("-quench","-quench-mri","-qmri")
+        use_quench_mri = .TRUE.
+      case ("-no-quench","-no-quench-mri","-no-qmri")
+        use_quench_mri = .FALSE.
+
+      ! use P_rad in alpha prescription?
+      case ("-prad-alpha", "-alpha-prad")
+        use_prad_in_alpha = .TRUE.
+      case ("-no-prad-alpha", "-no-alpha-prad")
+        use_prad_in_alpha = .FALSE.
+
+      end select
+    end do
   end subroutine
 
   !----------------------------------------------------------------------------!

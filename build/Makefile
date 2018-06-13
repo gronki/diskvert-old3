@@ -1,11 +1,14 @@
-VERSION = 180302
+VERSION = 180613
 
+#------------------------------------------------------------------------------#
+#----------------------------- INSTALLATION PATHS -----------------------------#
 #------------------------------------------------------------------------------#
 
 prefix = /usr/local
 bindir = $(prefix)/bin
 libdir = $(prefix)/lib
-fmoddir = $(libdir)/gfortran/modules
+includedir = $(prefix)/include
+fmoddir = $(includedir)
 
 #------------------------------------------------------------------------------#
 
@@ -14,48 +17,78 @@ override LDFLAGS += -L.
 
 #------------------------------------------------------------------------------#
 
-BUILD := release
+BUILD = release
+VENDOR = gnu
 
 #------------------------------------------------------------------------------#
+#---------------------------- CFLAGS AND COMPILERS ----------------------------#
+#------------------------------------------------------------------------------#
+ifeq ($(VENDOR), intel)
+#------------------------------------------------------------------------------#
+# Intel compilers
 
-CC = gcc
-FC = gfortran
+CC := icc
+FC := ifort
 
-FFLAGS_release := $(FFLAGS) -O3 -flto
-FFLAGS_debug   := -g -Og -fcheck=all -fbacktrace -mieee-fp
-FFLAGS := $(FFLAGS_$(BUILD))
+ifeq ($(BUILD), debug)
+FFLAGS := -g -Og -C -fp-model except -warn all
+else
+FFLAGS := -O3 -xhost -ipo -warn
+endif
+
+#------------------------------------------------------------------------------#
+else ifeq ($(VENDOR), pgi)
+#------------------------------------------------------------------------------#
+# PGI compilers
+
+$(error PGI compilers are not supported for now)
+
+#------------------------------------------------------------------------------#
+else
+#------------------------------------------------------------------------------#
+# GNU compilers (default)
+
+CC := gcc
+FC := gfortran
+
+ifeq ($(BUILD), debug)
+FFLAGS := -g -Og -fcheck=all -fbacktrace
+else
+FFLAGS ?= -march=native
+FFLAGS += -O3 -flto
+endif
 
 FFLAGS += -fimplicit-none -ffree-line-length-none -pedantic
 FFLAGS += -Wall -Wno-unused-dummy-argument -Warray-temporaries -Wrealloc-lhs
 
 #------------------------------------------------------------------------------#
+endif
+#------------------------------------------------------------------------------#
+#------------------------- CFLAGS AND COMPILERS - END -------------------------#
+#------------------------------------------------------------------------------#
 
-# CC = icc
-# FC = ifort
-#
-# FFLAGS_release := -O3 -xhost -ipo
-# FFLAGS_debug   := -g -Og -C -mieee-fp
-# FFLAGS := $(FFLAGS_$(BUILD))
-#
-# FFLAGS += -warn
+export CC FC
 
+#------------------------------------------------------------------------------#
+#-------------------------- SOURCES AND OBJECT FILES --------------------------#
 #------------------------------------------------------------------------------#
 
 # search for sources in these directories
-VPATH = ../src:../src/util:../src/prog:../src/math
+VPATH := ../src:../src/util:../src/prog:../src/math
 
 # objects that go into the shared library
-objects = balance.o fileunits.o globals.o grid.o heatbil.o ss73solution.o
-objects += rk4settings.o modelmag.o alphadisk.o
-objects += relaxation.o rxsettings.o
+objects := balance.o globals.o grid.o heatbil.o ss73solution.o
+objects += modelmag.o alphadisk.o relaxation.o relaxation_c.o
+objects += rk4settings.o fileunits.o
 # various math utilities
-objects += cgs.o threshold.o rk4integr.o eulerintegr.o ramps.o integrate.o interpol.o deriv.o
+objects += cgs.o threshold.o rk4integr.o eulerintegr.o ramps.o integrate.o \
+	interpol.o deriv.o
 # objects += bisect.o findzer.o findzer_multi.o histogram.o linsect.o random.o
 
 #------------------------------------------------------------------------------#
 
 # if using intel compiler, use the MKL instead of standard LAPACK
-ifeq ($(FC),ifort)
+ifeq ($(VENDOR), intel)
 LDLIBS += -mkl=sequential
 else
 LDLIBS += -llapack
@@ -65,6 +98,8 @@ endif
 
 programs = dv-alpha dv-alpha-rx dv-mag dv-mag-rx dv-rad1
 
+#------------------------------------------------------------------------------#
+#-------------------------------- BUILD RULES ---------------------------------#
 #------------------------------------------------------------------------------#
 
 all: $(programs)
@@ -77,6 +112,7 @@ lib: libdiskvert.so all
 install: all
 	install -d $(DESTDIR)$(bindir)
 	install $(programs) $(DESTDIR)$(bindir)
+	ln -s $(bindir)/dv-mag-rx $(DESTDIR)$(bindir)/diskvert
 
 install-lib: lib install
 	install -d $(DESTDIR)$(libdir)
@@ -95,9 +131,9 @@ install-lib-user: install-lib
 
 #------------------------------------------------------------------------------#
 
-%.o %.mod: %.F90
+%.o: %.F90
 	$(FC) $(INCLUDE) $(CPPFLAGS) $(FFLAGS) -c $< -o $@
-%.o %.mod: %.f90
+%.o: %.f90
 	$(FC) $(INCLUDE) $(FFLAGS) -c $< -o $@
 
 include deps.inc
@@ -108,17 +144,17 @@ settings.o      : ../libconfort/libconfort.a
 #------------------------------------------------------------------------------#
 
 $(programs): %: $(objects) results.o settings.o %.o ../libconfort/libconfort.a
-	$(FC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+	$(FC) $(FFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 #------------------------------------------------------------------------------#
 
 libdiskvert.so: $(objects) relaxation_c.o
-	$(FC) $(LDFLAGS) -shared $^ $(LDLIBS) -o $@
+	$(FC) $(FFLAGS) $(LDFLAGS) -shared $^ $(LDLIBS) -o $@
 
 #------------------------------------------------------------------------------#
 
 ../libconfort/libconfort.a:
-	$(MAKE) -C ../libconfort CC=$(CC) FC=$(FC) CFLAGS='-g -O2' FFLAGS='-g -O2' libconfort.a
+	$(MAKE) -C ../libconfort CC=$(CC) FC=$(FC) libconfort.a
 
 #------------------------------------------------------------------------------#
 

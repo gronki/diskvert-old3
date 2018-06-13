@@ -8,11 +8,12 @@ program dv_mag
     use results
     use grid
     use fileunits
+
+    !--------------------------------------------------------------------------!
+
     implicit none
 
-
     character (2**10) :: buf
-
     integer :: errno, nmax
     integer :: i
     real(r64), dimension(:), allocatable :: z, x

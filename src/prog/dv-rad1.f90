@@ -11,15 +11,13 @@ program dv_rad1
 
     implicit none
 
-    integer :: errno,i,j
+    integer :: i, j
     integer, parameter :: n = 2**9
     real(r64) :: r12, r23, alpha
     real(r64), dimension(n) :: r
     real(r64), dimension(n) :: rho1, T1, H1
     real(r64), dimension(n) :: rho2, T2, H2
     real(r64), dimension(n) :: rho3, T3, H3
-    real(r64) :: M(3,3), A(3)
-    integer :: ipiv(3)
     type(config) :: cfg
 
     integer, parameter :: nz = 2**11
