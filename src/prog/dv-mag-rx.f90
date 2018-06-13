@@ -924,7 +924,7 @@ contains
   !----------------------------------------------------------------------------!
 
   subroutine rdargvrx
-    integer :: i,errno
+    integer :: i
     character(2**8) :: arg
 
     do i = 1, command_argument_count()

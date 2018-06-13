@@ -255,7 +255,7 @@ contains
 
     real(r64) :: epsi
     real(r64) :: alpha_eff
-    real(r64) :: xxa,xxb
+    real(r64) :: xxa
     real(r64) :: rhotemp, heatmax
     real(r64) :: kabs, kabs_rho, kabs_T
     integer :: i,n
@@ -445,7 +445,7 @@ contains
       end subroutine
     end interface
 
-    real(r64) :: y(nb), dy(nb), x0(nb)
+    real(r64) :: y(nb), x0(nb)
     integer :: i
     real(r64) :: delx,yx,ym,xm
 

@@ -10,8 +10,6 @@ program dv_alpha
 
     implicit none
 
-    integer :: errno
-
     character(len=12), dimension(ny) :: y_labels
     character(len=12), dimension(na) :: a_labels
     integer :: nmax

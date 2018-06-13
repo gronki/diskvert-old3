@@ -105,7 +105,7 @@ contains
         real(r64), intent(inout) :: dy(size(y)), a(:)
         logical, intent(inout) :: abort
 
-        real(r64) :: compsw, t1
+        real(r64) :: compsw
         real(r64), parameter :: toler = 1
         real(r64) :: kabs, ksct, epsi, taues
 

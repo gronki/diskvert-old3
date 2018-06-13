@@ -13,10 +13,8 @@ program dv_mag
 
     implicit none
 
-    character (2**10) :: buf
-    integer :: errno, nmax
-    integer :: i
-    real(r64), dimension(:), allocatable :: z, x
+    integer :: i, nmax
+    real(r64), dimension(:), allocatable :: z
     real(r64), dimension(:,:), allocatable :: val, der, par
     type(config) :: cfg
 
@@ -116,7 +114,6 @@ contains
         type(config), intent(inout) :: cfg
         integer :: errno
         character(len=2048) :: buf
-        integer :: i
 
         call mincf_get(cfg, "eta", buf, errno)
         if ( iand(errno, mincf_not_found) .ne. 0 )  then

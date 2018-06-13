@@ -256,7 +256,7 @@ contains
     real(r64) :: err
     integer, dimension(size(Y)) :: yerrmask
     integer, intent(out) :: errno
-    integer :: i,it, ch(6), ny
+    integer :: it, ch(6), ny
     integer, dimension(size(Y)) :: ipiv
 
     errno = 0

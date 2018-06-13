@@ -15,12 +15,11 @@ program dv_alpha_relax
 
   type(config) :: cfg
   integer :: model, errno
-  integer :: ny = 3, i, iter, globiter = 0
+  integer :: ny = 3, i, globiter = 0
   integer, dimension(2) :: niter = [ 48, 12 ]
-  character(2**8) :: fn
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:)
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, tau, y_trad
-  real(dp) :: rhoc, Tc, Hdisk, err, t
+  real(dp) :: rhoc, Tc, Hdisk
   logical :: user_ff, user_bf
   integer, dimension(6) :: C_
 
@@ -34,7 +33,7 @@ program dv_alpha_relax
 
   parse_command_line: block
 
-    integer :: i,errno
+    integer :: i
     character(2**8) :: arg
 
     call rdargvgl
@@ -198,20 +197,20 @@ contains
     type(config), intent(inout) :: cfg
     character(len=2048) :: buf
 
-    call mincf_get(cfg, "alpha", buf)
+    call mincf_get(cfg, "alpha", buf, errno)
     if ( iand(errno, mincf_not_found) .ne. 0 )  then
       error stop "Magnetic alpha-parameter (key: alpha) is REQUIRED!"
     end if
     read (buf,*) alpha
 
-    call mincf_get(cfg, "radius", buf)
+    call mincf_get(cfg, "radius", buf, errno)
     if ( iand(errno, mincf_not_found) .ne. 0 )  then
       error stop "Radius (key: radius) is REQUIRED!"
     end if
     read (buf,*) radius
 
   end subroutine
-  
+
   !----------------------------------------------------------------------------!
 
   subroutine mktaues(z, rho, T, tau)
