@@ -58,7 +58,7 @@ FFLAGS ?= -march=native
 FFLAGS += -O3 -flto
 endif
 
-FFLAGS += -fimplicit-none -ffree-line-length-none -pedantic
+FFLAGS += -fimplicit-none -ffree-line-length-none -pedantic -fno-backtrace
 FFLAGS += -Wall -Wno-unused-dummy-argument -Warray-temporaries -Wrealloc-lhs
 
 #------------------------------------------------------------------------------#
@@ -112,7 +112,7 @@ lib: libdiskvert.so all
 install: all
 	install -d $(DESTDIR)$(bindir)
 	install $(programs) $(DESTDIR)$(bindir)
-	ln -s $(bindir)/dv-mag-rx $(DESTDIR)$(bindir)/diskvert
+	ln -sf $(bindir)/dv-mag-rx $(DESTDIR)$(bindir)/diskvert
 
 install-lib: lib install
 	install -d $(DESTDIR)$(libdir)
