@@ -1,8 +1,7 @@
 module relaxation
 
-  use iso_fortran_env, only: r64 => real64
+  use iso_fortran_env, only: r64 => real64, uerr => error_unit
   use ieee_arithmetic
-  use fileunits
 
   use slf_cgs
   use globals

@@ -2,7 +2,7 @@ module modelmag
 
   use ieee_arithmetic
   use iso_c_binding
-  use iso_fortran_env, only: r64 => real64, error_unit
+  use iso_fortran_env, only: r64 => real64, error_unit, uerr => error_unit
 
   use slf_cgs
 
@@ -12,7 +12,6 @@ module modelmag
   use globals
   use energy_balance
   use settings
-  use fileunits
 
   use rk4settings
 
