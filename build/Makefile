@@ -107,7 +107,7 @@ programs = dv-alpha dv-alpha-rx dv-mag dv-mag-rx dv-rad1
 all: $(programs)
 
 lib: override FFLAGS += -fPIC
-lib: libdiskvert.so all
+lib: libdiskvert.so
 
 #------------------------------------------------------------------------------#
 
@@ -116,7 +116,7 @@ install: all
 	install $(programs) $(DESTDIR)$(bindir)
 	ln -sf $(bindir)/dv-mag-rx $(DESTDIR)$(bindir)/diskvert
 
-install-lib: lib install
+install-lib: lib
 	install -d $(DESTDIR)$(libdir)
 	install libdiskvert.so $(DESTDIR)$(libdir)
 	install -d $(DESTDIR)$(fmoddir)/diskvert
@@ -124,12 +124,6 @@ install-lib: lib install
 	 	{globals,settings,grid,rk4settings}.mod \
 		{alphadisk,modelmag,relaxation,ss73solution}.mod \
 		$(DESTDIR)$(fmoddir)/diskvert
-
-install-user: prefix = $(HOME)/.local
-install-user: install
-
-install-lib-user: prefix = $(HOME)/.local
-install-lib-user: install-lib
 
 #------------------------------------------------------------------------------#
 
