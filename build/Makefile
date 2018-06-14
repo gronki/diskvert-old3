@@ -1,5 +1,3 @@
-VERSION = 180613
-
 #------------------------------------------------------------------------------#
 #----------------------------- INSTALLATION PATHS -----------------------------#
 #------------------------------------------------------------------------------#
@@ -12,62 +10,48 @@ fmoddir = $(includedir)
 
 #------------------------------------------------------------------------------#
 
-override INCLUDE += -I../libconfort
-override LDFLAGS += -L.
-
-#------------------------------------------------------------------------------#
-
-BUILD = release
-VENDOR = gnu
+INCLUDE := -I../libconfort
+LDFLAGS := -L.
 
 #------------------------------------------------------------------------------#
 #---------------------------- CFLAGS AND COMPILERS ----------------------------#
 #------------------------------------------------------------------------------#
-ifeq ($(VENDOR), intel)
-#------------------------------------------------------------------------------#
-# Intel compilers
 
-CC := icc
-FC := ifort
-
-ifeq ($(BUILD), debug)
-FFLAGS := -g -Og -C -fp-model except -warn all
-else
-FFLAGS := -O3 -xhost -ipo -warn
-endif
-
-#------------------------------------------------------------------------------#
-else ifeq ($(VENDOR), pgi)
-#------------------------------------------------------------------------------#
-# PGI compilers
-
-$(error PGI compilers are not supported for now)
-
-#------------------------------------------------------------------------------#
-else
-#------------------------------------------------------------------------------#
-# GNU compilers (default)
+# TO USE COMPILERS OTHER THAN GCC, COMMENT THIS BLOCK, AND UNCOMMENT
+# ONE OF THE BELOW BLOCKS (Intel or PGI)
 
 CC := gcc
 FC := gfortran
 
-ifeq ($(BUILD), debug)
-FFLAGS := -g -Og -fcheck=all -fbacktrace
-else
-FFLAGS ?= -march=native
-FFLAGS += -O3 -flto
-endif
+# TO SWITCH BETWEEN PERFORMANCE AND DEBUG COMPILATION, UNCOMMENT ONE:
+# performance (default)
+FFLAGS := -O3 -march=native
+# debug (slow)
+# FFLAGS := -ggdb -Og -fcheck=all
 
-FFLAGS += -fimplicit-none -ffree-line-length-none -pedantic -fno-backtrace
-FFLAGS += -Wall -Wno-unused-dummy-argument -Warray-temporaries -Wrealloc-lhs
+FFLAGS += -Wall -Wno-unused-dummy-argument -pedantic
+FFLAGS += -Warray-temporaries -Wrealloc-lhs-all
+FFLAGS += -fimplicit-none -ffree-line-length-none
+
+LDLIBS += -llapack
 
 #------------------------------------------------------------------------------#
-endif
-#------------------------------------------------------------------------------#
-#------------------------- CFLAGS AND COMPILERS - END -------------------------#
-#------------------------------------------------------------------------------#
+# Intel compilers
 
-export CC FC
+# CC := icc
+# FC := ifort
+#
+# FFLAGS := -O3 -xhost -ipo -warn
+# LDLIBS += -mkl=sequential
+
+#------------------------------------------------------------------------------#
+# PGI compilers (not working)
+
+# CC := pgcc
+# FC := pgf90
+#
+# FFLAGS := -O3 -ta=host
+# LDLIBS += -llapack -lblas
 
 #------------------------------------------------------------------------------#
 #-------------------------- SOURCES AND OBJECT FILES --------------------------#
@@ -89,19 +73,10 @@ objects_util := results.o settings.o fileunits.o
 
 #------------------------------------------------------------------------------#
 
-# if using intel compiler, use the MKL instead of standard LAPACK
-ifeq ($(VENDOR), intel)
-LDLIBS += -mkl=sequential
-else
-LDLIBS += -llapack
-endif
-
-#------------------------------------------------------------------------------#
-
 programs = dv-alpha dv-alpha-rx dv-mag dv-mag-rx dv-rad1
 
 #------------------------------------------------------------------------------#
-#-------------------------------- BUILD RULES ---------------------------------#
+#------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------#
 
 all: $(programs)
@@ -109,6 +84,8 @@ all: $(programs)
 lib: override FFLAGS += -fPIC
 lib: libdiskvert.so
 
+#------------------------------------------------------------------------------#
+#------------------------------ INSTALLATION ----------------------------------#
 #------------------------------------------------------------------------------#
 
 install: all
@@ -125,6 +102,8 @@ install-lib: lib
 		{alphadisk,modelmag,relaxation,ss73solution}.mod \
 		$(DESTDIR)$(fmoddir)/diskvert
 
+#------------------------------------------------------------------------------#
+#-------------------------------- BUILD RULES ---------------------------------#
 #------------------------------------------------------------------------------#
 
 %.o: %.F90
@@ -150,11 +129,18 @@ libdiskvert.so: $(objects) $(objects_lib)
 #------------------------------------------------------------------------------#
 
 ../libconfort/libconfort.a:
-	$(MAKE) -C ../libconfort CC=$(CC) FC=$(FC) libconfort.a
+	$(MAKE) -C ../libconfort CC=$(CC) CFLAGS='-g -O2' \
+		FC=$(FC) FFLAGS='-g -O2' libconfort.a
 
+#------------------------------------------------------------------------------#
+#---------------------------------- CLEANUP -----------------------------------#
 #------------------------------------------------------------------------------#
 
 clean:
 	$(RM) *.mod *.smod *.a *.o
 	$(RM) $(programs) *.so
 	$(MAKE) -C ../libconfort distclean
+
+#------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#

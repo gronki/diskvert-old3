@@ -10,34 +10,20 @@ Developement package for Lapack, OpenBLAS or other compatible library is require
 ```sh
 cd build
 make
-make install
+# install system-wide
+sudo make install
 ```
 
 If one has no root access, installation can be made in user's home directory.
-For example, to install in ```~/.local/bin``` and ```~/.local/lib```, instead of the last line one would run:
+Typical location is ``~/.local/bin`` and ``~/.local/lib``, which is achieved by following commands:
 
 ```sh
+# install for current user only
 make install prefix=~/.local
-```
-
-Now to execute the commands freely, it's advisable to add it to system ```$PATH``` variable.
-This command can be also placed in ```.bashrc``` or ```.cshrc``` file.
-
-```sh
+# add the directory to system path
+# this line can be also added to .bashrc
 export PATH="$PATH:$HOME/.local/bin"
 ```
-
-### Debug build
-
-By default, program is built using compiler flags that provide the fastest execution.
-If an error (such as segmentation fault) occurs, it may be helpful to build the program in a way that allows easy debugging.
-This can be achieved by the ```BUILD``` switch:
-
-```
-make BUILD=debug
-```
-
-This will enable the array checking and add debug information, but will slow the execution.
 
 ### Building the library and python package
 
@@ -72,13 +58,70 @@ Alternatively, once can install the Python package for the current user only:
 python setup.py install --user
 ```
 
+### Debug build
+
+By default, program is built using compiler flags that provide the fastest execution.
+If an error (such as segmentation fault) occurs, it may be helpful to build the program in a way that allows easy debugging.
+Two sets of optimization flags have been provided in Makefile, one for performance (enabled by default), and another one for debugging.
+Once can easily comment out the set which is not needed.
+
+```Makefile
+# flags for fast execution
+FFLAGS := -O3 -march=native
+# flags for debugging
+FFLAGS := -ggdb -Og -fcheck=all
+```
+
+This will enable the array checking and add debug information, but will slow the execution.
+
 ### Other compiler vendors
 
 Diskvert can be compiled using **icc** and **ifort**.
-This is achieved by using the ```VENDOR``` switch, which will also link the program against MKL rather than standard LAPACK.
+The easiest way to achieve is is to uncomment the following section in Makefile:
+```Makefile
+CC := icc
+FC := ifort
 
-```sh
-make VENDOR=intel
+FFLAGS := -O3 -xhost -ipo -warn
+LDLIBS += -mkl=sequential
 ```
 
-Note that PGI suite is not supported at the moment due to very poor support of the latest standard by PGI compiler.
+## Usage
+
+### Programs
+
+The recommended way to produce models is to execute ``diskvert`` program, which refers to the most up-to-date version of the model.
+(Other programs: ``dv-alpha``, ``dv-alpha-rx``, ``dv-mag`` and ``dv-rad1`` work but are not officially supported.)
+After successful build an installation, execution of program does not require changing the source code.
+For example, the following command will process the input file ``input.par``, and produce three output files (``model.dat``, ``model.txt`` and ``model.col``):
+
+```sh
+cat input.par | diskvert -o model
+```
+
+#### Input files
+
+The structure of the input file consists of key-value pairs (case-sensitive!), for example:
+
+```
+mbh 10
+mdot 0.1
+radius 6.5
+# this is a comment
+```
+
+The following keywords are allowed, all taking numerical values (required keywords are in **bold**):
+
+ - **``mbh``** is the black hole mass (in solar masses)
+ - **``mdot``** is the accretion rate (in units of Eddington rate)
+ - **``radius``** is the radius from the center of the black hole (in Schwarzschild radii)
+ - **``alpha``**, **``eta``** and ``nu`` (default = 0) are magnetic parameters
+
+
+#### Command-line parameters
+
+Under construction!
+
+### Python package
+
+#### Reading model files
