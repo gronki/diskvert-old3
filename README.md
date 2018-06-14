@@ -35,7 +35,7 @@ The shared library needs rebuilding the whole project.
 make clean
 make lib
 # to install system-wide (requires root)
-make install-lib
+sudo make install-lib
 # to install for the current user
 make install-lib prefix=~/.local
 ```
@@ -99,6 +99,12 @@ For example, the following command will process the input file ``input.par``, an
 cat input.par | diskvert -o model
 ```
 
+It may be helpful to store the files in archive file (here called ``model.tgz``) to save disk space:
+
+```sh
+tar czf model.{tgz,col,dat,txt} && rm model.{col,dat,txt}
+```
+
 #### Input files
 
 The structure of the input file consists of key-value pairs (case-sensitive!), for example:
@@ -115,7 +121,7 @@ The following keywords are allowed, all taking numerical values (required keywor
  - **``mbh``** is the black hole mass (in solar masses)
  - **``mdot``** is the accretion rate (in units of Eddington rate)
  - **``radius``** is the radius from the center of the black hole (in Schwarzschild radii)
- - **``alpha``**, **``eta``** and ``nu`` (default = 0) are magnetic parameters
+ - **``alpha``**, **``eta``** and ``nu`` (default = 0) are magnetic parameters (refer to the paper for details)
 
 
 #### Command-line parameters
@@ -124,4 +130,8 @@ Under construction!
 
 ### Python package
 
+Under construction!
+
 #### Reading model files
+
+Under construction!
