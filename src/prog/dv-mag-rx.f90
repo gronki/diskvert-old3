@@ -692,6 +692,8 @@ contains
     write (upar, *) 'kapsct_' // keyword, interpolf(x, yy(c_ksct,:), z)
     write (upar, *) 'kapabs_' // keyword, interpolf(x, yy(c_kabs,:), z)
     write (upar, *) 'kapabp_' // keyword, interpolf(x, yy(c_kabp,:), z)
+    write (upar, *) 'mag_gauss_' // keyword, &
+    &  sqrt(8 * pi * interpolf(x, yy(c_pmag,:), z))
 
   end subroutine
 
