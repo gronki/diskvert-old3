@@ -493,6 +493,8 @@ program dv_mag_relax
     real(dp) :: diskscale, tavgr
     logical :: has_eqbc = .false., has_tmin = .false.
 
+    call save_interpolated(0.0_dp, 'midpl', 'midplane')
+
     call interpol(yy(c_tau,:), x, 1.0_dp, zphot)
     call save_interpolated(zphot, 'phot', 'tau = 1')
 
