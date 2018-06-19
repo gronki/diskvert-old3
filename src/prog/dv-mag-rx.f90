@@ -39,7 +39,7 @@ program dv_mag_relax
 
   real(dp), parameter :: typical_hdisk = 15
 
-  integer, parameter :: ncols  = 31, &
+  integer, parameter :: ncols  = 32, &
       c_rho = 1, c_temp = 2, c_trad = 3, &
       c_pgas = 4, c_prad = 5, c_pmag = 6, &
       c_frad = 7, c_fmag = 8, c_fcnd = 9, &
@@ -48,9 +48,10 @@ program dv_mag_relax
       c_tau = 15, c_taues = 16, c_tauth = 17, &
       c_tavg = 18, c_beta = 19, c_coldens = 20, &
       c_kcnd = 21, c_coolb = 22, c_coolc = 23, &
-      c_compy = 24, c_compfr = 25, c_fbfr = 26, &
-      c_instabil = 27, &
-      c_adiab1 = 28, c_gradad = 29, c_gradrd = 30, c_betamri = 31
+      c_compy = 24, c_compy2 = 25, c_compfr = 26, c_fbfr = 27, &
+      c_adiab1 = 28, c_gradad = 29, c_gradrd = 30, c_betamri = 31, &
+      c_instabil = 32
+
   character(8), dimension(ncols) :: labels
 
   labels(c_rho) = 'rho'
@@ -79,6 +80,7 @@ program dv_mag_relax
   labels(c_coolb) = 'coolb'
   labels(c_coolc) = 'coolc'
   labels(c_compy) = 'compy'
+  labels(c_compy2) = 'compy2'
   labels(c_compfr) = 'compfr'
   labels(c_fbfr) = 'fbfr'
   labels(c_instabil) = 'instabil'
@@ -606,7 +608,7 @@ contains
     use slf_interpol
     real(dp), intent(in) :: z
     character(*) :: keyword, comment
-    real(dp) :: yz, frad, fmag
+    real(dp) :: yz
 
     write (upar, fmhdr) 'properties in ' // comment
 
@@ -652,32 +654,28 @@ contains
     end if
 
     ! optical depth of the corona
-    call interpol(x, yy(c_tau,:), z, yz)
-    write (upar,fmparg) "tau_" // keyword, yz
-    call interpol(x, yy(c_taues,:), z, yz)
-    write (upar,fmparg) "taues_" // keyword, yz
-    call interpol(x, yy(c_tauth,:), z, yz)
-    write (upar,fmparg) "tauth_" // keyword, yz
+    write (upar,fmparg) "tau_" // keyword, interpolf(x, yy(c_tau,:), z)
+    write (upar,fmparg) "taues_" // keyword, interpolf(x, yy(c_taues,:), z)
+    write (upar,fmparg) "tauth_" // keyword, interpolf(x, yy(c_tauth,:), z)
 
-    call interpol(x, yy(c_compy,:), z, yz)
-    write (upar,fmparf) 'compy_' // keyword, yz
+    write (upar,fmparf) 'compy_' // keyword, interpolf(x, yy(c_compy,:), z)
+    write (upar,fmparf) 'compy2_' // keyword, interpolf(x, yy(c_compy2,:), z)
 
-    call interpol(x, yy(c_compfr,:), z, yz)
-    write (upar,fmparec) 'compfr_' // keyword, yz, &
+    write (upar,fmparec) 'compfr_' // keyword, interpolf(x, yy(c_compfr,:), z), &
           'compton / brehms. ratio'
 
     ! energy released in the corona
-    call interpol(x,y_frad,z,frad)
-    write (upar,fmpare) "frad_" // keyword, frad
-    write (upar,fmparfc) "chi_" // keyword, 1 - frad / y_frad(ngrid), &
-        & "relative amount of radiative flux released in the " // comment
-
-    call interpol(x, yy(c_fmag,:), z, fmag)
-    write (upar, fmparf) 'fbfrac_' // keyword, fmag / (frad + fmag)
+    associate (frad => interpolf(x,y_frad,z),         &
+    &          frad_top => y_frad(ngrid),             &
+    &          fmag => interpolf(x, yy(c_fmag,:), z))
+      write (upar,fmpare) "frad_" // keyword, frad
+      write (upar,fmparfc) "chi_" // keyword, 1 - frad / frad_top, &
+      &   "relative amount of radiative flux released in the " // comment
+      write (upar, fmparf) 'fbfrac_' // keyword, fmag / (frad + fmag)
+    end associate
 
     ! magnetic beta
-    call interpol(x, yy(c_beta,:), z, yz)
-    write (upar,fmpargc) 'beta_' // keyword, yz, &
+    write (upar,fmpargc) 'beta_' // keyword, interpolf(x, yy(c_beta,:), z), &
         & 'magnetic beta in ' // comment
 
     ! column density: disk vs corona
@@ -787,8 +785,9 @@ contains
     yy(c_tauth,ngrid) = 0
     yy(c_tavg,ngrid) = 0
     yy(c_compy,ngrid) = 0
+    yy(c_compy2,ngrid) = 0
 
-    integrate_tau : do i = ngrid-1,1,-1
+    integrate_tau: do i = ngrid-1,1,-1
       rhom = (yy(c_rho,i) + yy(c_rho,i+1)) / 2
       if (rhom < 0) rhom = 0
       tempm = (yy(c_temp,i) + yy(c_temp,i+1)) / 2
@@ -807,8 +806,16 @@ contains
 
       tcorrm = merge(sqrt(1 + (4 * cgs_k_over_mec2 * tempm)**2), 1.0_dp, &
         use_precise_balance)
+
       yy(c_compy, i) = yy(c_compy, i+1) + dx * rhom * ksct &
            * 4 * cgs_k_over_mec2 * (tempm * tcorrm - tradm)
+
+      associate (tauesm => (yy(c_taues,i) + yy(c_taues,i+1)) / 2)
+        yy(c_compy2, i) = yy(c_compy2, i+1) + dx * rhom * ksct &
+          * 4 * cgs_k_over_mec2 * (tempm * tcorrm - tradm)  &
+          * (2 * tauesm + 1)
+          ! * (2 * tauesm**3 + tauesm) / sqrt(tauesm**4 + tauesm**2)
+      end associate
     end do integrate_tau
 
     ! average tempearture
