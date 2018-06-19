@@ -21,6 +21,9 @@ module fileunits
     character(*), parameter :: fmparl   = '(A20,1X,L12)'
     character(*), parameter :: fmparlc  = '(A20,1X,L12,1X,"#",1X,A)'
 
+    character(*), parameter :: fmparg = '(a20, 1x, g12.5)'
+    character(*), parameter :: fmpargc = '(a20, 1x, g12.5, 1x, "#", 1x, a)'
+
     character(*), parameter :: fmhdr  = '("#",1X,17("-"),1X,A)'
 
     character(*) , parameter :: fmcol = '(2A16)'

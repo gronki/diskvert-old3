@@ -535,7 +535,7 @@ program dv_mag_relax
     !--------------------------------------------------------------------------!
     ! instability location
 
-    write(upar, fmparf) 'instabil', minval(yy(c_instabil,:))
+    write(upar, fmparg) 'instabil', minval(yy(c_instabil,:))
 
     !--------------------------------------------------------------------------!
     ! compute the vertical disk scale and save it
@@ -550,7 +550,7 @@ program dv_mag_relax
     write (upar, fmparf) 'hdisk', diskscale / zscale
 
     ! schwarzchild radius and disk ratio d = H / R
-    write (upar, fmparf) 'ddisk', diskscale / (radius * rschw)
+    write (upar, fmparg) 'ddisk', diskscale / (radius * rschw)
 
     ! average disk temperature
     tavgr = integrate(yy(c_rho,:) * yy(c_temp,:), x) / yy(c_coldens,ngrid)
@@ -631,31 +631,31 @@ contains
 
 
     if (z < zhard) then
-      write (upar, *) 'tavg_' // keyword // '_nohard',  &
+      write (upar, fmparg) 'tavg_' // keyword // '_nohard',  &
               (interpolf(x, yy(c_tavg,:), z) &
               - interpolf(x, yy(c_tavg,:), zhard)) &
               / (interpolf(x, yy(c_tau,:), z) &
               - interpolf(x, yy(c_tau,:), zhard))
-      write (upar, *) 'compy_' // keyword // '_nohard',  &
+      write (upar, fmparg) 'compy_' // keyword // '_nohard',  &
               interpolf(x, yy(c_compy,:), z) &
               - interpolf(x, yy(c_compy,:), zhard)
-      write (upar, *) 'taues_' // keyword // '_nohard',  &
+      write (upar, fmparg) 'taues_' // keyword // '_nohard',  &
               interpolf(x, yy(c_taues,:), z) &
               - interpolf(x, yy(c_taues,:), zhard)
     else
-      write (upar, *) 'tavg_' // keyword // '_nohard', &
+      write (upar, fmparg) 'tavg_' // keyword // '_nohard', &
               interpolf(x, yy(c_temp,:), zhard)
-      write (upar, *) 'compy_' // keyword // '_nohard', 0
-      write (upar, *) 'taues_' // keyword // '_nohard', 0
+      write (upar, fmparg) 'compy_' // keyword // '_nohard', 0
+      write (upar, fmparg) 'taues_' // keyword // '_nohard', 0
     end if
 
     ! optical depth of the corona
     call interpol(x, yy(c_tau,:), z, yz)
-    write (upar,fmparf) "tau_" // keyword, yz
+    write (upar,fmparg) "tau_" // keyword, yz
     call interpol(x, yy(c_taues,:), z, yz)
-    write (upar,fmparf) "taues_" // keyword, yz
+    write (upar,fmparg) "taues_" // keyword, yz
     call interpol(x, yy(c_tauth,:), z, yz)
-    write (upar,fmparf) "tauth_" // keyword, yz
+    write (upar,fmparg) "tauth_" // keyword, yz
 
     call interpol(x, yy(c_compy,:), z, yz)
     write (upar,fmparf) 'compy_' // keyword, yz
@@ -675,7 +675,7 @@ contains
 
     ! magnetic beta
     call interpol(x, yy(c_beta,:), z, yz)
-    write (upar,fmparec) 'beta_' // keyword, yz, &
+    write (upar,fmpargc) 'beta_' // keyword, yz, &
         & 'magnetic beta in ' // comment
 
     ! column density: disk vs corona
@@ -689,11 +689,11 @@ contains
         (coldens - yz) / coldens, "mass fraction in " // comment
     end associate
 
-    write (upar, *) 'kapsct_' // keyword, interpolf(x, yy(c_ksct,:), z)
-    write (upar, *) 'kapabs_' // keyword, interpolf(x, yy(c_kabs,:), z)
-    write (upar, *) 'kapabp_' // keyword, interpolf(x, yy(c_kabp,:), z)
-    write (upar, *) 'mag_gauss_' // keyword, &
-    &  sqrt(8 * pi * interpolf(x, yy(c_pmag,:), z))
+    write (upar, fmparg) 'kapsct_' // keyword, interpolf(x, yy(c_ksct,:), z)
+    write (upar, fmparg) 'kapabs_' // keyword, interpolf(x, yy(c_kabs,:), z)
+    write (upar, fmparg) 'kapabp_' // keyword, interpolf(x, yy(c_kabp,:), z)
+    write (upar, fmpargc) 'mag_gauss_' // keyword, &
+    &  sqrt(8 * pi * interpolf(x, yy(c_pmag,:), z)), 'field strength in Gauss'
 
   end subroutine
 
