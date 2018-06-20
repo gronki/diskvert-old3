@@ -62,29 +62,15 @@ python setup.py install --user
 
 By default, program is built using compiler flags that provide the fastest execution.
 If an error (such as segmentation fault) occurs, it may be helpful to build the program in a way that allows easy debugging.
-Two sets of optimization flags have been provided in Makefile, one for performance (enabled by default), and another one for debugging.
+Two sets of optimization flags have been provided in Makefile, one for performance (enabled by default), and another one for debugging (will enable the array checking and add debug information, but will slow the execution).
 Once can easily comment out the set which is not needed.
-
-```Makefile
-# flags for fast execution
-FFLAGS := -O3 -march=native
-# flags for debugging
-FFLAGS := -ggdb -Og -fcheck=all
-```
-
-This will enable the array checking and add debug information, but will slow the execution.
 
 ### Other compiler vendors
 
 Diskvert can be compiled using **icc** and **ifort**.
-The easiest way to achieve is is to uncomment the following section in Makefile:
-```Makefile
-CC := icc
-FC := ifort
-
-FFLAGS := -O3 -xhost -ipo -warn
-LDLIBS += -mkl=sequential
-```
+They provide about 10 percent performance improvement due to more advanced optimization and faster algebra library.
+The easiest way to achieve this is to comment and uncomment appropriate sections in Makefile header.
+PGI compilers (**pgcc** and **pgf90**) do not work with this code (as of 2018) but hopefully they will soon.
 
 ## Usage
 
