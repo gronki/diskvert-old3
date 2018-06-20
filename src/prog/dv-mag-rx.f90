@@ -145,8 +145,8 @@ program dv_mag_relax
     ! estimate the disk top from approximate solution from B15
     htop = (zdisk_ss73 / zscale) * sqrt((4 + alpha * nu / zeta) &
           * (1d-6**(-2 / (xcor + 2)) - 1))
-    ! keep the disk dimention between 90H and 900H
-    htop = min(max(htop, 60.0_dp), 900.0_dp)
+    ! keep the disk dimension between 12H and 900H
+    htop = min(max(htop, 12.0_dp), 900.0_dp)
   end if
 
   ! old method:
@@ -158,7 +158,7 @@ program dv_mag_relax
   if (ngrid .eq. -1) then
     select case (tgrid)
     case (grid_linear)
-      ngrid = ceiling(80 * sqrt(htop))
+      ngrid = ceiling(90 * sqrt(htop))
     case (grid_log, grid_asinh)
       ngrid = ceiling(320 * log(1 + htop / typical_hdisk))
     case (grid_pow2)
