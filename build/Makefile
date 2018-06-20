@@ -24,16 +24,16 @@ CC := gcc
 FC := gfortran
 
 # TO SWITCH BETWEEN PERFORMANCE AND DEBUG COMPILATION, UNCOMMENT ONE:
-# performance (default)
+# default
 FFLAGS := -O3 -march=native
 # debug (slow)
-# FFLAGS := -ggdb -Og -fcheck=all
+# FFLAGS := -ggdb -Og -fcheck=all -mieee-fp
 
+FFLAGS += -fimplicit-none -ffree-line-length-none -fbacktrace
 FFLAGS += -Wall -Wno-unused-dummy-argument -pedantic
 FFLAGS += -Warray-temporaries -Wrealloc-lhs-all
-FFLAGS += -fimplicit-none -ffree-line-length-none
 
-LDLIBS += -llapack
+LDLIBS += -lopenblas
 
 #------------------------------------------------------------------------------#
 # Intel compilers
@@ -41,7 +41,7 @@ LDLIBS += -llapack
 # CC := icc
 # FC := ifort
 #
-# FFLAGS := -O3 -xhost -ipo -warn
+# FFLAGS := -O2 -xhost -warn
 # LDLIBS += -mkl=sequential
 
 #------------------------------------------------------------------------------#
@@ -50,7 +50,7 @@ LDLIBS += -llapack
 # CC := pgcc
 # FC := pgf90
 #
-# FFLAGS := -O3 -ta=host
+# FFLAGS := -O2
 # LDLIBS += -llapack -lblas
 
 #------------------------------------------------------------------------------#
