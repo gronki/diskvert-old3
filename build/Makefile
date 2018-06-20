@@ -25,9 +25,9 @@ FC := gfortran
 
 # TO SWITCH BETWEEN PERFORMANCE AND DEBUG COMPILATION, UNCOMMENT ONE:
 # default
-FFLAGS := -O3 -march=native
+FFLAGS := -O2
 # debug (slow)
-# FFLAGS := -ggdb -Og -fcheck=all -mieee-fp
+# FFLAGS := -ggdb -O0 -fcheck=all -mieee-fp
 
 FFLAGS += -fimplicit-none -ffree-line-length-none -fbacktrace
 FFLAGS += -Wall -Wno-unused-dummy-argument -pedantic
@@ -129,8 +129,8 @@ libdiskvert.so: $(objects) $(objects_lib)
 #------------------------------------------------------------------------------#
 
 ../libconfort/libconfort.a:
-	$(MAKE) -C ../libconfort CC=$(CC) CFLAGS='-g -O2' \
-		FC=$(FC) FFLAGS='-g -O2' libconfort.a
+	$(MAKE) -C ../libconfort CC=$(CC) CFLAGS='-O2' \
+		FC=$(FC) FFLAGS='-O2' libconfort.a
 
 #------------------------------------------------------------------------------#
 #---------------------------------- CLEANUP -----------------------------------#
