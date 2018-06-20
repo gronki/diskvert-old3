@@ -17,7 +17,7 @@ testuj() {
 
   echo "prefix: $prefix"
 
-  parallel --eta --jobs $jobs --delay 0.2s cat input.par \| /usr/bin/time -f %U -o $prefix/time-{} $prefix/bin/dv-mag-rx -n 1024 -corona -post-corona -top 120 -linear -o $prefix/disk-{} ::: $(seq $trials)
+  parallel --eta --jobs $jobs --delay 0.1s python mkpar.py \| /usr/bin/time -f %U -o $prefix/time-{} $prefix/bin/diskvert -n 2560 -compton -post-corona -top 120 -linear -o $prefix/disk-{} ::: $(seq $trials)
 
   LC_NUMERIC=C echo "$(python stat.py $prefix/time-*) + $FC $FFLAGS" | tee -a results.txt
   rm -rfv "$prefix"
