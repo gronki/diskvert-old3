@@ -58,18 +58,22 @@ Alternatively, once can install the Python package for the current user only:
 python setup.py install --user
 ```
 
-### Debug build
+### Special builds
 
-By default, program is built using compiler flags that provide the fastest execution.
-If an error (such as segmentation fault) occurs, it may be helpful to build the program in a way that allows easy debugging.
-Two sets of optimization flags have been provided in Makefile, one for performance (enabled by default), and another one for debugging (will enable the array checking and add debug information, but will slow the execution).
-Once can easily comment out the set which is not needed.
+During normal use, there is no need for changing the default compiler flags, which provide optimal execution speed.
+However, if for some reason different compiler options are needed (such as debugging or a specific architecture), they can be overriden in a following way:
+```sh
+# check for array bounds and append debug info
+make FFLAGS='-g -Og -fcheck=all'
+```
 
 ### Other compiler vendors
 
 Diskvert can be compiled using **icc** and **ifort**.
 They provide about 10 percent performance improvement due to more advanced optimization and faster algebra library.
-The easiest way to achieve this is to comment and uncomment appropriate sections in Makefile header.
+```sh
+make CC=icc FC=ifort FFLAGS='-O2 -xhost'
+```
 PGI compilers (**pgcc** and **pgf90**) do not work with this code (as of 2018) but hopefully they will soon.
 
 ## Usage

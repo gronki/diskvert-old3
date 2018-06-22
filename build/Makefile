@@ -17,41 +17,36 @@ LDFLAGS := -L.
 #---------------------------- CFLAGS AND COMPILERS ----------------------------#
 #------------------------------------------------------------------------------#
 
-# TO USE COMPILERS OTHER THAN GCC, COMMENT THIS BLOCK, AND UNCOMMENT
-# ONE OF THE BELOW BLOCKS (Intel or PGI)
-
-CC := gcc
 FC := gfortran
-
-# TO SWITCH BETWEEN PERFORMANCE AND DEBUG COMPILATION, UNCOMMENT ONE:
-# default
 FFLAGS := -O2
-# debug (slow)
-# FFLAGS := -ggdb -O0 -fcheck=all -mieee-fp
 
-FFLAGS += -fimplicit-none -ffree-line-length-none -fbacktrace
-FFLAGS += -Wall -Wno-unused-dummy-argument -pedantic
+#------------------------------------------------------------------------------#
+
+FCVER := $(shell $(FC) --version \
+	| sed '/^\\s*$$/d' | head -1 | awk '{ print $$1 }')
+
+#------------------------------------------------------------------------------#
+
+ifeq ($(FCVER), GNU)
+
+FFLAGS += -Wall -Wextra -Wno-unused-dummy-argument -pedantic
 FFLAGS += -Warray-temporaries -Wrealloc-lhs-all
-
+override FFLAGS += -fimplicit-none -ffree-line-length-none
 LDLIBS += -lopenblas
 
 #------------------------------------------------------------------------------#
-# Intel compilers
 
-# CC := icc
-# FC := ifort
-#
-# FFLAGS := -O2 -xhost -warn
-# LDLIBS += -mkl=sequential
+else ifeq ($(FCVER), ifort)
+
+FFLAGS += -xhost
+override FFLAGS += -std15 -implicitnone -warn
+LDLIBS += -mkl=sequential
 
 #------------------------------------------------------------------------------#
-# PGI compilers (not working)
 
-# CC := pgcc
-# FC := pgf90
-#
-# FFLAGS := -O2
-# LDLIBS += -llapack -lblas
+else
+LDLIBS += -llapack -lblas
+endif
 
 #------------------------------------------------------------------------------#
 #-------------------------- SOURCES AND OBJECT FILES --------------------------#
@@ -129,8 +124,7 @@ libdiskvert.so: $(objects) $(objects_lib)
 #------------------------------------------------------------------------------#
 
 ../libconfort/libconfort.a:
-	$(MAKE) -C ../libconfort CC=$(CC) CFLAGS='-O2' \
-		FC=$(FC) FFLAGS='-O2' libconfort.a
+	$(MAKE) -C ../libconfort FC=$(FC) FFLAGS='-O2' libconfort.a
 
 #------------------------------------------------------------------------------#
 #---------------------------------- CLEANUP -----------------------------------#
@@ -144,3 +138,5 @@ clean:
 #------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------#
+
+.PHONY: all lib install install-lib clean
