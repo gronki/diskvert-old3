@@ -15,6 +15,6 @@ stderr.write(str(data) + "\n")
 
 n = times.count()
 mean = np.sum(times) / n
-stdev = np.sqrt(np.sum((times - mean)**2) / (n - 1))
+stdev = np.sqrt(np.sum((times - mean)**2) / (n**2 - n))
 
-print(u'{:8.3f} {:8.3f}\n'.format(mean,stdev))
+print(u'{:6.3f} +/- {:.3f}\n'.format(mean,stdev))
