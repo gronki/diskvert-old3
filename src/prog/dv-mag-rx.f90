@@ -852,8 +852,9 @@ contains
       call loggrad(yy(c_temp,:), yy(c_pgas,:), yy(c_gradrd,:))
     end block gradients
 
-    call loggrad(x, yy(c_pmag,:), yy(c_qcor,:))
-    yy(c_qcor,:) = -yy(c_qcor,:)
+    ! call loggrad(x, yy(c_pmag,:), yy(c_qcor,:))
+    ! yy(c_qcor,:) = -yy(c_qcor,:)
+    yy(c_qcor,:) = qcor - (yy(c_pgas,:) + yy(c_prad,:)) / yy(c_pmag,:) * (alpha / eta)
 
     ! column density
     yy(c_coldens,1) = 0
