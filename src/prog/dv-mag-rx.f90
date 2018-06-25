@@ -16,7 +16,7 @@ program dv_mag_relax
   type(config) :: cfg
   integer :: model, errno
   integer :: ny = 3, i, iter, nitert = 0, KL, KU
-  integer, dimension(3) :: niter = [ 20, 8, 24 ]
+  integer, dimension(3) :: niter = [ 20, 8, 18 ]
   real(dp), allocatable, target :: x(:), x0(:), Y(:), dY(:), M(:,:), YY(:,:)
   real(dp), allocatable :: MB(:,:)
   real(dp), pointer :: yv(:,:)
@@ -26,7 +26,7 @@ program dv_mag_relax
   real(dp), pointer, dimension(:) :: y_rho, y_temp, y_frad, y_pmag, &
         & y_Trad, y_fcnd
   real(dp), allocatable, dimension(:) :: tau, heat
-  real(dp) :: rho_0_ss73, temp_0_ss73, zdisk_ss73, err, err0, ramp, beta_0, xcor
+  real(dp) :: rho_0_ss73, temp_0_ss73, zdisk_ss73, err, err0, ramp, beta_0, qcor
   character(*), parameter :: fmiter = '(I5,2X,ES9.2,2X,F5.1,"%")'
   logical :: user_ff, user_bf, converged, has_corona
   integer, dimension(6) :: c_
@@ -39,7 +39,7 @@ program dv_mag_relax
 
   real(dp), parameter :: typical_hdisk = 15
 
-  integer, parameter :: ncols  = 32, &
+  integer, parameter :: ncols  = 33, &
       c_rho = 1, c_temp = 2, c_trad = 3, &
       c_pgas = 4, c_prad = 5, c_pmag = 6, &
       c_frad = 7, c_fmag = 8, c_fcnd = 9, &
@@ -50,7 +50,7 @@ program dv_mag_relax
       c_kcnd = 21, c_coolb = 22, c_coolc = 23, &
       c_compy = 24, c_compy2 = 25, c_compfr = 26, c_fbfr = 27, &
       c_adiab1 = 28, c_gradad = 29, c_gradrd = 30, c_betamri = 31, &
-      c_instabil = 32
+      c_instabil = 32, c_qcor = 33
 
   character(8), dimension(ncols) :: labels
 
@@ -87,6 +87,7 @@ program dv_mag_relax
   labels(c_adiab1) = 'adiab1'
   labels(c_gradad) = 'gradad'
   labels(c_gradrd) = 'gradrd'
+  labels(c_qcor) = 'qcor'
 
   !----------------------------------------------------------------------------!
   ! default values
@@ -121,12 +122,12 @@ program dv_mag_relax
   if (alpha <= 0) error stop "alpha must be positive"
 
   beta_0 = 2 * zeta / alpha + nu - 1
-  xcor = 2 + alpha * (nu - 1) / zeta
+  qcor = 2 + alpha * (nu - 1) / zeta
 
   if (beta_0 < 0) error stop "MAGNETIC BETA cannot be negative! " &
         & // "zeta > alpha / 2 !!!"
 
-  if (xcor < 1) error stop "I refuse to compute the disk where xcor < 1 !!!!"
+  if (qcor < 1) error stop "I refuse to compute the disk where qcor < 1 !!!!"
 
   !----------------------------------------------------------------------------!
   ! some initial computation
@@ -144,7 +145,7 @@ program dv_mag_relax
   if (cfg_auto_htop) then
     ! estimate the disk top from approximate solution from B15
     htop = (zdisk_ss73 / zscale) * sqrt((4 + alpha * nu / zeta) &
-          * (1d-6**(-2 / (xcor + 2)) - 1))
+          * (1d-6**(-2 / (qcor + 2)) - 1))
     ! keep the disk dimension between 12H and 900H
     htop = min(max(htop, 12.0_dp), 900.0_dp)
   end if
@@ -341,7 +342,7 @@ program dv_mag_relax
     y_pmag  => Y(C_(5)::ny)
     YV(1:ny,1:ngrid) => Y
 
-    if (cfg_temperature_method == EQUATION_BALANCE) niter(3) = niter(3) + 10
+    if (cfg_temperature_method == EQUATION_BALANCE) niter(3) = niter(3) + 8
 
     if (use_conduction) then
       niter(3) = niter(3) + 12
@@ -375,7 +376,7 @@ program dv_mag_relax
       forall (i = 1:ngrid*ny) errmask(i) = (Y(i) .ne. 0) &
           & .and. ieee_is_normal(dY(i))
       err = sqrt(sum((dY/Y)**2, errmask) / count(errmask))
-      ramp = ramp5(iter, niter(3) - 8) ! * min(err0 / err, 1.0_r64)
+      ramp = ramp5(iter, niter(3) - 4) ! * min(err0 / err, 1.0_r64)
 
       write(uerr,fmiter) nitert+1, err, 100*ramp
 
@@ -388,10 +389,10 @@ program dv_mag_relax
       end if
       Y(:) = Y + dY * ramp
 
-      where (y_trad < teff * 0.80) y_trad = teff * 0.80
-      where (y_temp < teff * 0.80) y_temp = teff * 0.80
-      where (.not.ieee_is_normal(y_rho) .or. y_rho < epsilon(1d0)*rho_0_ss73) &
-            y_rho = epsilon(1d0)*rho_0_ss73
+      where (y_trad < teff / 2) y_trad = teff / 2
+      where (y_temp < teff / 2) y_temp = teff / 2
+      where (.not. ieee_is_normal(y_rho) .or. y_rho < epsilon(1.0_dp) * rho_0_ss73) &
+            y_rho = epsilon(1.0_dp) * rho_0_ss73
 
       nitert = nitert + 1
       if (cfg_write_all_iters) call saveiter(nitert)
@@ -436,15 +437,19 @@ program dv_mag_relax
   write (upar, fmparfc) "eta", zeta, "field rise parameter"
   write (upar, fmparfc) "zeta", zeta, "field rise parameter"
   write (upar, fmparfc) "nu", nu, "reconnection parameter"
-  write (upar, fmparfc) "xcor", xcor, "corona parameter"
+  write (upar, fmparfc) "qcor", qcor, "corona parameter"
+  write (upar, fmparfc) "xcor", qcor, "corona parameter (old name)"
 
   write (upar, fmpare) "radius", radius
   write (upar, fmpare) "zscale", zscale
   write (upar, fmpare) "facc", facc
   write (upar, fmpare) "omega", omega
-  teff = (yy(c_frad,ngrid) / cgs_stef)**(0.25_dp)
-  write (upar, fmpare) "teff", teff
-  write (upar, fmparf) "teff_keV", teff * keV_in_kelvin
+
+  associate (teff_real => (yy(c_frad, ngrid) / cgs_stef)**(0.25_dp))
+    write (upar, fmpare) "teff", teff_real
+    write (upar, fmparf) "teff_keV", teff_real * keV_in_kelvin
+  end associate
+
 
   write (upar, fmpare) "rho_0", yy(c_rho,1)
   write (upar, fmpare) "temp_0", yy(c_temp,1)
@@ -842,9 +847,13 @@ contains
       pgpt(:) = yy(c_pgas,:) / (yy(c_pgas,:) + yy(c_prad,:))
       yy(c_adiab1,:) = (32 - 24 * pgpt - 3 * pgpt**2) / (24 - 21 * pgpt)
       yy(c_gradad,:) = 2 * (4 - 3 * pgpt) / (32 - 24 * pgpt - 3 * pgpt**2)
-      call deriv(log(yy(c_temp,:)), log(yy(c_pgas,:) + yy(c_prad,:)), &
-            yy(c_gradrd,:))
+      ! call deriv(log(yy(c_temp,:)), log(yy(c_pgas,:) + yy(c_prad,:)), &
+            ! yy(c_gradrd,:))
+      call loggrad(yy(c_temp,:), yy(c_pgas,:), yy(c_gradrd,:))
     end block gradients
+
+    call loggrad(x, yy(c_pmag,:), yy(c_qcor,:))
+    yy(c_qcor,:) = -yy(c_qcor,:)
 
     ! column density
     yy(c_coldens,1) = 0
@@ -876,6 +885,25 @@ contains
       end if
     end do search_for_minimum
 
+  end subroutine
+
+  !----------------------------------------------------------------------------!
+  ! computes log gradient of any function
+
+  pure subroutine loggrad(x, y, d)
+    real(dp), intent(in) :: x(:), y(:)
+    real(dp), intent(out) :: d(:)
+    integer :: i
+
+    if (size(x) /= size(y) .or. size(d) /= size(y)) error stop
+
+    do concurrent (i = 2:size(y)-1)
+      d(i) = (y(i+1) - y(i-1)) * (x(i+1) + x(i-1)) &
+      &   / ((y(i+1) + y(i-1)) * (x(i+1) - x(i-1)) )
+    end do
+
+    d(1) = d(2)
+    d(size(d)) = d(size(d) - 1)
   end subroutine
 
   !----------------------------------------------------------------------------!
