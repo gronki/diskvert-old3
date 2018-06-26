@@ -38,7 +38,6 @@ LDLIBS += -lopenblas
 
 else ifeq ($(FCVER), ifort)
 
-FFLAGS += -xhost
 override FFLAGS += -std15 -implicitnone -warn
 LDLIBS += -mkl=sequential
 

@@ -39,7 +39,7 @@ program dv_mag_relax
 
   real(dp), parameter :: typical_hdisk = 15
 
-  integer, parameter :: ncols  = 33, &
+  integer, parameter :: ncols  = 34, &
       c_rho = 1, c_temp = 2, c_trad = 3, &
       c_pgas = 4, c_prad = 5, c_pmag = 6, &
       c_frad = 7, c_fmag = 8, c_fcnd = 9, &
@@ -50,7 +50,7 @@ program dv_mag_relax
       c_kcnd = 21, c_coolb = 22, c_coolc = 23, &
       c_compy = 24, c_compy2 = 25, c_compfr = 26, c_fbfr = 27, &
       c_adiab1 = 28, c_gradad = 29, c_gradrd = 30, c_betamri = 31, &
-      c_instabil = 32, c_qcor = 33
+      c_instabil = 32, c_qcor = 33, c_betarad = 34
 
   character(8), dimension(ncols) :: labels
 
@@ -75,6 +75,7 @@ program dv_mag_relax
   labels(c_tauth) = 'tauth'
   labels(c_tavg) = 'tavg'
   labels(c_beta) = 'beta'
+  labels(c_betarad) = 'betarad'
   labels(c_betamri) = 'betamri'
   labels(c_coldens) = 'coldens'
   labels(c_coolb) = 'coolb'
@@ -438,6 +439,7 @@ program dv_mag_relax
   write (upar, fmparfc) "zeta", zeta, "field rise parameter"
   write (upar, fmparfc) "nu", nu, "reconnection parameter"
   write (upar, fmparfc) "qcor", qcor, "corona parameter"
+  write (upar, fmparfc) "qcor_fact", maxval(yy(c_qcor,:)), "same incl. pressure"
   write (upar, fmparfc) "xcor", qcor, "corona parameter (old name)"
 
   write (upar, fmpare) "radius", radius
@@ -450,12 +452,10 @@ program dv_mag_relax
     write (upar, fmparf) "teff_keV", teff_real * keV_in_kelvin
   end associate
 
-
   write (upar, fmpare) "rho_0", yy(c_rho,1)
   write (upar, fmpare) "temp_0", yy(c_temp,1)
   write (upar,fmpare) 'beta_0', yy(c_pgas,1) / yy(c_pmag,1)
   write (upar,fmpare) 'betakin_0', (yy(c_pgas,1) + yy(c_prad,1)) / yy(c_pmag,1)
-  write (upar,fmpare) 'betarad_0', yy(c_pgas,1) / yy(c_prad,1)
 
   write (upar, fmpare) "rho_0_ss73", rho_0_ss73
   write (upar, fmpare) "temp_0_ss73", temp_0_ss73
@@ -539,7 +539,6 @@ program dv_mag_relax
     write (upar, fmpare) 'frad_top', yy(c_frad, ngrid)
     write (upar, fmpare) 'fmag_top', yy(c_fmag, ngrid)
     write (upar, fmparf) 'fbfrac_top', yy(c_fbfr, ngrid)
-    write (upar, fmpare) 'betarad_0', yy(c_pgas,1) / yy(c_prad,1)
 
     !--------------------------------------------------------------------------!
     ! instability location
@@ -670,7 +669,7 @@ contains
           'compton / brehms. ratio'
 
     ! energy released in the corona
-    associate (frad => interpolf(x,y_frad,z),         &
+    associate (frad => interpolf(x, y_frad, z),       &
     &          frad_top => y_frad(ngrid),             &
     &          fmag => interpolf(x, yy(c_fmag,:), z))
       write (upar,fmpare) "frad_" // keyword, frad
@@ -682,6 +681,10 @@ contains
     ! magnetic beta
     write (upar,fmpargc) 'beta_' // keyword, interpolf(x, yy(c_beta,:), z), &
         & 'magnetic beta in ' // comment
+    write (upar,fmparg) 'betarad_' // keyword, interpolf(x, yy(c_betarad,:), z)
+
+    ! magnetic gradient
+    write (upar,fmparg) 'qcor_' // keyword, interpolf(x, yy(c_qcor,:), z)
 
     ! column density: disk vs corona
     call interpol(x, yy(c_coldens,:), z, yz)
@@ -784,6 +787,9 @@ contains
     yy(c_fbfr,1) = 0
     yy(c_fbfr,2:) = yy(c_frad,2:) / (yy(c_frad,2:) + yy(c_fmag,2:))
 
+    ! radiation pressure fraction
+    yy(c_betarad,:) = yy(c_prad,:) / yy(c_pgas,:)
+
     ! integrate the optical depths and averaged temperature
     yy(c_tau,ngrid) = 0
     yy(c_taues,ngrid) = 0
@@ -854,7 +860,7 @@ contains
 
     ! call loggrad(x, yy(c_pmag,:), yy(c_qcor,:))
     ! yy(c_qcor,:) = -yy(c_qcor,:)
-    yy(c_qcor,:) = qcor - (yy(c_pgas,:) + yy(c_prad,:)) / yy(c_pmag,:) * (alpha / eta)
+    yy(c_qcor,:) = qcor - (yy(c_pgas,:) + yy(c_prad,:)) / yy(c_pmag,:) * (alpha / zeta)
 
     ! column density
     yy(c_coldens,1) = 0
