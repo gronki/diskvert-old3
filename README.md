@@ -71,6 +71,7 @@ make FFLAGS='-g -Og -fcheck=all'
 
 Diskvert can be compiled using **icc** and **ifort**.
 They provide about 10 percent performance improvement due to more advanced optimization and faster algebra library.
+One can either specify the alternative compiler from the command line, or edit the Makefile to make the change permanent.
 ```sh
 make CC=icc FC=ifort FFLAGS='-O2 -xhost'
 ```
